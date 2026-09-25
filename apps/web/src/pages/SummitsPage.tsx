@@ -97,7 +97,7 @@ export function SummitsPage() {
     <div className="space-y-6">
       <PageHeading
         eyebrow="Community Summits"
-        title="参会情况"
+        title="社区参展"
         description="社区峰会与全体峰会的台账：会期、参会规模、参会组织名单与峰会成果。"
         meta={
           <>

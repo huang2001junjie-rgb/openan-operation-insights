@@ -64,7 +64,7 @@ export function NextSummitBanner({ summit }: { summit: SummitSummary | null }) {
             to="/summits"
             className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-b from-brand-500 to-brand-600 px-4 py-2.5 text-sm font-medium text-white shadow-[0_12px_30px_-16px_rgba(36,114,245,0.95)] transition hover:from-brand-400 hover:to-brand-500"
           >
-            查看参会情况
+            查看社区参展
             <IconArrowRight width={16} height={16} />
           </Link>
           {summit.websiteUrl ? (

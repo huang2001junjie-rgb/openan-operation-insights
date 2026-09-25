@@ -647,8 +647,8 @@ erDiagram
 | 3 | GET | `/api/contributions` | 组织 GitHub 维度贡献 | 社区活跃度（明细表 / 排行榜 / 组织贡献分布环形图） |
 | 4 | GET | `/api/insights` | 组织 Confluence 维度贡献 | 社区活跃度 |
 | 5 | GET | `/api/contributions/summary` | 贡献聚合总量 | 社区活跃度（页头更新时间等） |
-| 6 | GET | `/api/summits` | 峰会列表（可含详情） | 参会情况 |
-| 7 | GET | `/api/summits/:id` | 单场峰会详情 | 参会情况（预留跳转） |
+| 6 | GET | `/api/summits` | 峰会列表（可含详情） | 社区参展 |
+| 7 | GET | `/api/summits/:id` | 单场峰会详情 | 社区参展（预留跳转） |
 | 8 | GET | `/api/contributor-contributions` | 个人 GitHub 维度贡献 | 社区活跃度（个人贡献排行） |
 | 9 | GET | `/api/meetings` | 例会参会矩阵（人 × 日期） | 例会参会情况 |
 
@@ -829,7 +829,7 @@ erDiagram
 
 #### 5.3.6 `GET /api/summits`
 
-**用途**：参会情况页的时间线数据；`includeDetail=true` 时一并返回详情表格数据。
+**用途**：社区参展页的时间线数据；`includeDetail=true` 时一并返回详情表格数据。
 
 **请求参数**：
 
