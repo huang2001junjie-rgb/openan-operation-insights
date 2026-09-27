@@ -1,8 +1,10 @@
 import {
   Contributor,
   HomeFileData,
+  IdentityClaim,
   MeetingAttendanceMatrix,
   MeetingAttendanceRow,
+  Person,
   SummitDetail,
   MetricValue,
   Organization,
@@ -193,4 +195,51 @@ export function isHomeFileData(value: unknown): value is HomeFileData {
     isMetricValue(value.useCaseCount) &&
     isNullableString(value.nextSummitId)
   );
+}
+
+const IDENTITY_SOURCES = ['github', 'confluence', 'meeting'];
+
+/**
+ * 自然人（04 文档 §3.9）：
+ * - `personId` / `displayName` / 时间戳必填；
+ * - `orgId` 必须显式出现，取值 `string | null`（`null` = 未归属）；
+ * - `avatarUrl` 可选。
+ */
+export function isPerson(value: unknown): value is Person {
+  if (!isObject(value)) return false;
+  return (
+    isString(value.personId) &&
+    isString(value.displayName) &&
+    (value.orgId === null || isString(value.orgId)) &&
+    isNullableString(value.avatarUrl) &&
+    isString(value.createdAt) &&
+    isString(value.updatedAt)
+  );
+}
+
+export function isPersonArray(value: unknown): value is Person[] {
+  return Array.isArray(value) && value.every(isPerson);
+}
+
+/**
+ * 身份认领边（04 文档 §3.10）：
+ * - `claimId` / `personId` / `source` / `accountKey` / `createdAt` 必填；
+ * - `displayName`、`createdBy` 可选；
+ * - 不做唯一性校验（同一账号可被多人引用）。
+ */
+export function isIdentityClaim(value: unknown): value is IdentityClaim {
+  if (!isObject(value)) return false;
+  return (
+    isString(value.claimId) &&
+    isString(value.personId) &&
+    IDENTITY_SOURCES.includes(String(value.source)) &&
+    isString(value.accountKey) &&
+    isNullableString(value.displayName) &&
+    isString(value.createdAt) &&
+    isNullableString(value.createdBy)
+  );
+}
+
+export function isIdentityClaimArray(value: unknown): value is IdentityClaim[] {
+  return Array.isArray(value) && value.every(isIdentityClaim);
 }

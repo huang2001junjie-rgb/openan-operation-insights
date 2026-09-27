@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-09-27T05:23:25.744Z",
+  "data": [
+    {
+      "claimId": "clm_8f9e7a2d-a75c-496c-af24-cd7057d87834",
+      "personId": "casey-cain",
+      "source": "github",
+      "accountKey": "4486747",
+      "displayName": "Casey Cain",
+      "createdAt": "2026-09-27T05:23:18.798Z"
+    },
+    {
+      "claimId": "clm_dc6be823-ff2c-4f65-8c6e-56043161772a",
+      "personId": "chuanyu-chen",
+      "source": "github",
+      "accountKey": "22441124",
+      "displayName": "Chuanyu Chen",
+      "createdAt": "2026-09-27T05:23:25.744Z"
+    }
+  ]
+}

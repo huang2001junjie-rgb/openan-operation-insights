@@ -55,6 +55,11 @@ export interface AppConfig {
   corsOrigins: string[];
   cacheTtlSeconds: number;
   logLevel: string;
+  /**
+   * 身份匹配控制台写接口令牌（04 §5.1）。
+   * 为空表示写功能整体禁用（写接口返回 40301）；仅比对、不落盘、不记日志。
+   */
+  adminToken: string;
   github: GithubConfig;
 }
 
@@ -78,6 +83,7 @@ export default (): AppConfig => {
       .filter((origin) => origin.length > 0),
     cacheTtlSeconds: toNumber(process.env.CACHE_TTL_SECONDS, 300),
     logLevel: process.env.LOG_LEVEL?.trim() || 'log',
+    adminToken: process.env.ADMIN_TOKEN?.trim() ?? '',
     github: {
       token: process.env.GITHUB_TOKEN?.trim() ?? '',
       orgs: splitList(process.env.GITHUB_ORGS),

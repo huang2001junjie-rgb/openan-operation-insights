@@ -5,6 +5,7 @@ import { HomeModule } from './modules/home/home.module';
 import { MeetingModule } from './modules/meeting/meeting.module';
 import { SummitModule } from './modules/summit/summit.module';
 import { OrganizationModule } from './modules/organization/organization.module';
+import { IdentityModule } from './modules/identity/identity.module';
 import { CommonModule } from './common/common.module';
 import configuration from './config/configuration';
 import { validateEnv } from './config/env.validation';
@@ -28,6 +29,7 @@ import { RepositoriesModule } from './repositories/repositories.module';
     ActivityModule,
     SummitModule,
     MeetingModule,
+    IdentityModule,
   ],
 })
 export class AppModule {}

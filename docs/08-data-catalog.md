@@ -20,8 +20,9 @@ flowchart LR
   MAN["人工编辑 data/*.json"] --> D
   C --> D["data/*.json"]
   MS --> D
-  D --> API["NestJS API（只读）"]
-  API --> WEB["React 看板（四个页面）"]
+  D --> API["NestJS API<br/>（业务只读 + identity 写）"]
+  API --> WEB["React 看板（四个页面）+ 身份匹配控制台"]
+  WEB -->|"认领 / 归属变更（X-Admin-Token）"| D
 ```
 
 ## 1. 汇总（一句话速览）
@@ -72,6 +73,10 @@ flowchart LR
 | P2 | 个人贡献者档案 | 人工档案 + 采集回填的 GitHub 协作指标（按 `githubId` 归并） | ✅ | 人工维护 + 外部 API |
 | P3 | 数据更新时间 | 各文件信封的 `updatedAt`，供前端展示 | ➖ | 派生（文件信封） |
 | P4 | 采集运行状态 | 采集游标、配额、未归属登录名、仓库集合等运行态 | ✅ | 采集器写入（非契约） |
+| P5 | 自然人档案 | 跨来源认定为同一个人的**身份根**（`personId` + 展示名 + 归属组织） | ✅ | 人工维护（身份匹配控制台） |
+| P6 | 身份认领映射 | 自然人 ←→ 来源账号的**认领边**（`source` + `accountKey`） | ✅ | 人工维护（身份匹配控制台） |
+| P7 | 身份候选池 | 待认领 / 已认领的来源账号池，按来源分组 | ➖ | 派生（P2 贡献者 + M1 例会列名 + Confluence 来源） |
+| P8 | 组织花名册 | 各组织下的开发者清单与人数 | ➖ | 派生（P5 的 `orgId` 分组，非落盘） |
 
 ## 2. 详细描述
 
@@ -228,6 +233,33 @@ flowchart LR
 - 归类：仅存采集元信息，**不污染业务数据文件**；删除后触发全量采集。历史快照位于 `data/.snapshots/`（保留最近 7 份，用于回滚）。
 - 未实现需补（可选）：`unattributedLogins` 目前只落盘、无界面；建议在运营侧建立「未归属登录名 → 组织」补录流程，闭环提高归属率。
 
+**P5 自然人档案**
+- 状态：✅ 已实现（人工维护，**写侧**）。来源：`data/persons.json`（信封包裹 `Person[]`，初始为 `[]`）。
+- 字段：`personId`（主键，slug，创建后不可变）、`displayName`、`orgId`（可空，归属组织）、`avatarUrl`（可选）、`createdAt`/`updatedAt`。档案一经创建仅可改名与调整归属，删除为不可逆物理删除（仅限误建）。
+- 归类：**自然人 = 跨来源身份根**，是 P6 认领边的唯一锚点，不复用 P2 `Contributor`（后者是 GitHub 账号维度档案）。`orgId` 是**自然人级**归属且为**唯一真相**（§3.2 的 `Contributor.orgId` 是账号级归属，两者并存、互不覆盖）。
+- 未实现需补：自然人与 P2 `Contributor`、M1 例会列名、Confluence 账号之间**目前仅靠人工认领**，无自动归并规则（如 login 与人名相似度）；`avatarUrl` 需人工或认领后回填。
+
+**P6 身份认领映射**
+- 状态：✅ 已实现（人工维护，**写侧**）。来源：`data/identity-claims.json`（信封包裹 `IdentityClaim[]`，初始为 `[]`）。
+- 字段：`claimId`（主键）、`personId`（外键 → P5）、`source`（`github`/`confluence`/`meeting`）、`accountKey`（来源内稳定标识：`githubId`／`accountId`／人名原文）、`displayName`（快照，可选）、`createdAt`、`createdBy`（可选）。
+- 归类：**点边分离**——认领边与自然人分文件存放，认领 / 解除可独立发生，避免每次绑定重写整个自然人档案。解除匹配 = **物理删除该边**；**未认领池**定义为「没有被任何边引用的来源账号」，因此池无需维护状态位。
+- 口径：**不做唯一性校验**（同一账号可被多人认领，前端提示冲突）；认领**不改变**任何历史贡献数据（贡献挂在 `githubId` 与列名原文上）。
+- 未实现需补：无一键「按 login / 人名相似度推荐认领」；未来新增来源（如 Zoom 参会账号）只需扩展 `source` 枚举，`Person` 不动。
+
+**P7 身份候选池**
+- 状态：➖ 派生（不落盘、无数据文件）。
+- 来源：`github` ← P2 `contributors.json`（`accountKey = githubId`）；`confluence` ← `insights.json`（**当前为空，返回空数组且不报错**）；`meeting` ← M1 `meetings.json` 的 `columns` 去重（`accountKey = 人名原文`）。
+- 字段（`IdentityCandidate`）：`source`、`accountKey`、`displayName`、`avatarUrl`（仅 github）、`claimedBy[]`（空数组 = 待认领；长度 > 1 = 冲突）。
+- 归类：候选池随来源采集自动同步，**零维护**；响应**不含邮箱等敏感身份字段**；单一来源缺失时仅降级为空数组并在 `warnings` 中说明。
+- 未实现需补：无分页（当前量级数十～数百，全量返回）；Confluence 分组需等 A3 采集器落地后才有数据。
+
+**P8 组织花名册**
+- 状态：➖ 派生（不落盘、无数据文件）。
+- 来源：P5 `persons.json` 按 `orgId` 分组 + P1 组织档案（只读）。
+- 字段（`OrgRosterEntry`）：`organization`（组织档案原文）、`memberCount`（**活跃**自然人数）、`members[]`（`personId`/`displayName`/`avatarUrl`/`status`）。
+- 归类：归属**只存 `Person.orgId` 一处**，组织档案上**不存成员清单**（避免两份真相）；排除伪组织 `unattributed`，未归属者进 `unassigned`。归属写入唯一入口是 `PATCH /api/identity/persons/:personId`。
+- 未实现需补：无「按组织导出花名册」；`memberCount` 与 P1 组织的贡献归属人数（来自 P2）**口径不同**，不可直接相减。
+
 ## 3. 归类与派生总则
 
 ### 3.1 组织类型（`Organization.type`）
@@ -248,6 +280,8 @@ flowchart LR
 3. **独立开发者兜底**：以上均未命中 → `unattributed`。
 
 补充：邮箱**仅用于内存判定，不写入任何数据文件**（`@users.noreply.github.com` 等自然不命中）；人工在 `contributors.json` 已指定的 `orgId` **不会被自动覆盖**；多组织配置相同域名时按组织档案顺序取第一个。
+
+> **本节只适用于 `Contributor.orgId`（GitHub 账号级归属）。** 身份匹配控制台维护的 `Person.orgId`（自然人级归属，见 P5/P8）是**独立口径**：不参与本节判定，也不被采集器改写；两者并存且互不覆盖。
 
 ### 3.3 综合贡献分（H6 卡片墙）
 
@@ -272,7 +306,9 @@ flowchart LR
 | 中 | P1 | 补齐组织 `aliases`，提升归属准确率 | 运营录入 |
 | 中 | S2 | 补录峰会 `attendeeCount`；补齐参会组织档案 | 运营录入 / 报名系统 |
 | 低 | A6 | 采集侧保留时间维度，使 `from`/`to` 生效 | 采集器改造（阶段三）|
-| 低 | M3 | 引入 `personId` + Zoom API 自动采集参会 | 依赖 M1 规范化 |
+| 中 | P7 | 落地 Confluence 采集器，使候选池 `confluence` 分组真正有数据 | A3 |
+| 中 | P6 | 自动匹配建议（按 GitHub login / 人名相似度推荐认领对象） | P5/P6 数据积累后 |
+| 低 | M3 | 接 Zoom API 自动采集参会，并把参会账号认领到 P5 自然人 | P5 已就绪；依赖 M1 列名规范化 |
 | 低 | H6 | 贡献分权重 / 排除名单（如 `dependabot`）可配置化 | 配置项设计 |
 | 低 | P4 | 「未归属登录名 → 组织」补录流程 | 运营流程 |
 
@@ -281,4 +317,4 @@ flowchart LR
 - 本文件为**登记册**：新增 / 调整数据时同步更新 §1 汇总与 §2 对应条目；
 - 若某项状态由 🟡 变为 ✅，请同时勾掉 §4 待办中的对应行；
 - 与 `04-data-and-api-contract.md` 冲突时**以 `04` 为准**，并在此记录差异；
-- 本文件不参与 CI 校验（与 `07-feature-registry.md` 同属「可自由编辑」文档）。
+- 本文件不参与 CI 校验（属「可自由编辑」文档）。

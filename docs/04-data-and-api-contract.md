@@ -16,6 +16,10 @@
 | `data/contributors.json` | `JsonFileEnvelope<Contributor[]>` | 个人贡献者档案（GitHub 账号维度） | 数百 |
 | `data/summits.json` | `JsonFileEnvelope<SummitDetail[]>` | 峰会时间线与详情 | 十余 |
 | `data/meetings.json` | `JsonFileEnvelope<MeetingAttendanceMatrix>` | 例会参会矩阵（人 × 日期） | 1 |
+| `data/persons.json` | `JsonFileEnvelope<Person[]>` | 自然人档案（身份匹配控制台的**点**） | 数十 |
+| `data/identity-claims.json` | `JsonFileEnvelope<IdentityClaim[]>` | 身份认领映射边（自然人 ←→ 来源账号） | 数百 |
+
+> 另有 `data/.identity-audit.jsonl`：身份认领的 **append-only 审计流水**，**非契约**、不参与结构校验、接口不返回（先例同 `data/.sync-state.json`）。记录认领 / 解除 / 删除 / 归属变更，字段见 5.3.15。
 
 ### 1.1 通用文件信封
 
@@ -45,6 +49,8 @@ erDiagram
   ORGANIZATION ||--o| SUMMIT : "hostOrgId 可空"
   ORGANIZATION }o--o{ SUMMIT : "attendingOrganizations"
   HOME_FILE }o--|| SUMMIT : "nextSummitId"
+  ORGANIZATION |o--o{ PERSON : "orgId 可空"
+  PERSON ||--o{ IDENTITY_CLAIM : "personId"
 
   ORGANIZATION {
     string orgId PK
@@ -84,6 +90,17 @@ erDiagram
     string date "行头，YYYY-MM-DD"
     boolean[] attendance "与 columns 等长"
   }
+  PERSON {
+    string personId PK
+    string displayName
+    string orgId FK "可空"
+  }
+  IDENTITY_CLAIM {
+    string claimId PK
+    string personId FK
+    string source "github 或 confluence 或 meeting"
+    string accountKey
+  }
 ```
 
 **关联规则**：
@@ -96,6 +113,11 @@ erDiagram
 - 允许"有贡献记录但组织档案缺失"：`Service` 层以贡献记录内的 `orgName`/`logoUrl` 兜底，并记录 `WARN` 日志提示数据维护缺失。
 - `attendingOrganizations` **存组织名称字符串**（便于人工维护可读性），`Service` 层负责按 `name`/`aliases` 反查 `orgId` 以便跳转。
 - `MeetingAttendanceMatrix` **与任何实体都不关联**（独立实体，见 ADR-0005）：其 `columns` 是 Excel 台账表头**原文**（人名），**不是主键**，也不关联 `Organization` / `Contributor`，因此**不参与**组织归属判定与个人贡献统计口径。
+- `Person.personId` 是**自然人身份根**主键（见 3.9），`IdentityClaim.personId` 以它关联；`Person.orgId` **可空**，为空表示未归属（前端归入「独立开发者」）。
+- `IdentityClaim` 是**边**（见 3.10）：一条记录表示「某个来源账号被认领给某个自然人」。来源侧由 `source` + `accountKey` 指称；**本期不做唯一性校验**——同一账号可被多个自然人引用，同一自然人也可持有多个来源账号。
+- **`Person.orgId` ≠ `Contributor.orgId`**：前者是**自然人级**归属（身份匹配控制台维护，为其唯一真相），后者是 **GitHub 账号级**归属（贡献数据口径，采集器按别名/邮箱域名判定，见 08 文档 §3.2）。本期两者并存、互不覆盖，看板取数口径不变。
+- `MeetingAttendanceMatrix.columns` 的人名**不自动关联** `Person`：本期只提供「人工把某个人名认领给某个自然人」的写入入口（见 5.3.14），不做自动匹配。
+- 候选池（`IdentityCandidate`）与组织花名册（`OrgRosterEntry`）均为**派生结果**，不落盘、无对应数据文件，见 5.3.11 / 5.3.13。
 
 ---
 
@@ -106,6 +128,8 @@ erDiagram
 | 组织 | `orgId` | kebab-case，与 GitHub 组织名对齐（小写） | `openan-labs` |
 | 贡献者 | `contributorId` | kebab-case，与 GitHub login 对齐（小写） | `octocat` |
 | 峰会 | `id` | kebab-case + 年份 | `openan-summit-2026` |
+| 自然人 | `personId` | kebab-case 可读 slug；重名时末尾追加序号 | `zhang-san`、`zhang-san-2` |
+| 身份认领边 | `claimId` | `clm_` + 4 位顺序号，由服务端生成、不可指定 | `clm_0007` |
 | 例会参会矩阵 | **无主键** | 行 = 日期（`YYYY-MM-DD`），列 = 人名原文 | — |
 
 **时间规范**：
@@ -118,6 +142,7 @@ erDiagram
 - 布尔字段 `is` / `has` 前缀。**唯一例外**：例会矩阵单元格 `present` 采用直陈式（`true` = 出席），因它是矩阵值而非实体属性。
 - 数组字段使用复数名词（`tags`、`outcomes`）。
 - 计数字段使用具体名词而非 `count` 后缀堆叠（`pullRequests`、`requirements`）。
+- `personId` **一经创建不可变更**：重命名只改 `displayName`，避免已建立的认领边失效。来源账号以 `source` + `accountKey` 指称，与 `personId` 解耦。
 
 ---
 
@@ -282,6 +307,48 @@ erDiagram
 > - **空白 = 缺席**：台账中未标记的格子一律解析为 `false` 并计入出席率分母。因此**成员加入前的历史空白同样计入缺席**，会系统性拉低后加入者的出席率——这是 ADR-0005 明知并接受的负债。
 > - **不含会议元信息**：无时长、主持人、议程、地点等字段（ADR-0005 明确放弃）。
 > - **不含聚合字段**：个人出席率（`present / rows.length`）与每场出席人数均由**前端**派生，接口不返回。
+
+### 3.9 `Person`（自然人）
+
+> **身份根**：跨来源被认定为同一个人的最小单位，是 `IdentityClaim` 的唯一锚点。由身份匹配控制台（`/admin/identity`）维护，不从任何采集链路写入。**点与边分离**：自然人（点）与认领边（见 3.10）分文件存放。
+
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| `personId` | string | ✅ | 主键，可读 slug，**一经创建不可变更**；重名时末尾追加 `-2`、`-3` |
+| `displayName` | string | ✅ | 展示名，可改；改名不影响任何认领关系 |
+| `orgId` | string \| null | ✅ | 归属组织，关联 `Organization.orgId`；`null` = 未归属。**归属的唯一真相**：组织花名册由本字段派生（见 5.3.13），组织档案上**不存成员清单** |
+| `avatarUrl` | string | ❌ | 展示用头像，通常回填其首个 GitHub 账号头像；缺失时前端降级为首字母色块 |
+| `createdAt` | string | ✅ | 创建时间（ISO 8601 UTC） |
+| `updatedAt` | string | ✅ | 最后变更时间（ISO 8601 UTC） |
+
+**口径声明**：
+
+- 归属组织**不收录**伪组织 `unattributed`（`type = 'individual'`）；未归属一律以 `orgId = null` 表达，前端在组织视图归入「独立开发者」分组。
+- 自然人**不复用** `Contributor`：`Contributor` 是 GitHub 账号维度档案（见 3.7），一个自然人可以认领多个来源账号，二者非一一对应。
+- 自然人**不含**邮箱等敏感身份字段；邮箱仅用于内存判定，不写入任何数据文件（见 08 文档 §3.2）。
+
+### 3.10 `IdentityClaim`（身份认领边）
+
+> **边**：一条记录 = 一次「把某来源账号判定为某自然人」的人工认领。与 `Person` 分文件存放，使认领 / 解除可独立发生，避免每次绑定重写整个自然人档案。
+
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| `claimId` | string | ✅ | 主键，服务端生成（`clm_` + 顺序号） |
+| `personId` | string | ✅ | 外键 → `Person.personId`；目标必须是已存在的自然人（不存在则 `40403`） |
+| `source` | `'github' \| 'confluence' \| 'meeting'` | ✅ | 来源类型：GitHub 账户 / Confluence 账户 / 例会（Zoom）参会人名。**未来新增来源只需扩展该枚举**，不改 `Person` |
+| `accountKey` | string | ✅ | **来源内稳定标识**：GitHub 取 `githubId`（数字账号 ID 的字符串形式）；Confluence 取 `accountId`；例会取 `columns` 中的**人名原文** |
+| `displayName` | string | ❌ | 认领时的来源展示名**快照**，仅作渲染兜底（来源文件缺失时仍可展示） |
+| `createdAt` | string | ✅ | 认领时间（ISO 8601 UTC） |
+| `createdBy` | string | ❌ | 操作者标识（本期写入固定值，预留多操作者） |
+
+**口径声明**：
+
+- **不做唯一性校验**：同一 `source` + `accountKey` 可存在多条边。前端对「同一账号被多人引用」显示冲突提示，服务端仅记 `WARN` 不阻断。
+- **解除匹配 = 物理删除该边**（不是置状态位）。**未认领池**定义为「没有被任何边引用的来源账号」，见 5.3.11。
+- 自然人**一经创建即长存**：仅支持改名与调整归属，不提供归档。删除自然人 = **物理删除**（不可逆，仅限误建 / 候选池重复提取，见 5.3.14）。
+- 认领**不改变**任何历史贡献数据：贡献指标挂在来源账号（`Contributor.githubId`、例会矩阵列名）上，删边只回池，不影响归因口径。
+
+**审计**：认领 / 解除 / 删除 / 归属变更均向 `data/.identity-audit.jsonl` 追加一条记录（append-only，非契约），字段见 5.3.15。
 
 ---
 
@@ -618,6 +685,63 @@ erDiagram
 
 > 说明：`columns` 取自台账表头原文；新增成员追加在**末尾**，离场成员**保留列**（历史出席不可抹除）；`rows` 按台账原序排列，接口不做重排（ADR-0005）。本文件由 `apps/api/scripts/import-meetings.ts` 从 `data/source/meetings.xlsx` 生成，日常只维护 Excel（见 05 文档第 10 节）。
 
+### 4.8 `data/persons.json`
+
+```json
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-09-27T09:00:00Z",
+  "data": [
+    {
+      "personId": "zhang-san",
+      "displayName": "张三",
+      "orgId": "huawei",
+      "avatarUrl": "https://avatars.githubusercontent.com/u/22441124?v=4",
+      "createdAt": "2026-09-27T09:00:00Z",
+      "updatedAt": "2026-09-27T09:00:00Z"
+    },
+    {
+      "personId": "casey-cain",
+      "displayName": "Casey Cain",
+      "orgId": null,
+      "createdAt": "2026-09-27T09:00:00Z",
+      "updatedAt": "2026-09-27T09:00:00Z"
+    }
+  ]
+}
+```
+
+> 说明：**初始文件为 `"data": []`**，上例为演示数据。`orgId: null` 表示未归属（独立开发者）。
+
+### 4.9 `data/identity-claims.json`
+
+```json
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-09-27T09:06:00Z",
+  "data": [
+    {
+      "claimId": "clm_0001",
+      "personId": "zhang-san",
+      "source": "github",
+      "accountKey": "22441124",
+      "displayName": "Chuanyu Chen",
+      "createdAt": "2026-09-27T09:05:00Z"
+    },
+    {
+      "claimId": "clm_0002",
+      "personId": "zhang-san",
+      "source": "meeting",
+      "accountKey": "张三",
+      "displayName": "张三",
+      "createdAt": "2026-09-27T09:06:00Z"
+    }
+  ]
+}
+```
+
+> 说明：**初始文件为 `"data": []`**。`source` + `accountKey` 指向来源侧账号；`meeting` 的 `accountKey` 是人名**原文**（可能重名，故不做唯一性校验）。
+
 ---
 
 ## 5. REST 接口契约
@@ -628,15 +752,16 @@ erDiagram
 | --- | --- |
 | 基地址 | 同域部署为 `/api`；开发期由 Vite 代理 `/api` → `http://localhost:3000` |
 | 版本策略 | 路径中暂不带版本号。发生不兼容变更时改为 `/api/v2/...`，旧路径保留一个迭代周期 |
-| 请求方法 | 本阶段全部为 `GET`（只读看板），无写接口 |
+| 请求方法 | 看板接口全部为 `GET`（只读）；身份匹配控制台另有 `POST` / `PATCH` / `DELETE` 写接口，**仅存在于 `/api/identity/*` 下**（见 5.3.14）。既有看板接口的路径、方法与响应行为不变 |
+| 鉴权 | **仅写接口**需要：请求头 `X-Admin-Token: <令牌>`，令牌取自环境变量 `ADMIN_TOKEN`。读接口不鉴权。未配置 `ADMIN_TOKEN` 时所有写接口整体禁用并返回 `40301` |
 | 内容类型 | 响应 `application/json; charset=utf-8` |
 | 响应信封 | 统一 `{ code, message, data }`，`code = 0` 表示成功 |
 | 时间格式 | 请求与响应中的时间均为 ISO 8601 UTC 字符串 |
 | 分页 | 仅 `GET /api/summits` 预留分页参数，其余接口数据量小、一次性返回 |
 | 排序 | 由后端给出业务默认排序（见各接口说明），前端可再对已获取数据做本地排序 |
 | 未知参数 | 返回 `40001`（`forbidNonWhitelisted`），避免拼写错误被静默忽略 |
-| 缓存头 | 响应包含 `Cache-Control: private, max-age=60`；数据陈旧时附加 `X-Data-Stale: true` |
-| 幂等性 | 全部 `GET`，天然幂等，前端可安全重试 |
+| 缓存头 | **看板只读接口**响应包含 `Cache-Control: private, max-age=60`；数据陈旧时附加 `X-Data-Stale: true`。**`/api/identity/*` 的全部响应（含只读 GET）与全部写接口一律 `no-store`**——该控制台数据可被写接口即时改变，必须禁用浏览器 HTTP 缓存，否则会出现"刚创建的自然人数分钟内不显示、强刷才出现" |
+| 幂等性 | 全部 `GET` 天然幂等；身份认领写接口**不幂等**（重复认领会新增边），前端须禁用重复提交 |
 
 ### 5.2 接口清单
 
@@ -651,6 +776,17 @@ erDiagram
 | 7 | GET | `/api/summits/:id` | 单场峰会详情 | 社区参展（预留跳转） |
 | 8 | GET | `/api/contributor-contributions` | 个人 GitHub 维度贡献 | 社区活跃度（个人贡献排行） |
 | 9 | GET | `/api/meetings` | 例会参会矩阵（人 × 日期） | 例会参会情况 |
+| 10 | GET | `/api/identity/persons` | 自然人列表（含归属与已认领数） | 身份匹配控制台（自然人 ↔ 账号） |
+| 11 | GET | `/api/identity/claims` | 身份认领边全量列表 | 身份匹配控制台 |
+| 12 | GET | `/api/identity/candidates` | 候选池（按来源派生，含已归属标记） | 身份匹配控制台（自然人 ↔ 账号） |
+| 13 | GET | `/api/identity/org-roster` | 组织花名册（派生）+ 未归属分组 | 身份匹配控制台（组织 ↔ 开发者） |
+| 14 | POST | `/api/identity/persons` | 新建自然人 | 身份匹配控制台 |
+| 15 | PATCH | `/api/identity/persons/:personId` | 重命名 / 调整归属组织 | 身份匹配控制台 |
+| 16 | DELETE | `/api/identity/persons/:personId` | 物理删除自然人（不可逆，仅限误建/重复提取） | 身份匹配控制台 |
+| 17 | POST | `/api/identity/claims` | 认领来源账号 | 身份匹配控制台 |
+| 18 | DELETE | `/api/identity/claims/:claimId` | 解除认领（账号回池） | 身份匹配控制台 |
+
+> 第 10～13 项为**只读**（不鉴权，但响应为 `no-store`，见 5.1 缓存头）；第 14～18 项为**写接口**，统一位于 `/api/identity/*`，需要 `X-Admin-Token`（见 5.1 与 5.3.14）。
 
 ### 5.3 接口详细定义
 
@@ -972,6 +1108,258 @@ erDiagram
 
 **失败场景**：`50001`（`meetings.json` 缺失或结构损坏）。
 
+#### 5.3.10 `GET /api/identity/persons`
+
+**用途**：身份匹配控制台左栏自然人花名册（自然人 ↔ 账号模式）。
+
+**请求参数**：
+
+| 参数 | 类型 | 必填 | 默认 | 说明 |
+| --- | --- | --- | --- | --- |
+| `keyword` | string | ❌ | — | 按 `displayName` / `personId` 不区分大小写模糊匹配 |
+| `orgId` | string | ❌ | — | 按归属组织过滤；**特殊值 `none`** 表示只取未归属（`orgId = null`） |
+
+**响应 `data`**：`PersonListItem[]`，按 `displayName` 升序。
+
+```json
+{
+  "code": 0,
+  "message": "ok",
+  "data": [
+    {
+      "personId": "zhang-san",
+      "displayName": "张三",
+      "orgId": "huawei",
+      "avatarUrl": "https://avatars.githubusercontent.com/u/22441124?v=4",
+      "createdAt": "2026-09-27T09:00:00Z",
+      "updatedAt": "2026-09-27T09:00:00Z",
+      "claimCount": 2
+    }
+  ]
+}
+```
+
+`PersonListItem` = `Person`（见 3.9）+ 派生字段：
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `claimCount` | number | 该自然人当前持有的认领边数（派生自 `identity-claims.json`） |
+
+**失败场景**：`50001`（`persons.json` 缺失或结构损坏）。
+
+#### 5.3.11 `GET /api/identity/candidates`
+
+**用途**：候选池（右侧待认领来源账号）。**派生、不落盘**。
+
+**数据来源与派生口径**：
+
+| `source` | 来源文件 | `accountKey` | `displayName` | 备注 |
+| --- | --- | --- | --- | --- |
+| `github` | `contributors.json` | `githubId` 的字符串形式 | `name` | 头像取 `avatarUrl` |
+| `confluence` | `insights.json` | Confluence `accountId` | 账户展示名 | 当前来源为空（`insights.json` 为 `[]`），**返回空数组且不报错** |
+| `meeting` | `meetings.json` | `columns` 中的人名**原文** | 同 `accountKey` | 按原文去重；**同原文即同一条**，重名者由人工判别 |
+
+**请求参数**：无。
+
+**响应 `data`**：按来源分组的对象，另附 `warnings`。
+
+```json
+{
+  "code": 0,
+  "message": "ok",
+  "data": {
+    "github": [
+      {
+        "source": "github",
+        "accountKey": "22441124",
+        "displayName": "Chuanyu Chen",
+        "avatarUrl": "https://avatars.githubusercontent.com/u/22441124?v=4",
+        "claimedBy": [{ "personId": "zhang-san", "displayName": "张三" }]
+      }
+    ],
+    "confluence": [],
+    "meeting": [
+      { "source": "meeting", "accountKey": "张三", "displayName": "张三", "claimedBy": [] }
+    ],
+    "warnings": ["confluence 数据源暂无数据"]
+  }
+}
+```
+
+`IdentityCandidate`：
+
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| `source` | `'github' \| 'confluence' \| 'meeting'` | ✅ | 来源类型 |
+| `accountKey` | string | ✅ | 来源内稳定标识（语义同 3.10） |
+| `displayName` | string | ✅ | 展示名 |
+| `avatarUrl` | string | ❌ | 仅 `github` 有值 |
+| `claimedBy` | `{ personId, displayName }[]` | ✅ | **空数组 = 待认领**；长度 > 1 表示冲突（同一账号被多人引用） |
+
+**口径声明**：
+
+- **不返回**邮箱、令牌等敏感身份字段。
+- `claimedBy` 由 `identity-claims.json` 与 `persons.json` 关联派生。
+- 任一**来源文件**（`contributors.json` / `insights.json` / `meetings.json`）缺失或为空时**降级为空数组**并在 `warnings` 中说明，**不阻断**整个接口。
+
+**失败场景**：`50001`（`persons.json` 或 `identity-claims.json` 缺失/损坏）。
+
+#### 5.3.12 `GET /api/identity/claims`
+
+**用途**：认领边全量列表，供前端做「账号 → 自然人」关联与冲突提示。
+
+**请求参数**：无。
+
+**响应 `data`**：`IdentityClaim[]`（见 3.10），按 `createdAt` 升序、原样返回（不聚合、不去重）。
+
+**失败场景**：`50001`（`identity-claims.json` 缺失/损坏）。
+
+#### 5.3.13 `GET /api/identity/org-roster`
+
+**用途**：组织 ↔ 开发者模式的组织列表与花名册。**派生、不落盘**。
+
+**请求参数**：无。
+
+**响应 `data`**：
+
+```json
+{
+  "code": 0,
+  "message": "ok",
+  "data": {
+    "organizations": [
+      {
+        "organization": { "orgId": "huawei", "name": "Huawei", "logoUrl": "/logos/huawei.png", "homepageUrl": "https://www.huawei.com", "type": "partner", "tags": [] },
+        "memberCount": 3,
+        "members": [{ "personId": "zhang-san", "displayName": "张三" }]
+      }
+    ],
+    "unassigned": [{ "personId": "casey-cain", "displayName": "Casey Cain" }],
+    "updatedAt": "2026-09-27T09:00:00Z"
+  }
+}
+```
+
+`OrgRosterEntry`：
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `organization` | `Organization` | 组织档案（见 3.1），**只读直读** `organizations.json` |
+| `memberCount` | number | 归属该组织的自然人数（派生自 `Person.orgId`） |
+| `members` | `PersonRef[]` | 成员清单，按 `displayName` 升序 |
+
+`PersonRef` = `Pick<Person, 'personId' | 'displayName' | 'avatarUrl'>`。
+
+**口径声明**：
+
+- 组织清单**只读**取自 `organizations.json`；本期**不提供**组织写接口。
+- 排除伪组织 `unattributed`（`type = 'individual'`），因此 **`organizations[].memberCount` 之和 + `unassigned.length` = 自然人总数**（可自检）。
+- 归属写入的**唯一入口**是 `PATCH /api/identity/persons/:personId { orgId }`（见 5.3.14）；组织档案上**不存**成员清单，避免两份真相。
+- `unassigned` = `orgId` 为 `null` 的自然人。
+
+**失败场景**：`50001`（`persons.json` 或 `organizations.json` 缺失/损坏）。
+
+#### 5.3.14 写接口（`/api/identity/*`）
+
+**通用约定**：
+
+| 项 | 约定 |
+| --- | --- |
+| 鉴权 | 请求头 `X-Admin-Token: <令牌>`，与 `ADMIN_TOKEN` 环境变量**定长比较**；缺失 → `40101`，不匹配 → `40102`，服务端未配置 → `40301` |
+| 请求体 | `application/json`；字段须在 DTO 中完整声明，未知字段 → `40001` |
+| 响应 | 成功统一返回受影响实体的最新形态（不裸返回 `null`） |
+| 日志 | 认领 / 解除 / 删除 / 归属变更记 `log` 级并带 `personId`、`source`、`accountKey`、`orgId`；**令牌与邮箱不得入日志** |
+| 缓存 | `Cache-Control: no-store` |
+
+**① `POST /api/identity/persons`** —— 新建自然人
+
+请求体：
+
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| `displayName` | string | ✅ | 展示名，1～64 字符（trim 后非空） |
+
+- `personId` 由服务端从 `displayName` 生成 slug（小写、非字母数字转 `-`、去首尾 `-`）；**无法生成 ASCII slug 时退化为 `person`**，冲突时统一追加顺序号（`person-2`、`person-3`）。
+- 响应 `data`：`Person`（见 3.9；不含 `claimCount`）。
+
+**② `PATCH /api/identity/persons/:personId`** —— 重命名 / 调整归属
+
+请求体（**至少提供一项**，否则 `40000`）：
+
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| `displayName` | string | ❌ | 新展示名（1～64 字符） |
+| `orgId` | string \| null | ❌ | 归属组织；`null` = 置为未归属 |
+
+- `orgId` 非 `null` 时必须是 `organizations.json` 中存在的组织，且 `type !== 'individual'`；不存在 → `40401`，为伪组织 → `40004`。
+- 响应 `data`：`Person`。
+
+**③ `DELETE /api/identity/persons/:personId`** —— 物理删除（不可逆）
+
+- **先删除该自然人的全部认领边、再删除自然人本体**；仅用于误建 / 候选池重复提取，记 `WARN` 日志。
+- 响应 `data`：`{ personId, removedClaims }`（`removedClaims` = 一并解除的边数）。
+- 目标不存在 → `40403`。
+
+**④ `POST /api/identity/claims`** —— 认领来源账号
+
+请求体：
+
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| `personId` | string | ✅ | 目标自然人 |
+| `source` | `'github' \| 'confluence' \| 'meeting'` | ✅ | 来源类型 |
+| `accountKey` | string | ✅ | 来源内稳定标识 |
+| `displayName` | string | ❌ | 展示名快照 |
+
+- 目标自然人不存在 → `40403`。
+- 同一 `source` + `accountKey` + `personId` 已存在 → `40901`（防止界面重复点击产生重复边）。
+- **同一账号指向不同自然人**允许创建并记 `WARN`（前端显示冲突提示）。
+- 响应 `data`：`IdentityClaim`（见 3.10）。
+
+**⑤ `DELETE /api/identity/claims/:claimId`** —— 解除认领
+
+- **物理删除该边**；账号自动回到候选池（未被任何边引用）。
+- 边不存在 → `40404`。
+- 响应 `data`：`{ claimId, personId, source, accountKey }`。
+
+**跨文件顺序（重要）**：涉及 `persons.json` 与 `identity-claims.json` 的操作一律**先改边、后改点**。任一步失败时数据处于「人还在、边已解」的**可重试安全态**，不出现半成品。仅改归属（`orgId`）只写 `persons.json` 单文件，天然原子。
+
+**失败场景汇总**：
+
+| 场景 | 错误码 |
+| --- | --- |
+| 请求体字段缺失/超长/未知字段 | `40001` |
+| 请求体未提供任何可改字段 | `40000` |
+| `orgId` 指向伪组织 `unattributed` | `40004` |
+| 缺少 `X-Admin-Token` | `40101` |
+| `X-Admin-Token` 不匹配 | `40102` |
+| 服务端未配置 `ADMIN_TOKEN`（写功能未启用） | `40301` |
+| 组织不存在 | `40401` |
+| 自然人不存在 | `40403` |
+| 认领边不存在 | `40404` |
+| 重复认领（同人同账号） | `40901` |
+| 数据文件写入失败 | `50002` |
+
+#### 5.3.15 审计流水 `data/.identity-audit.jsonl`
+
+**定位**：**非契约**、接口不返回、不参与结构校验（先例同 `data/.sync-state.json`）。仅追加（append-only），不修改既有行。
+
+**写入时机**：新建 / 重命名 / 归属变更 / 物理删除自然人；认领 / 解除认领。
+
+**单行结构**（JSON Lines，每行一个对象）：
+
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| `at` | string | ✅ | 操作时间（ISO 8601 UTC） |
+| `action` | `'person.create' \| 'person.update' \| 'person.delete' \| 'claim.create' \| 'claim.delete'` | ✅ | 动作 |
+| `personId` | string | ✅ | 涉及的自然人 |
+| `claimId` | string | ❌ | 仅 `claim.*` |
+| `source` | string | ❌ | 仅 `claim.*` |
+| `accountKey` | string | ❌ | 仅 `claim.*` |
+| `detail` | object | ❌ | 变更摘要，如 `{ "orgId": "huawei" }` |
+
+> 审计**只记标识与结构变化**，**不得**写入令牌、邮箱等个人信息。写审计失败**不使主操作失败**（仅记 `WARN`），保证归属数据优先落盘。
+
 ---
 
 ## 6. 契约治理
@@ -995,10 +1383,15 @@ erDiagram
 | `isUpcoming` | 未开始 | **未结束**（进行中的峰会同样为 `true`） |
 | `MeetingAttendanceMatrix.columns` | 主键 / 稳定标识 | 台账表头**原文**（人名），非主键，靠台账人工保持一致 |
 | `attendance[i] = false` | 该人明确请假 | **未出席**（含「尚未加入」的历史空白），且计入出席率分母 |
+| `Person.orgId` | 与 `Contributor.orgId` 是同一个字段 | **自然人级**归属（身份匹配控制台维护，为其唯一真相）；`Contributor.orgId` 是 **GitHub 账号级**归属（采集口径） |
+| `IdentityClaim.accountKey` | 账号对象本体 / 可跨来源复用 | **来源内**稳定标识（github=`githubId`、confluence=`accountId`、meeting=人名原文），**必须与 `source` 组合**才有意义 |
+| 「解除匹配」 | 把账号标记为「未匹配」状态位 | **物理删除该条边**；账号因「不再被任何边引用」而自动回到候选池 |
+| 组织花名册 `members` | 一份落盘的成员表 | 由 `Person.orgId` **派生**（组织档案上不存成员清单，避免两份真相） |
+| `memberCount` | 离职者应被移出花名册 | 该组织**全部**自然人（派生自 `Person.orgId`）；人员离职不做任何处理，历史成员与贡献归因始终保留在册 |
 
 ### 6.3 契约自检清单
 
-- [ ] 四个页面的每个展示字段，都能在本文档中找到对应定义
+- [ ] 每个页面的每个展示字段，都能在本文档中找到对应定义
 - [ ] `data/*.json` 中不存在本文档未定义的字段
 - [ ] 所有必填字段在种子数据中均已提供
 - [ ] 可选字段在前端均有降级展示策略

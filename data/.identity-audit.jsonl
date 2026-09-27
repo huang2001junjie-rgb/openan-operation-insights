@@ -1,0 +1,17 @@
+{"at":"2026-09-27T03:30:33.135Z","action":"person.create","personId":"casey-cain","detail":{"displayName":"Casey Cain"}}
+{"at":"2026-09-27T03:41:37.880Z","action":"person.create","personId":"chuanyu-chen","detail":{"displayName":"Chuanyu Chen"}}
+{"at":"2026-09-27T03:43:07.792Z","action":"person.create","personId":"jie-zhou","detail":{"displayName":"Jie Zhou"}}
+{"at":"2026-09-27T03:48:44.573Z","action":"person.create","personId":"zhiqiang-tang","detail":{"displayName":"Zhiqiang Tang"}}
+{"at":"2026-09-27T03:48:56.254Z","action":"person.archive","personId":"casey-cain","detail":{"removedClaims":0}}
+{"at":"2026-09-27T03:49:04.038Z","action":"person.archive","personId":"chuanyu-chen","detail":{"removedClaims":0}}
+{"at":"2026-09-27T03:51:43.152Z","action":"person.restore","personId":"casey-cain"}
+{"at":"2026-09-27T03:51:44.411Z","action":"person.restore","personId":"chuanyu-chen"}
+{"at":"2026-09-27T04:49:55.931Z","action":"person.update","personId":"chuanyu-chen","detail":{"orgId":"huawei"}}
+{"at":"2026-09-27T05:05:10.313Z","action":"person.update","personId":"zhiqiang-tang","detail":{"orgId":null}}
+{"at":"2026-09-27T05:05:10.339Z","action":"person.update","personId":"zhiqiang-tang","detail":{"orgId":"personal"}}
+{"at":"2026-09-27T05:05:15.882Z","action":"person.update","personId":"zhiqiang-tang","detail":{"orgId":null}}
+{"at":"2026-09-27T05:23:18.802Z","action":"claim.create","personId":"casey-cain","claimId":"clm_8f9e7a2d-a75c-496c-af24-cd7057d87834","source":"github","accountKey":"4486747"}
+{"at":"2026-09-27T05:23:25.747Z","action":"claim.create","personId":"chuanyu-chen","claimId":"clm_dc6be823-ff2c-4f65-8c6e-56043161772a","source":"github","accountKey":"22441124"}
+{"at":"2026-09-27T05:23:43.227Z","action":"person.update","personId":"chuanyu-chen","detail":{"orgId":null}}
+{"at":"2026-09-27T05:23:43.972Z","action":"person.update","personId":"chuanyu-chen","detail":{"orgId":"huawei"}}
+{"at":"2026-09-27T05:23:45.154Z","action":"person.update","personId":"jie-zhou","detail":{"orgId":"huawei"}}

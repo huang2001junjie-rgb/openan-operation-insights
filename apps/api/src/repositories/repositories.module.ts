@@ -4,7 +4,9 @@ import { join } from 'node:path';
 import {
   Contributor,
   HomeFileData,
+  IdentityClaim,
   MeetingAttendanceMatrix,
+  Person,
   SummitDetail,
   Organization,
   OrganizationContribution,
@@ -15,8 +17,10 @@ import {
   CONTRIBUTIONS_REPOSITORY,
   CONTRIBUTORS_REPOSITORY,
   HOME_REPOSITORY,
+  IDENTITY_CLAIMS_REPOSITORY,
   INSIGHTS_REPOSITORY,
   MEETINGS_REPOSITORY,
+  PERSONS_REPOSITORY,
   SUMMITS_REPOSITORY,
   ORGANIZATIONS_REPOSITORY,
 } from './repository.tokens';
@@ -24,8 +28,10 @@ import {
   isContributionArray,
   isContributorArray,
   isHomeFileData,
+  isIdentityClaimArray,
   isInsightArray,
   isMeetingAttendanceMatrix,
+  isPersonArray,
   isSummitDetailArray,
   isOrganizationArray,
 } from './validators';
@@ -88,10 +94,23 @@ const repositoryProviders = [
     ),
     inject: [ConfigService],
   },
+  {
+    provide: PERSONS_REPOSITORY,
+    useFactory: makeRepository<Person[]>('persons.json', isPersonArray),
+    inject: [ConfigService],
+  },
+  {
+    provide: IDENTITY_CLAIMS_REPOSITORY,
+    useFactory: makeRepository<IdentityClaim[]>(
+      'identity-claims.json',
+      isIdentityClaimArray,
+    ),
+    inject: [ConfigService],
+  },
 ];
 
 /**
- * 启动期数据自检：校验七个业务 JSON 文件的结构合法性。
+ * 启动期数据自检：校验九个业务 JSON 文件的结构合法性。
  * 校验失败不阻断启动（降级只读），由具体接口返回 50001。
  */
 export class DataBootstrapService implements OnApplicationBootstrap {
@@ -107,6 +126,9 @@ export class DataBootstrapService implements OnApplicationBootstrap {
     @Inject(SUMMITS_REPOSITORY) private readonly summits: JsonRepository<SummitDetail[]>,
     @Inject(MEETINGS_REPOSITORY)
     private readonly meetings: JsonRepository<MeetingAttendanceMatrix>,
+    @Inject(PERSONS_REPOSITORY) private readonly persons: JsonRepository<Person[]>,
+    @Inject(IDENTITY_CLAIMS_REPOSITORY)
+    private readonly identityClaims: JsonRepository<IdentityClaim[]>,
   ) {}
 
   async onApplicationBootstrap(): Promise<void> {
@@ -118,6 +140,8 @@ export class DataBootstrapService implements OnApplicationBootstrap {
       this.contributors,
       this.summits,
       this.meetings,
+      this.persons,
+      this.identityClaims,
     ] as const;
 
     const results = await Promise.all(
@@ -152,6 +176,8 @@ export class DataBootstrapService implements OnApplicationBootstrap {
     CONTRIBUTORS_REPOSITORY,
     SUMMITS_REPOSITORY,
     MEETINGS_REPOSITORY,
+    PERSONS_REPOSITORY,
+    IDENTITY_CLAIMS_REPOSITORY,
   ],
 })
 export class RepositoriesModule {}
