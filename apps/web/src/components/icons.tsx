@@ -194,3 +194,87 @@ export const IconFilter = (props: IconProps) => (
     <path d="M4 6h16M7 12h10M10 18h4" />
   </svg>
 );
+
+export const IconX = (props: IconProps) => (
+  <svg {...base(props)}>
+    <path d="M6 6l12 12M18 6 6 18" />
+  </svg>
+);
+
+export const IconPlus = (props: IconProps) => (
+  <svg {...base(props)}>
+    <path d="M12 5v14M5 12h14" />
+  </svg>
+);
+
+export const IconTrash = (props: IconProps) => (
+  <svg {...base(props)}>
+    <path d="M4 7h16M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7" />
+    <path d="M6 7l1 12.5A1.5 1.5 0 0 0 8.5 21h7a1.5 1.5 0 0 0 1.5-1.5L18 7" />
+    <path d="M10 11v6M14 11v6" />
+  </svg>
+);
+
+export const IconArchive = (props: IconProps) => (
+  <svg {...base(props)}>
+    <rect x="3" y="4" width="18" height="4" rx="1.5" />
+    <path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8M10 12h4" />
+  </svg>
+);
+
+export const IconUnlink = (props: IconProps) => (
+  <svg {...base(props)}>
+    <path d="M9 15l-1.2 1.2a3.5 3.5 0 0 1-5-5L5 9" />
+    <path d="M15 9l1.2-1.2a3.5 3.5 0 0 1 5 5L19 15" />
+    <path d="M4 4l16 16" />
+  </svg>
+);
+
+export const IconLink = (props: IconProps) => (
+  <svg {...base(props)}>
+    <path d="M9.5 14.5 14.5 9.5" />
+    <path d="M11 6.5 12.5 5a3.5 3.5 0 0 1 5 5L16 11.5" />
+    <path d="M13 17.5 11.5 19a3.5 3.5 0 0 1-5-5L8 12.5" />
+  </svg>
+);
+
+export const IconKey = (props: IconProps) => (
+  <svg {...base(props)}>
+    <circle cx="8" cy="8" r="4" />
+    <path d="M11 11l8 8M16 16l2-2M18.5 18.5 21 16" />
+  </svg>
+);
+
+export const IconShield = (props: IconProps) => (
+  <svg {...base(props)}>
+    <path d="M12 3.5 19 6v5.5c0 4-2.9 7.3-7 8.5-4.1-1.2-7-4.5-7-8.5V6z" />
+    <path d="m9.2 12 2 2 3.6-3.8" />
+  </svg>
+);
+
+export const IconChevronRight = (props: IconProps) => (
+  <svg {...base(props)}>
+    <path d="m9.5 6 6 6-6 6" />
+  </svg>
+);
+
+export const IconUserPlus = (props: IconProps) => (
+  <svg {...base(props)}>
+    <circle cx="9.5" cy="8" r="3.4" />
+    <path d="M3.5 20a6 6 0 0 1 11.4-2.6" />
+    <path d="M18 13v6M15 16h6" />
+  </svg>
+);
+
+export const IconInfo = (props: IconProps) => (
+  <svg {...base(props)}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 11v5M12 7.6h.01" />
+  </svg>
+);
+
+export const IconArrowLeft = (props: IconProps) => (
+  <svg {...base(props)}>
+    <path d="M19 12H5M11 6l-6 6 6 6" />
+  </svg>
+);

@@ -155,3 +155,93 @@ export interface MeetingAttendanceMatrix {
   /** 台账最后同步时间（ISO 8601） */
   updatedAt?: string;
 }
+
+// ---------------------------------------------------------------------------
+// 身份匹配控制台（04 §3.9 / §3.10 / §5.3.10～§5.3.15）
+// ---------------------------------------------------------------------------
+
+/** 来源类型：未来新增来源只需扩展此联合类型，Person 结构不变 */
+export type IdentitySource = 'github' | 'confluence' | 'meeting';
+
+/** 自然人 —— 跨来源的身份根（04 §3.9） */
+export interface Person {
+  personId: string;
+  displayName: string;
+  /** 归属组织，**唯一真相**；null = 未归属 */
+  orgId: string | null;
+  avatarUrl?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** 身份认领边（04 §3.10） */
+export interface IdentityClaim {
+  claimId: string;
+  personId: string;
+  source: IdentitySource;
+  /** 来源内稳定标识：github=githubId、confluence=accountId、meeting=人名原文 */
+  accountKey: string;
+  displayName?: string;
+  createdAt: string;
+  createdBy?: string;
+}
+
+/** `GET /api/identity/persons` 的响应条目 */
+export interface PersonListItem extends Person {
+  claimCount: number;
+}
+
+export interface IdentityCandidateOwner {
+  personId: string;
+  displayName: string;
+}
+
+/** 候选池条目（04 §5.3.11） */
+export interface IdentityCandidate {
+  source: IdentitySource;
+  accountKey: string;
+  displayName: string;
+  avatarUrl?: string;
+  /** 空数组 = 待认领；长度 > 1 = 冲突（同一账号被多个自然人引用） */
+  claimedBy: IdentityCandidateOwner[];
+}
+
+/** `GET /api/identity/candidates` 的响应 data */
+export interface IdentityCandidatesData {
+  github: IdentityCandidate[];
+  confluence: IdentityCandidate[];
+  meeting: IdentityCandidate[];
+  warnings: string[];
+}
+
+/** 花名册成员引用（Person 的展示子集） */
+export type PersonRef = Pick<Person, 'personId' | 'displayName' | 'avatarUrl'>;
+
+/** 组织花名册条目（04 §5.3.13） */
+export interface OrgRosterEntry {
+  organization: Organization;
+  /** 归属该组织的自然人数 */
+  memberCount: number;
+  members: PersonRef[];
+}
+
+/** `GET /api/identity/org-roster` 的响应 data */
+export interface OrgRosterData {
+  organizations: OrgRosterEntry[];
+  unassigned: PersonRef[];
+  updatedAt: string;
+}
+
+/** `DELETE /api/identity/persons/:personId` 的响应 data（物理删除，仅限误建/重复提取，不可逆） */
+export interface PersonDeleteResult {
+  personId: string;
+  removedClaims: number;
+}
+
+/** `DELETE /api/identity/claims/:claimId` 的响应 data */
+export interface ClaimDeleteResult {
+  claimId: string;
+  personId: string;
+  source: IdentitySource;
+  accountKey: string;
+}

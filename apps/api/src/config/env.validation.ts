@@ -30,6 +30,14 @@ export function validateEnv(raw: Record<string, unknown>): Record<string, unknow
     }
   }
 
+  // 身份匹配写接口令牌：提供则必须足够长，避免弱口令直接开启写通道
+  const adminToken = raw.ADMIN_TOKEN;
+  if (adminToken !== undefined && String(adminToken).trim() !== '') {
+    if (String(adminToken).trim().length < 8) {
+      errors.push('ADMIN_TOKEN 至少 8 个字符；留空表示禁用身份匹配写功能');
+    }
+  }
+
   const nodeEnv = raw.NODE_ENV;
   if (nodeEnv !== undefined && !['development', 'production', 'test'].includes(String(nodeEnv))) {
     errors.push(`NODE_ENV 只能是 development / production / test，当前值：${String(nodeEnv)}`);

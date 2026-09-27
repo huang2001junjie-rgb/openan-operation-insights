@@ -1,13 +1,14 @@
 import { NavLink } from 'react-router-dom';
 import { cn } from '@/lib/cn';
 import { BrandMark } from './BrandMark';
-import { IconActivity, IconCalendar, IconDashboard, IconUsers } from '@/components/icons';
+import { IconActivity, IconCalendar, IconDashboard, IconShield, IconUsers } from '@/components/icons';
 
 const NAV_ITEMS = [
   { to: '/', label: '概览', hint: '伙伴共建与关键指标', icon: <IconDashboard width={16} height={16} />, end: true },
   { to: '/activity', label: '社区活跃度', hint: '贡献与成果明细', icon: <IconActivity width={16} height={16} />, end: false },
   { to: '/summits', label: '社区参展', hint: '社区参加的行业峰会与展会', icon: <IconCalendar width={16} height={16} />, end: false },
   { to: '/meetings', label: '例会出勤', hint: '例会参会矩阵', icon: <IconUsers width={16} height={16} />, end: false },
+  { to: '/admin/identity', label: '身份匹配', hint: '自然人 / 账号 / 组织匹配管理', icon: <IconShield width={16} height={16} />, end: false },
 ];
 
 export function TopNav() {
@@ -61,7 +62,7 @@ export function TopNav() {
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent-400/70" />
               <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-accent-400" />
             </span>
-            数据只读视图
+            看板只读 · 匹配可写
           </span>
         </div>
       </div>

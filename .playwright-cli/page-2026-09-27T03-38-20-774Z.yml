@@ -1,0 +1,390 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - link "OpenAN 运营洞察首页" [ref=e6] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e11]:
+          - generic [ref=e12]: OpenAN
+          - generic [ref=e13]: 运营洞察平台
+      - navigation [ref=e14]:
+        - link "概览" [ref=e15] [cursor=pointer]:
+          - /url: /
+        - link "社区活跃度" [ref=e24] [cursor=pointer]:
+          - /url: /activity
+        - link "社区参展" [ref=e30] [cursor=pointer]:
+          - /url: /summits
+        - link "例会出勤" [ref=e37] [cursor=pointer]:
+          - /url: /meetings
+        - link "身份匹配" [ref=e45] [cursor=pointer]:
+          - /url: /admin/identity
+      - generic [ref=e52]: 看板只读 · 匹配可写
+  - main [ref=e57]:
+    - generic [ref=e58]:
+      - generic [ref=e59]:
+        - generic [ref=e60]:
+          - paragraph [ref=e61]: 身份匹配
+          - heading "身份匹配控制台" [level=1] [ref=e62]
+          - paragraph [ref=e63]: 以自然人为最基本单位，把 GitHub / Confluence / 例会人名认领到同一自然人，并把开发者收纳进组织档案。两个模式共享同一份归属数据，变更即时落盘。
+          - tablist [ref=e65]:
+            - tab "自然人 ↔ 账号 1" [selected] [ref=e66] [cursor=pointer]:
+              - text: 自然人 ↔ 账号
+              - generic [ref=e67]: "1"
+            - tab "组织 ↔ 开发者 10" [ref=e68] [cursor=pointer]:
+              - text: 组织 ↔ 开发者
+              - generic [ref=e69]: "10"
+        - button "管理令牌" [ref=e71] [cursor=pointer]: 配置令牌
+      - generic [ref=e76]:
+        - generic [ref=e77]:
+          - generic [ref=e78]:
+            - generic [ref=e79]:
+              - heading "自然人" [level=2] [ref=e80]
+              - paragraph [ref=e81]: 身份匹配的最基本单位
+            - generic [ref=e82]: "1"
+          - generic [ref=e83]:
+            - textbox "新建自然人" [ref=e85]:
+              - /placeholder: 输入展示名新建自然人
+            - button "新建" [disabled] [ref=e86]
+          - generic [ref=e89]:
+            - textbox "搜索自然人" [ref=e91]:
+              - /placeholder: 搜索姓名或标识
+            - generic [ref=e92]:
+              - tablist [ref=e93]:
+                - tab "活跃" [selected] [ref=e94] [cursor=pointer]
+                - tab "已归档" [ref=e95] [cursor=pointer]
+              - combobox "按归属筛选" [ref=e97] [cursor=pointer]:
+                - option "全部归属" [selected]
+                - option "未归属"
+                - option "China Mobile"
+                - option "Huawei"
+                - option "Orange"
+                - option "ZTE"
+                - option "AIS"
+                - option "Infosys"
+                - option "AsiaInfo"
+                - option "personal"
+                - option "Zain"
+                - option "Inspur"
+          - generic [ref=e99]:
+            - button "CC Casey Cain 未归属 账号 0" [ref=e100] [cursor=pointer]:
+              - generic "Casey Cain" [ref=e101]: CC
+              - generic [ref=e102]:
+                - generic [ref=e103]: Casey Cain
+                - generic [ref=e105]:
+                  - generic [ref=e106]: 未归属
+                  - generic [ref=e107]: 账号 0
+            - generic [ref=e108]:
+              - button "归档 Casey Cain" [ref=e109] [cursor=pointer]
+              - button "查看 Casey Cain 详情" [ref=e113] [cursor=pointer]
+        - generic [ref=e116]:
+          - generic [ref=e117]:
+            - generic [ref=e118]:
+              - heading "候选账号池" [level=2] [ref=e119]
+              - paragraph [ref=e120]: 待认领 41 项 · 派生自既有数据
+            - generic [ref=e121]: 请先在左侧选择自然人
+          - textbox "搜索候选账号" [ref=e128]:
+            - /placeholder: 搜索候选账号或人名
+          - paragraph [ref=e130]: confluence 数据源暂无数据
+          - generic [ref=e134]:
+            - generic [ref=e135]:
+              - button "GitHub 待认领 33" [expanded] [ref=e136] [cursor=pointer]:
+                - generic [ref=e139]: GitHub
+                - generic [ref=e140]: 待认领 33
+              - generic [ref=e142]:
+                - paragraph [ref=e143]: 待认领
+                - generic [ref=e145]:
+                  - generic "Casey Cain" [ref=e146]:
+                    - img "Casey Cain" [ref=e147]
+                  - generic [ref=e148]:
+                    - paragraph [ref=e149]: Casey Cain
+                    - paragraph [ref=e150]: "4486747"
+                  - button "认领" [disabled] [ref=e151]
+                - generic [ref=e157]:
+                  - generic "Chuanyu Chen" [ref=e158]:
+                    - img "Chuanyu Chen" [ref=e159]
+                  - generic [ref=e160]:
+                    - paragraph [ref=e161]: Chuanyu Chen
+                    - paragraph [ref=e162]: "22441124"
+                  - button "认领" [disabled] [ref=e163]
+                - generic [ref=e169]:
+                  - generic "cnafan" [ref=e170]:
+                    - img "cnafan" [ref=e171]
+                  - generic [ref=e172]:
+                    - paragraph [ref=e173]: cnafan
+                    - paragraph [ref=e174]: "9312901"
+                  - button "认领" [disabled] [ref=e175]
+                - generic [ref=e181]:
+                  - generic "YuYu" [ref=e182]:
+                    - img "YuYu" [ref=e183]
+                  - generic [ref=e184]:
+                    - paragraph [ref=e185]: YuYu
+                    - paragraph [ref=e186]: "294090693"
+                  - button "认领" [disabled] [ref=e187]
+                - generic [ref=e193]:
+                  - generic "jiangjiansheng1" [ref=e194]:
+                    - img "jiangjiansheng1" [ref=e195]
+                  - generic [ref=e196]:
+                    - paragraph [ref=e197]: jiangjiansheng1
+                    - paragraph [ref=e198]: "294108829"
+                  - button "认领" [disabled] [ref=e199]
+                - generic [ref=e205]:
+                  - generic "joe" [ref=e206]:
+                    - img "joe" [ref=e207]
+                  - generic [ref=e208]:
+                    - paragraph [ref=e209]: joe
+                    - paragraph [ref=e210]: "27408053"
+                  - button "认领" [disabled] [ref=e211]
+                - generic [ref=e217]:
+                  - generic "wangjiming12" [ref=e218]:
+                    - img "wangjiming12" [ref=e219]
+                  - generic [ref=e220]:
+                    - paragraph [ref=e221]: wangjiming12
+                    - paragraph [ref=e222]: "293888496"
+                  - button "认领" [disabled] [ref=e223]
+                - generic [ref=e229]:
+                  - generic "zhouxuancheng" [ref=e230]:
+                    - img "zhouxuancheng" [ref=e231]
+                  - generic [ref=e232]:
+                    - paragraph [ref=e233]: zhouxuancheng
+                    - paragraph [ref=e234]: "293711967"
+                  - button "认领" [disabled] [ref=e235]
+                - generic [ref=e241]:
+                  - generic "YinLei2026" [ref=e242]:
+                    - img "YinLei2026" [ref=e243]
+                  - generic [ref=e244]:
+                    - paragraph [ref=e245]: YinLei2026
+                    - paragraph [ref=e246]: "294816296"
+                  - button "认领" [disabled] [ref=e247]
+                - generic [ref=e253]:
+                  - generic "zhangwenjun-huawei" [ref=e254]:
+                    - img "zhangwenjun-huawei" [ref=e255]
+                  - generic [ref=e256]:
+                    - paragraph [ref=e257]: zhangwenjun-huawei
+                    - paragraph [ref=e258]: "293838403"
+                  - button "认领" [disabled] [ref=e259]
+                - generic [ref=e265]:
+                  - generic "Yu Gong" [ref=e266]:
+                    - img "Yu Gong" [ref=e267]
+                  - generic [ref=e268]:
+                    - paragraph [ref=e269]: Yu Gong
+                    - paragraph [ref=e270]: "293917369"
+                  - button "认领" [disabled] [ref=e271]
+                - generic [ref=e277]:
+                  - generic "Jie Zhou" [ref=e278]:
+                    - img "Jie Zhou" [ref=e279]
+                  - generic [ref=e280]:
+                    - paragraph [ref=e281]: Jie Zhou
+                    - paragraph [ref=e282]: "9649802"
+                  - button "认领" [disabled] [ref=e283]
+                - generic [ref=e289]:
+                  - generic "wangruiyang8" [ref=e290]:
+                    - img "wangruiyang8" [ref=e291]
+                  - generic [ref=e292]:
+                    - paragraph [ref=e293]: wangruiyang8
+                    - paragraph [ref=e294]: "315175088"
+                  - button "认领" [disabled] [ref=e295]
+                - generic [ref=e301]:
+                  - generic "codetalks-hw" [ref=e302]:
+                    - img "codetalks-hw" [ref=e303]
+                  - generic [ref=e304]:
+                    - paragraph [ref=e305]: codetalks-hw
+                    - paragraph [ref=e306]: "125893352"
+                  - button "认领" [disabled] [ref=e307]
+                - generic [ref=e313]:
+                  - generic "qinyanhao01" [ref=e314]:
+                    - img "qinyanhao01" [ref=e315]
+                  - generic [ref=e316]:
+                    - paragraph [ref=e317]: qinyanhao01
+                    - paragraph [ref=e318]: "313217715"
+                  - button "认领" [disabled] [ref=e319]
+                - generic [ref=e325]:
+                  - generic "mamusen-huawei" [ref=e326]:
+                    - img "mamusen-huawei" [ref=e327]
+                  - generic [ref=e328]:
+                    - paragraph [ref=e329]: mamusen-huawei
+                    - paragraph [ref=e330]: "326845781"
+                  - button "认领" [disabled] [ref=e331]
+                - generic [ref=e337]:
+                  - generic "wangyonglong12111" [ref=e338]:
+                    - img "wangyonglong12111" [ref=e339]
+                  - generic [ref=e340]:
+                    - paragraph [ref=e341]: wangyonglong12111
+                    - paragraph [ref=e342]: "127069813"
+                  - button "认领" [disabled] [ref=e343]
+                - generic [ref=e349]:
+                  - generic "Tingyu Ding" [ref=e350]:
+                    - img "Tingyu Ding" [ref=e351]
+                  - generic [ref=e352]:
+                    - paragraph [ref=e353]: Tingyu Ding
+                    - paragraph [ref=e354]: "35390334"
+                  - button "认领" [disabled] [ref=e355]
+                - generic [ref=e361]:
+                  - generic "Kevin McDonnell" [ref=e362]:
+                    - img "Kevin McDonnell" [ref=e363]
+                  - generic [ref=e364]:
+                    - paragraph [ref=e365]: Kevin McDonnell
+                    - paragraph [ref=e366]: "12085202"
+                  - button "认领" [disabled] [ref=e367]
+                - generic [ref=e373]:
+                  - generic "XunliYang" [ref=e374]:
+                    - img "XunliYang" [ref=e375]
+                  - generic [ref=e376]:
+                    - paragraph [ref=e377]: XunliYang
+                    - paragraph [ref=e378]: "211948174"
+                  - button "认领" [disabled] [ref=e379]
+                - generic [ref=e385]:
+                  - generic "zhangxltx" [ref=e386]:
+                    - img "zhangxltx" [ref=e387]
+                  - generic [ref=e388]:
+                    - paragraph [ref=e389]: zhangxltx
+                    - paragraph [ref=e390]: "57202835"
+                  - button "认领" [disabled] [ref=e391]
+                - generic [ref=e397]:
+                  - generic "Junjie Huang" [ref=e398]:
+                    - img "Junjie Huang" [ref=e399]
+                  - generic [ref=e400]:
+                    - paragraph [ref=e401]: Junjie Huang
+                    - paragraph [ref=e402]: "287865201"
+                  - button "认领" [disabled] [ref=e403]
+                - generic [ref=e409]:
+                  - generic "guofei66" [ref=e410]:
+                    - img "guofei66" [ref=e411]
+                  - generic [ref=e412]:
+                    - paragraph [ref=e413]: guofei66
+                    - paragraph [ref=e414]: "169223219"
+                  - button "认领" [disabled] [ref=e415]
+                - generic [ref=e421]:
+                  - generic "zhangzhiqiangwl" [ref=e422]:
+                    - img "zhangzhiqiangwl" [ref=e423]
+                  - generic [ref=e424]:
+                    - paragraph [ref=e425]: zhangzhiqiangwl
+                    - paragraph [ref=e426]: "293713576"
+                  - button "认领" [disabled] [ref=e427]
+                - generic [ref=e433]:
+                  - generic "Yan-lin Wang" [ref=e434]:
+                    - img "Yan-lin Wang" [ref=e435]
+                  - generic [ref=e436]:
+                    - paragraph [ref=e437]: Yan-lin Wang
+                    - paragraph [ref=e438]: "43065037"
+                  - button "认领" [disabled] [ref=e439]
+                - generic [ref=e445]:
+                  - generic "Kuang Mi" [ref=e446]:
+                    - img "Kuang Mi" [ref=e447]
+                  - generic [ref=e448]:
+                    - paragraph [ref=e449]: Kuang Mi
+                    - paragraph [ref=e450]: "255609285"
+                  - button "认领" [disabled] [ref=e451]
+                - generic [ref=e457]:
+                  - generic "Lorenzo Cipriani" [ref=e458]:
+                    - img "Lorenzo Cipriani" [ref=e459]
+                  - generic [ref=e460]:
+                    - paragraph [ref=e461]: Lorenzo Cipriani
+                    - paragraph [ref=e462]: "178486491"
+                  - button "认领" [disabled] [ref=e463]
+                - generic [ref=e469]:
+                  - generic "tommy" [ref=e470]:
+                    - img "tommy" [ref=e471]
+                  - generic [ref=e472]:
+                    - paragraph [ref=e473]: tommy
+                    - paragraph [ref=e474]: "120540501"
+                  - button "认领" [disabled] [ref=e475]
+                - generic [ref=e481]:
+                  - generic "Lv Bo" [ref=e482]:
+                    - img "Lv Bo" [ref=e483]
+                  - generic [ref=e484]:
+                    - paragraph [ref=e485]: Lv Bo
+                    - paragraph [ref=e486]: "23048127"
+                  - button "认领" [disabled] [ref=e487]
+                - generic [ref=e493]:
+                  - generic "20030512" [ref=e494]:
+                    - img "20030512" [ref=e495]
+                  - generic [ref=e496]:
+                    - paragraph [ref=e497]: "20030512"
+                    - paragraph [ref=e498]: "131948940"
+                  - button "认领" [disabled] [ref=e499]
+                - generic [ref=e505]:
+                  - generic "chenjinjin" [ref=e506]:
+                    - img "chenjinjin" [ref=e507]
+                  - generic [ref=e508]:
+                    - paragraph [ref=e509]: chenjinjin
+                    - paragraph [ref=e510]: "22369073"
+                  - button "认领" [disabled] [ref=e511]
+                - generic [ref=e517]:
+                  - generic "唐志强" [ref=e518]:
+                    - img "唐志强" [ref=e519]
+                  - generic [ref=e520]:
+                    - paragraph [ref=e521]: 唐志强
+                    - paragraph [ref=e522]: "23572557"
+                  - button "认领" [disabled] [ref=e523]
+                - generic [ref=e529]:
+                  - generic "dependabot" [ref=e530]:
+                    - img "dependabot" [ref=e531]
+                  - generic [ref=e532]:
+                    - paragraph [ref=e533]: dependabot
+                    - paragraph [ref=e534]: "0"
+                  - button "认领" [disabled] [ref=e535]
+            - generic [ref=e540]:
+              - button "Confluence 待认领 0" [expanded] [ref=e541] [cursor=pointer]:
+                - generic [ref=e544]: Confluence
+                - generic [ref=e545]: 待认领 0
+              - paragraph [ref=e547]: 当前来源暂无数据（待接入账号级采集）。
+            - generic [ref=e548]:
+              - button "例会 待认领 8" [expanded] [ref=e549] [cursor=pointer]:
+                - generic [ref=e552]: 例会
+                - generic [ref=e553]: 待认领 8
+              - generic [ref=e555]:
+                - paragraph [ref=e556]: 待认领
+                - generic [ref=e558]:
+                  - generic "Yijun Yu(Huawei)" [ref=e559]: YY
+                  - generic [ref=e560]:
+                    - paragraph [ref=e561]: Yijun Yu(Huawei)
+                    - paragraph [ref=e562]: Yijun Yu(Huawei)
+                  - button "认领" [disabled] [ref=e563]
+                - generic [ref=e569]:
+                  - generic "Kailai Zhang(China Mobile)" [ref=e570]: KZ
+                  - generic [ref=e571]:
+                    - paragraph [ref=e572]: Kailai Zhang(China Mobile)
+                    - paragraph [ref=e573]: Kailai Zhang(China Mobile)
+                  - button "认领" [disabled] [ref=e574]
+                - generic [ref=e580]:
+                  - generic "Mohammed El Barhichi (Orange)" [ref=e581]: ME
+                  - generic [ref=e582]:
+                    - paragraph [ref=e583]: Mohammed El Barhichi (Orange)
+                    - paragraph [ref=e584]: Mohammed El Barhichi (Orange)
+                  - button "认领" [disabled] [ref=e585]
+                - generic [ref=e591]:
+                  - generic "Boonchoung Tansuthepverawongse(AIS)" [ref=e592]: BT
+                  - generic [ref=e593]:
+                    - paragraph [ref=e594]: Boonchoung Tansuthepverawongse(AIS)
+                    - paragraph [ref=e595]: Boonchoung Tansuthepverawongse(AIS)
+                  - button "认领" [disabled] [ref=e596]
+                - generic [ref=e602]:
+                  - generic "Eduardo M Panciera Molanes(Telecom Argentina)" [ref=e603]: EM
+                  - generic [ref=e604]:
+                    - paragraph [ref=e605]: Eduardo M Panciera Molanes(Telecom Argentina)
+                    - paragraph [ref=e606]: Eduardo M Panciera Molanes(Telecom Argentina)
+                  - button "认领" [disabled] [ref=e607]
+                - generic [ref=e613]:
+                  - generic "Ullas Krishnan (Infosys)" [ref=e614]: UK
+                  - generic [ref=e615]:
+                    - paragraph [ref=e616]: Ullas Krishnan (Infosys)
+                    - paragraph [ref=e617]: Ullas Krishnan (Infosys)
+                  - button "认领" [disabled] [ref=e618]
+                - generic [ref=e624]:
+                  - generic "Xiaobin Shi(ZTE)" [ref=e625]: XS
+                  - generic [ref=e626]:
+                    - paragraph [ref=e627]: Xiaobin Shi(ZTE)
+                    - paragraph [ref=e628]: Xiaobin Shi(ZTE)
+                  - button "认领" [disabled] [ref=e629]
+                - generic [ref=e635]:
+                  - generic "Dajiang Du(AsiaInfo)" [ref=e636]: DD
+                  - generic [ref=e637]:
+                    - paragraph [ref=e638]: Dajiang Du(AsiaInfo)
+                    - paragraph [ref=e639]: Dajiang Du(AsiaInfo)
+                  - button "认领" [disabled] [ref=e640]
+  - contentinfo [ref=e645]:
+    - generic [ref=e646]:
+      - paragraph [ref=e647]: OpenAN 社区运营洞察平台 · 数据契约 v1（schemaVersion 1）
+      - paragraph [ref=e648]:
+        - generic [ref=e649]: 看板只读；身份匹配控制台提供受令牌保护的写操作
+        - generic [ref=e650]: "|"
+        - generic [ref=e651]: 指标口径见《数据与接口契约》

@@ -18,6 +18,20 @@ const cases = [
   { name: '例会参会矩阵', path: '/meetings', expect: (d) => Array.isArray(d.columns) && Array.isArray(d.rows) },
   { name: '非法排序字段→40001', path: '/contributions?sortBy=oops', expectError: 40001 },
   { name: '非法年份→40003', path: '/summits?year=1999', expectError: 40003 },
+  { name: '自然人列表', path: '/identity/persons?status=all', expect: (d) => Array.isArray(d) },
+  { name: '认领边列表', path: '/identity/claims', expect: (d) => Array.isArray(d) },
+  {
+    name: '候选池',
+    path: '/identity/candidates',
+    expect: (d) => Array.isArray(d.github) && Array.isArray(d.meeting) && Array.isArray(d.warnings),
+  },
+  {
+    name: '组织花名册',
+    path: '/identity/org-roster',
+    expect: (d) => Array.isArray(d.organizations) && Array.isArray(d.unassigned),
+  },
+  // 写接口未带令牌：已配置 → 40101；未配置 → 40301（两者均可接受）
+  { name: '写接口缺令牌', path: '/identity/persons', method: 'POST', body: { displayName: 'smoke' }, expectErrorIn: [40101, 40301] },
 ];
 
 let failed = 0;
@@ -25,12 +39,18 @@ let failed = 0;
 for (const testCase of cases) {
   const url = `${BASE}${testCase.path}`;
   try {
-    const response = await fetch(url);
+    const init = { method: testCase.method ?? 'GET' };
+    if (testCase.body !== undefined) {
+      init.headers = { 'Content-Type': 'application/json' };
+      init.body = JSON.stringify(testCase.body);
+    }
+    const response = await fetch(url, init);
     const body = await response.json();
 
-    if (testCase.expectError !== undefined) {
-      const ok = body.code === testCase.expectError;
-      ok ? pass(testCase.name, `code=${body.code}`) : fail(testCase.name, `期望 code=${testCase.expectError}，实际 ${JSON.stringify(body)}`);
+    const expectedCodes = testCase.expectErrorIn ?? (testCase.expectError !== undefined ? [testCase.expectError] : null);
+    if (expectedCodes) {
+      const ok = expectedCodes.includes(body.code);
+      ok ? pass(testCase.name, `code=${body.code}`) : fail(testCase.name, `期望 code∈${expectedCodes}，实际 ${JSON.stringify(body)}`);
       continue;
     }
 

@@ -14,6 +14,7 @@
     "collect:dev:full": "ts-node -r tsconfig-paths/register src/collector/main.ts --mode=full",
     "collect:check": "node scripts/collector-check.mjs",
     "collect:meetings": "ts-node -r tsconfig-paths/register scripts/import-meetings.ts",
+    "identity:check": "node scripts/identity-check.mjs",
     "smoke": "node scripts/smoke.mjs"
   },
   "dependencies": {
