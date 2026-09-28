@@ -16,6 +16,16 @@ export interface MeetingAttendanceMatrixProps {
 
 const toPercent = (value: number): string => `${Math.round(value * 100)}%`;
 
+/** 台账列头原文「人名(公司)」→ { name, company }；无括号时整串视为人名 */
+export function splitMemberLabel(raw: string): { name: string; company?: string } {
+  const matched = raw.trim().match(/^(.*?)\s*[(（]\s*(.*?)\s*[)）]\s*$/);
+  if (!matched) return { name: raw.trim() };
+  const name = matched[1]?.trim() ?? '';
+  const company = matched[2]?.trim() ?? '';
+  if (!name || !company) return { name: raw.trim() };
+  return { name, company };
+}
+
 /**
  * 例会参会矩阵：行 = 日期、列 = 成员，严格保留台账原序，前端不可重排（ADR-0005）。
  * 为在「不可重排」的前提下仍能读出席率，个人出席率挂列头副标签、每场出席人数挂行头（见 02 文档 §6）。
@@ -81,20 +91,34 @@ export function MeetingAttendanceMatrix({
                   >
                     日期
                   </th>
-                  {columns.map((column, index) => (
-                    <th
-                      key={`${column}-${index}`}
-                      scope="col"
-                      className="sticky top-0 z-20 min-w-[6.25rem] border-b border-white/[0.08] bg-ink-900/95 px-2.5 py-2 text-center align-bottom backdrop-blur-md"
-                    >
-                      <span className="block max-w-[9rem] truncate text-xs font-semibold text-slate-300" title={column}>
-                        {column}
-                      </span>
-                      <span className="numeric mt-0.5 block text-[0.66rem] font-normal text-accent-300/80">
-                        {toPercent(rates[index] ?? 0)}
-                      </span>
-                    </th>
-                  ))}
+                  {columns.map((column, index) => {
+                    const member = splitMemberLabel(column);
+                    return (
+                      <th
+                        key={`${column}-${index}`}
+                        scope="col"
+                        className="sticky top-0 z-20 min-w-[6.25rem] border-b border-white/[0.08] bg-ink-900/95 px-2.5 py-2 text-center align-bottom backdrop-blur-md"
+                      >
+                        <span
+                          className="block max-w-[9rem] truncate text-xs font-semibold text-slate-300"
+                          title={column}
+                        >
+                          {member.company ?? member.name}
+                        </span>
+                        {member.company ? (
+                          <span
+                            className="mt-0.5 block max-w-[9rem] break-words text-[0.7rem] font-normal leading-snug text-slate-400"
+                            title={member.name}
+                          >
+                            {member.name}
+                          </span>
+                        ) : null}
+                        <span className="numeric mt-0.5 block text-[0.66rem] font-normal text-accent-300/80">
+                          {toPercent(rates[index] ?? 0)}
+                        </span>
+                      </th>
+                    );
+                  })}
                 </tr>
               </thead>
               <tbody>
