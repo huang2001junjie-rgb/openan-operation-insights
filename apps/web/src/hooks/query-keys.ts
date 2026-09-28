@@ -17,8 +17,8 @@ export const queryKeys = {
     ['contributions', { orgIds: params.orgIds ?? [], from: params.from ?? '', to: params.to ?? '' }] as const,
   contributionSummary: (params: ActivityParams) =>
     ['contributions', 'summary', { orgIds: params.orgIds ?? [], from: params.from ?? '', to: params.to ?? '' }] as const,
-  insights: (params: ActivityParams) =>
-    ['insights', { orgIds: params.orgIds ?? [], from: params.from ?? '', to: params.to ?? '' }] as const,
+  wiki: (params: ActivityParams) =>
+    ['wiki', { orgIds: params.orgIds ?? [], from: params.from ?? '', to: params.to ?? '' }] as const,
   contributorContributions: (params: ActivityParams) =>
     [
       'contributors',

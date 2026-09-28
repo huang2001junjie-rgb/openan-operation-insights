@@ -6,7 +6,7 @@ import type {
   ContributorContribution,
   Organization,
   OrganizationContribution,
-  OrganizationInsight,
+  OrganizationWiki,
 } from '@/types/contract';
 
 const toParams = (params: ActivityParams) => ({
@@ -31,11 +31,11 @@ export function useContributions(params: ActivityParams = {}) {
   });
 }
 
-export function useInsights(params: ActivityParams = {}) {
+export function useWiki(params: ActivityParams = {}) {
   return useQuery({
-    queryKey: queryKeys.insights(params),
+    queryKey: queryKeys.wiki(params),
     queryFn: ({ signal }) =>
-      apiGet<OrganizationInsight[]>('/insights', {
+      apiGet<OrganizationWiki[]>('/wiki', {
         params: { ...toParams(params), sortBy: 'requirements', order: 'desc' },
         signal,
       }),

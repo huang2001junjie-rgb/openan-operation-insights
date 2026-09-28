@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-09-27T05:23:45.150Z",
+  "updatedAt": "2026-09-28T01:31:49.777Z",
   "data": [
     {
       "personId": "casey-cain",
@@ -14,14 +14,14 @@
       "displayName": "Chuanyu Chen",
       "orgId": "huawei",
       "createdAt": "2026-09-27T03:41:37.875Z",
-      "updatedAt": "2026-09-27T05:23:43.969Z"
+      "updatedAt": "2026-09-28T01:31:49.777Z"
     },
     {
       "personId": "jie-zhou",
       "displayName": "Jie Zhou",
       "orgId": "huawei",
       "createdAt": "2026-09-27T03:43:07.787Z",
-      "updatedAt": "2026-09-27T05:23:45.150Z"
+      "updatedAt": "2026-09-28T01:31:49.158Z"
     },
     {
       "personId": "zhiqiang-tang",
@@ -29,6 +29,13 @@
       "orgId": null,
       "createdAt": "2026-09-27T03:48:44.567Z",
       "updatedAt": "2026-09-27T05:05:15.879Z"
+    },
+    {
+      "personId": "tingyu-ding",
+      "displayName": "Tingyu Ding",
+      "orgId": "huawei",
+      "createdAt": "2026-09-28T01:31:19.527Z",
+      "updatedAt": "2026-09-28T01:31:48.597Z"
     }
   ]
 }

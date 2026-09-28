@@ -11,7 +11,7 @@ import {
   useContributions,
   useContributionSummary,
   useContributorContributions,
-  useInsights,
+  useWiki,
   useOrganizationOptions,
 } from '@/hooks/useActivity';
 import { fromDateInput, formatDateTime } from '@/lib/format';
@@ -39,7 +39,7 @@ export function ActivityPage() {
   );
 
   const contributions = useContributions(params);
-  const insights = useInsights(params);
+  const wiki = useWiki(params);
   const summary = useContributionSummary(params);
   const contributorContributions = useContributorContributions(params);
   const organizationOptions = useOrganizationOptions();
@@ -52,18 +52,18 @@ export function ActivityPage() {
   }, [organizationOptions.data, params.orgIds]);
 
   const rows = useMemo(
-    () => mergeActivityRows(contributions.data ?? [], insights.data ?? [], organizationRows),
-    [contributions.data, insights.data, organizationRows],
+    () => mergeActivityRows(contributions.data ?? [], wiki.data ?? [], organizationRows),
+    [contributions.data, wiki.data, organizationRows],
   );
 
   const isFetching =
     contributions.isFetching ||
-    insights.isFetching ||
+    wiki.isFetching ||
     summary.isFetching ||
     contributorContributions.isFetching ||
     organizationOptions.isFetching;
   const isLoading =
-    contributions.isLoading || insights.isLoading || organizationOptions.isLoading;
+    contributions.isLoading || wiki.isLoading || organizationOptions.isLoading;
 
   const handleChange = (next: ActivityFilterState) => {
     setFilters(next);
@@ -126,7 +126,7 @@ export function ActivityPage() {
         </div>
       </div>
 
-      {contributions.isError !== insights.isError ? (
+      {contributions.isError !== wiki.isError ? (
         <Card className="reveal border-amber-400/20 bg-amber-500/[0.05]">
           <p className="text-xs leading-relaxed text-amber-100/80">
             数据源部分可用：{contributions.isError ? 'GitHub 贡献数据' : 'Confluence 成果数据'}
@@ -138,11 +138,11 @@ export function ActivityPage() {
       <ActivityTable
         rows={rows}
         isLoading={isLoading}
-        isError={contributions.isError && insights.isError}
-        error={contributions.error ?? insights.error}
+        isError={contributions.isError && wiki.isError}
+        error={contributions.error ?? wiki.error}
         onRetry={() => {
           void contributions.refetch();
-          void insights.refetch();
+          void wiki.refetch();
         }}
       />
     </div>

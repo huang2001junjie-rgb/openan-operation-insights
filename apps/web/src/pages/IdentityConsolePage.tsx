@@ -3,6 +3,7 @@ import { PageHeading } from '@/components/layout/PageHeading';
 import { IconKey } from '@/components/icons';
 import { cn } from '@/lib/cn';
 import { useAdminToken } from '@/lib/admin-token';
+import { pushToast } from '@/lib/toast';
 import {
   useBulkAssignOrg,
   useCreateClaim,
@@ -240,7 +241,20 @@ export function IdentityConsolePage() {
             isError={personsFiltered.isError}
             error={personsFiltered.error}
             onRetry={() => personsFiltered.refetch()}
-            onCreate={(displayName) => createPerson.mutate(displayName)}
+            onCreate={async (displayName) => {
+              // 未配置令牌时写接口必然被拒（40101）：直接开令牌弹窗并把原因说清楚，
+              // 不让用户对着「点了没反应」的新建按钮猜
+              if (!token) {
+                setTokenOpen(true);
+                pushToast({
+                  tone: 'error',
+                  title: '写操作未启用',
+                  description: '请先填入管理令牌，再重新点击「新建」。',
+                });
+                throw new Error('admin-token-missing');
+              }
+              return createPerson.mutateAsync(displayName);
+            }}
             isCreating={createPerson.isPending}
           />
           <CandidatePool

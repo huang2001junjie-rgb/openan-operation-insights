@@ -377,7 +377,7 @@ openan-operation-insights/
 │   ├── home.json                          # 首页指标 + 下一次峰会
 │   ├── organizations.json                 # 组织档案（伙伴 / 外部开发者）
 │   ├── contributions.json                 # 组织 × 贡献指标（GitHub 类）
-│   ├── insights.json                      # 组织 × Confluence 类指标
+│   ├── wiki.json                      # 组织 × Confluence 类指标
 │   ├── contributors.json                  # 个人贡献者档案（GitHub 账号维度）
 │   ├── summits.json                       # 峰会列表 + 详情
 │   └── meetings.json                      # 例会参会矩阵（人 × 日期）

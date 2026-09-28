@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-09-27T05:23:25.744Z",
+  "updatedAt": "2026-09-28T01:31:26.244Z",
   "data": [
     {
       "claimId": "clm_8f9e7a2d-a75c-496c-af24-cd7057d87834",
@@ -17,6 +17,14 @@
       "accountKey": "22441124",
       "displayName": "Chuanyu Chen",
       "createdAt": "2026-09-27T05:23:25.744Z"
+    },
+    {
+      "claimId": "clm_23d9f8ad-2402-44d1-9ba4-02ad75d6761a",
+      "personId": "tingyu-ding",
+      "source": "github",
+      "accountKey": "35390334",
+      "displayName": "Tingyu Ding",
+      "createdAt": "2026-09-28T01:31:26.244Z"
     }
   ]
 }

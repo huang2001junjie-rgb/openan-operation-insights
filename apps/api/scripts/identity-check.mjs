@@ -57,7 +57,7 @@ function makeRepos(dir, seed) {
     claims: makeRepo(dir, 'identity-claims.json', validators.isIdentityClaimArray),
     organizations: makeRepo(dir, 'organizations.json', validators.isOrganizationArray),
     contributors: makeRepo(dir, 'contributors.json', validators.isContributorArray),
-    insights: makeRepo(dir, 'insights.json', validators.isInsightArray),
+    wiki: makeRepo(dir, 'wiki.json', validators.isWikiArray),
     meetings: makeRepo(dir, 'meetings.json', validators.isMeetingAttendanceMatrix),
     seed,
   };
@@ -82,7 +82,7 @@ function makeDataDir(withSources = true) {
   writeFileSync(join(dir, 'organizations.json'), JSON.stringify(envelope(ORGS), null, 2));
   if (withSources) {
     writeFileSync(join(dir, 'contributors.json'), JSON.stringify(envelope(CONTRIBUTORS), null, 2));
-    writeFileSync(join(dir, 'insights.json'), JSON.stringify(envelope([]), null, 2));
+    writeFileSync(join(dir, 'wiki.json'), JSON.stringify(envelope([]), null, 2));
     writeFileSync(join(dir, 'meetings.json'), JSON.stringify(envelope(MEETINGS), null, 2));
   }
   return dir;
@@ -174,7 +174,7 @@ async function scenarioCandidates() {
   const repos = makeRepos(dir);
   repos.dir = dir;
   const personSvc = makePersonService(repos);
-  const cand = new CandidateService(repos.contributors, repos.insights, repos.meetings, repos.persons, repos.claims);
+  const cand = new CandidateService(repos.contributors, repos.wiki, repos.meetings, repos.persons, repos.claims);
 
   const person = await personSvc.createPerson({ displayName: 'Chuanyu Chen' });
   await personSvc.createClaim({ personId: person.personId, source: 'github', accountKey: '22441124' });
@@ -194,7 +194,7 @@ async function scenarioCandidates() {
   degradedRepos.dir = degradedDir;
   const degraded = new CandidateService(
     degradedRepos.contributors,
-    degradedRepos.insights,
+    degradedRepos.wiki,
     degradedRepos.meetings,
     degradedRepos.persons,
     degradedRepos.claims,

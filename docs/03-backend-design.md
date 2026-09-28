@@ -51,7 +51,7 @@ flowchart TB
 | --- | --- | --- | --- | --- |
 | `HomeModule` | `HomeController` | `HomeService` | `HOME_METRIC_PORT`、`ORGANIZATION_PORT`、`SUMMIT_PORT` | 聚合首页指标、下次峰会、贡献组织概览 |
 | `OrganizationModule` | `OrganizationController` | `OrganizationService` | `ORGANIZATION_PORT`、`CONTRIBUTION_PORT` | 组织档案与筛选 |
-| `ActivityModule` | `ActivityController` | `ActivityService` | `CONTRIBUTION_PORT`、`INSIGHT_PORT` | 贡献明细、成果洞察、贡献聚合 |
+| `ActivityModule` | `ActivityController` | `ActivityService` | `CONTRIBUTION_PORT`、`WIKI_PORT` | 贡献明细、成果洞察、贡献聚合 |
 | `SummitModule` | `SummitController` | `SummitService` | `SUMMIT_PORT` | 峰会列表、时间线、详情 |
 | `MeetingModule` | `MeetingController` | `MeetingService` | `MEETING_ATTENDANCE_PORT` | 例会参会矩阵（**纯透传**，无口径计算） |
 | `ProvidersModule` | — | — | — | 集中声明所有端口 Token → 适配器类的绑定；当前六个端口**恒为 JSON 实现**，采集不经此切换（见 2.3 节） |
@@ -60,7 +60,7 @@ flowchart TB
 
 > **设计意图**：把"端口 → 适配器"的绑定集中到 `ProvidersModule`，使业务模块（Home / Activity / Summit）只依赖端口、对数据来源无感知。
 >
-> **重要修正（读写分离）**：外部数据采集**不通过本模块切换**。按"采集写、接口读"的设计（见 `05-integration-roadmap.md` 2.5 节），`src/collector` 是唯一写入 `data/*.json` 的入口，API 请求链路永远只读本地落盘文件，因此 `CONTRIBUTION_PORT` / `INSIGHT_PORT` **恒为 JSON 实现**，不存在 `GithubContributionProvider` 之类的第二套适配器。本模块的绑定能力保留给另一类场景：未来更换存储实现（如 PostgreSQL），或确需 API 链路直连上游实时查询时。
+> **重要修正（读写分离）**：外部数据采集**不通过本模块切换**。按"采集写、接口读"的设计（见 `05-integration-roadmap.md` 2.5 节），`src/collector` 是唯一写入 `data/*.json` 的入口，API 请求链路永远只读本地落盘文件，因此 `CONTRIBUTION_PORT` / `WIKI_PORT` **恒为 JSON 实现**，不存在 `GithubContributionProvider` 之类的第二套适配器。本模块的绑定能力保留给另一类场景：未来更换存储实现（如 PostgreSQL），或确需 API 链路直连上游实时查询时。
 
 ### 2.3 关键文件清单约定
 
@@ -84,7 +84,7 @@ apps/api/src/
 │   │   ├── home-metric.port.ts
 │   │   ├── organization.port.ts
 │   │   ├── contribution.port.ts
-│   │   ├── insight.port.ts
+│   │   ├── wiki.port.ts
 │   │   ├── summit.port.ts
 │   │   └── meeting-attendance.port.ts
 │   ├── tokens.ts                    # 所有 DI Token 常量
@@ -188,15 +188,15 @@ export interface ContributionPort {
 ### 4.2 Confluence 洞察端口
 
 ```ts
-// providers/ports/insight.port.ts
-export interface InsightQuery {
+// providers/ports/wiki.port.ts
+export interface WikiQuery {
   orgIds?: string[];
   from?: string;
   to?: string;
 }
 
 /** Confluence 维度贡献 */
-export interface OrganizationInsight {
+export interface OrganizationWiki {
   orgId: string;
   orgName: string;
   logoUrl: string;
@@ -207,8 +207,8 @@ export interface OrganizationInsight {
   updatedAt: string;
 }
 
-export interface InsightPort {
-  getInsights(q: InsightQuery): Promise<OrganizationInsight[]>;
+export interface WikiPort {
+  getWiki(q: WikiQuery): Promise<OrganizationWiki[]>;
 }
 ```
 
@@ -305,7 +305,7 @@ export interface MeetingAttendancePort {
 export const HOME_METRIC_PORT = Symbol('HOME_METRIC_PORT');
 export const ORGANIZATION_PORT = Symbol('ORGANIZATION_PORT');
 export const CONTRIBUTION_PORT = Symbol('CONTRIBUTION_PORT');
-export const INSIGHT_PORT = Symbol('INSIGHT_PORT');
+export const WIKI_PORT = Symbol('WIKI_PORT');
 export const SUMMIT_PORT = Symbol('SUMMIT_PORT');
 export const MEETING_ATTENDANCE_PORT = Symbol('MEETING_ATTENDANCE_PORT');
 ```
@@ -320,11 +320,11 @@ export const MEETING_ATTENDANCE_PORT = Symbol('MEETING_ATTENDANCE_PORT');
     { provide: HOME_METRIC_PORT,  useClass: JsonHomeMetricProvider },
     { provide: ORGANIZATION_PORT, useClass: JsonOrganizationProvider },
     { provide: CONTRIBUTION_PORT, useClass: JsonContributionProvider },
-    { provide: INSIGHT_PORT,      useClass: JsonInsightProvider },
+    { provide: WIKI_PORT,      useClass: JsonWikiProvider },
     { provide: SUMMIT_PORT,       useClass: JsonSummitProvider },
     { provide: MEETING_ATTENDANCE_PORT, useClass: JsonMeetingAttendanceProvider },
   ],
-  exports: [HOME_METRIC_PORT, ORGANIZATION_PORT, CONTRIBUTION_PORT, INSIGHT_PORT, SUMMIT_PORT, MEETING_ATTENDANCE_PORT],
+  exports: [HOME_METRIC_PORT, ORGANIZATION_PORT, CONTRIBUTION_PORT, WIKI_PORT, SUMMIT_PORT, MEETING_ATTENDANCE_PORT],
 })
 export class ProvidersModule {}
 ```
@@ -374,7 +374,7 @@ export interface JsonRepository<T> {
 | `data/home.json` | `HomeSummary`（首页指标 + `nextSummitId`） | 极低 | 1 条记录 |
 | `data/organizations.json` | `Organization[]` | 低 | 数十条 |
 | `data/contributions.json` | `OrganizationContribution[]` | 低（阶段三为定时采集） | 数十条 |
-| `data/insights.json` | `OrganizationInsight[]` | 低 | 数十条 |
+| `data/wiki.json` | `OrganizationWiki[]` | 低 | 数十条 |
 | `data/summits.json` | `SummitDetail[]` | 极低 | 十余条 |
 | `data/meetings.json` | `MeetingAttendanceMatrix` | 极低（运营手动触发导入） | 1 个矩阵（约数十行 × 数十列） |
 

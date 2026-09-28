@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Badge } from '@/components/ui/Badge';
 import { Button, SearchInput, Select, TextInput } from '@/components/ui/Field';
 import { AsyncState } from '@/components/ui/AsyncState';
 import { SkeletonList } from '@/components/ui/Skeleton';
 import { IconChevronRight, IconPlus } from '@/components/icons';
 import { cn } from '@/lib/cn';
+import { pushToast } from '@/lib/toast';
 import type { PersonListItem } from '@/types/contract';
 import type { OrgOption } from './OrgAssignSelect';
 import { PersonAvatar } from './PersonAvatar';
@@ -28,7 +29,8 @@ export interface PersonRosterProps {
   isError: boolean;
   error?: unknown;
   onRetry: () => void;
-  onCreate: (displayName: string) => void;
+  /** 新建自然人；成功即清空输入，失败由上层提示并保留输入便于重试 */
+  onCreate: (displayName: string) => Promise<unknown>;
   isCreating: boolean;
 }
 
@@ -53,12 +55,31 @@ export function PersonRoster({
   isCreating,
 }: PersonRosterProps) {
   const [draftName, setDraftName] = useState('');
+  const nameInputRef = useRef<HTMLInputElement>(null);
 
+  /**
+   * 空名点击**不再静默返回**：早先按钮在空名时即被 `disabled`，而 `Button` 没有禁用态样式，
+   * 外观与可用态一致，点击毫无反馈（易被误判为按钮失效）。
+   * 现在空名走「提示 + 聚焦」，只有提交在途时才禁用。
+   */
   const submitCreate = () => {
+    if (isCreating) return;
     const value = draftName.trim();
-    if (!value || isCreating) return;
-    onCreate(value);
-    setDraftName('');
+    if (!value) {
+      pushToast({
+        tone: 'info',
+        title: '请先输入展示名',
+        description: '展示名用于生成 personId，是自然人的唯一标识。',
+      });
+      nameInputRef.current?.focus();
+      return;
+    }
+    // 仅在成功后清空：先清空再提交时，一旦失败则输入框已空、按钮回到禁用态，
+    // 表现为「点过一次之后彻底没反应」
+    onCreate(value).then(
+      () => setDraftName(''),
+      () => undefined,
+    );
   };
 
   return (
@@ -75,6 +96,7 @@ export function PersonRoster({
 
       <div className="mt-3 flex items-center gap-2">
         <TextInput
+          ref={nameInputRef}
           value={draftName}
           placeholder="输入展示名新建自然人"
           aria-label="新建自然人"
@@ -84,10 +106,11 @@ export function PersonRoster({
             if (event.key === 'Enter') submitCreate();
           }}
         />
+        {/* 空名不再禁用：禁用态与可用态外观一致时点击毫无反馈，会被误判为「按钮失效」 */}
         <Button
           variant="primary"
           className="h-10 shrink-0 px-3"
-          disabled={isCreating || !draftName.trim()}
+          disabled={isCreating}
           onClick={submitCreate}
         >
           <IconPlus width={15} height={15} />

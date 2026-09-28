@@ -15,3 +15,14 @@
 {"at":"2026-09-27T05:23:43.227Z","action":"person.update","personId":"chuanyu-chen","detail":{"orgId":null}}
 {"at":"2026-09-27T05:23:43.972Z","action":"person.update","personId":"chuanyu-chen","detail":{"orgId":"huawei"}}
 {"at":"2026-09-27T05:23:45.154Z","action":"person.update","personId":"jie-zhou","detail":{"orgId":"huawei"}}
+{"at":"2026-09-28T01:14:01.022Z","action":"person.create","personId":"zz-diagnostic-tmp","detail":{"displayName":"zz-diagnostic-tmp"}}
+{"at":"2026-09-28T01:14:01.066Z","action":"person.delete","personId":"zz-diagnostic-tmp","detail":{"removedClaims":0}}
+{"at":"2026-09-28T01:31:19.533Z","action":"person.create","personId":"tingyu-ding","detail":{"displayName":"Tingyu Ding"}}
+{"at":"2026-09-28T01:31:26.247Z","action":"claim.create","personId":"tingyu-ding","claimId":"clm_23d9f8ad-2402-44d1-9ba4-02ad75d6761a","source":"github","accountKey":"35390334"}
+{"at":"2026-09-28T01:31:33.159Z","action":"person.update","personId":"tingyu-ding","detail":{"orgId":"huawei"}}
+{"at":"2026-09-28T01:31:46.300Z","action":"person.update","personId":"jie-zhou","detail":{"orgId":null}}
+{"at":"2026-09-28T01:31:46.960Z","action":"person.update","personId":"chuanyu-chen","detail":{"orgId":null}}
+{"at":"2026-09-28T01:31:47.800Z","action":"person.update","personId":"tingyu-ding","detail":{"orgId":null}}
+{"at":"2026-09-28T01:31:48.601Z","action":"person.update","personId":"tingyu-ding","detail":{"orgId":"huawei"}}
+{"at":"2026-09-28T01:31:49.162Z","action":"person.update","personId":"jie-zhou","detail":{"orgId":"huawei"}}
+{"at":"2026-09-28T01:31:49.781Z","action":"person.update","personId":"chuanyu-chen","detail":{"orgId":"huawei"}}

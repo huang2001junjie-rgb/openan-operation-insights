@@ -1,4 +1,4 @@
-import type { Organization, OrganizationContribution, OrganizationInsight } from '@/types/contract';
+import type { Organization, OrganizationContribution, OrganizationWiki } from '@/types/contract';
 
 /** 明细表行：组织档案为底表，GitHub 与 Confluence 两个数据源按 orgId 连接后的结果 */
 export interface ActivityRow {
@@ -25,7 +25,7 @@ export interface ActivityRow {
  */
 export function mergeActivityRows(
   contributions: OrganizationContribution[],
-  insights: OrganizationInsight[],
+  wiki: OrganizationWiki[],
   organizations: Organization[] = [],
 ): ActivityRow[] {
   const rows = new Map<string, ActivityRow>();
@@ -74,7 +74,7 @@ export function mergeActivityRows(
     }
   }
 
-  for (const item of insights) {
+  for (const item of wiki) {
     const existing = rows.get(item.orgId);
     if (existing) {
       existing.requirements = item.confluence.requirements;

@@ -12,7 +12,7 @@
 | `data/home.json` | `JsonFileEnvelope<HomeFileData>` | 首页四项指标 + 下一次峰会引用 | 1 |
 | `data/organizations.json` | `JsonFileEnvelope<Organization[]>` | 组织档案（伙伴 / 外部开发者 / 社区） | 数十 |
 | `data/contributions.json` | `JsonFileEnvelope<OrganizationContribution[]>` | GitHub 维度贡献 | 数十 |
-| `data/insights.json` | `JsonFileEnvelope<OrganizationInsight[]>` | Confluence 维度贡献 | 数十 |
+| `data/wiki.json` | `JsonFileEnvelope<OrganizationWiki[]>` | wiki 维度贡献（Confluence） | 数十 |
 | `data/contributors.json` | `JsonFileEnvelope<Contributor[]>` | 个人贡献者档案（GitHub 账号维度） | 数百 |
 | `data/summits.json` | `JsonFileEnvelope<SummitDetail[]>` | 峰会时间线与详情 | 十余 |
 | `data/meetings.json` | `JsonFileEnvelope<MeetingAttendanceMatrix>` | 例会参会矩阵（人 × 日期） | 1 |
@@ -44,7 +44,7 @@
 ```mermaid
 erDiagram
   ORGANIZATION ||--o| CONTRIBUTION : "orgId"
-  ORGANIZATION ||--o| INSIGHT : "orgId"
+  ORGANIZATION ||--o| WIKI : "orgId"
   ORGANIZATION |o--o{ CONTRIBUTOR : "orgId 可空"
   ORGANIZATION ||--o| SUMMIT : "hostOrgId 可空"
   ORGANIZATION }o--o{ SUMMIT : "attendingOrganizations"
@@ -66,7 +66,7 @@ erDiagram
     number issues
     number linesChanged
   }
-  INSIGHT {
+  WIKI {
     string orgId FK
     number requirements
     number bestPractices
@@ -105,7 +105,7 @@ erDiagram
 
 **关联规则**：
 
-- `Organization.orgId` 是全局唯一主键，`contributions.json` / `insights.json` / `summits.attendingOrganizations` 均以它关联。
+- `Organization.orgId` 是全局唯一主键，`contributions.json` / `wiki.json` / `summits.attendingOrganizations` 均以它关联。
 - `Contributor.orgId` **可空**：为空表示独立贡献者（不属于任何组织）。非空但档案缺失时，降级按独立贡献者处理并记 `WARN`。
 - `Contributor.githubId`（GitHub 数字账号 ID）全局唯一，是阶段三采集归并与去重的稳定键。
 - `Summit.hostOrgId` **可空**：有值时关联 `Organization.orgId`（主办组织，前端可跳转档案）；为空时前端以 `host` 文本兜底展示。
@@ -197,7 +197,7 @@ erDiagram
 > - 首页卡片墙将其渲染为**独立开发者卡片**（中性色 + 个人图标）：人数取 `externalDeveloperCount`（= `contributors.json` 中 `orgId` 为空的条数），贡献量取其贡献记录；
 > - 该伪组织**不计入**伙伴单位等组织计数，也不出现在 `type=partner/external/community` 的筛选结果中。
 
-### 3.3 `OrganizationInsight`（Confluence 维度贡献）
+### 3.3 `OrganizationWiki`（wiki 维度贡献，来源 Confluence）
 
 | 字段 | 类型 | 必填 | 说明 |
 | --- | --- | --- | --- |
@@ -490,7 +490,7 @@ erDiagram
 }
 ```
 
-### 4.4 `data/insights.json`
+### 4.4 `data/wiki.json`
 
 ```json
 {
@@ -770,7 +770,7 @@ erDiagram
 | 1 | GET | `/api/home/summary` | 首页概览（四项指标 + 下一次峰会） | 首页 |
 | 2 | GET | `/api/organizations` | 组织档案列表 | 首页（贡献组织）、社区活跃度（筛选） |
 | 3 | GET | `/api/contributions` | 组织 GitHub 维度贡献 | 社区活跃度（明细表 / 排行榜 / 组织贡献分布环形图） |
-| 4 | GET | `/api/insights` | 组织 Confluence 维度贡献 | 社区活跃度 |
+| 4 | GET | `/api/wiki` | 组织 wiki 维度贡献（Confluence） | 社区活跃度 |
 | 5 | GET | `/api/contributions/summary` | 贡献聚合总量 | 社区活跃度（页头更新时间等） |
 | 6 | GET | `/api/summits` | 峰会列表（可含详情） | 社区参展 |
 | 7 | GET | `/api/summits/:id` | 单场峰会详情 | 社区参展（预留跳转） |
@@ -911,13 +911,13 @@ erDiagram
 
 ---
 
-#### 5.3.4 `GET /api/insights`
+#### 5.3.4 `GET /api/wiki`
 
-**用途**：社区活跃度页的 Confluence 维度数据。
+**用途**：社区活跃度页的 wiki（Confluence）维度数据。
 
 **请求参数**：与 `/api/contributions` 相同（`sortBy` 可选值为 `requirements` / `bestPractices`）。
 
-**响应 `data`**：`OrganizationInsight[]`，字段见 3.3。
+**响应 `data`**：`OrganizationWiki[]`，字段见 3.3。
 
 ---
 
@@ -1156,7 +1156,7 @@ erDiagram
 | `source` | 来源文件 | `accountKey` | `displayName` | 备注 |
 | --- | --- | --- | --- | --- |
 | `github` | `contributors.json` | `githubId` 的字符串形式 | `name` | 头像取 `avatarUrl` |
-| `confluence` | `insights.json` | Confluence `accountId` | 账户展示名 | 当前来源为空（`insights.json` 为 `[]`），**返回空数组且不报错** |
+| `confluence` | `wiki.json` | Confluence `accountId` | 账户展示名 | 当前来源为空（`wiki.json` 为 `[]`），**返回空数组且不报错** |
 | `meeting` | `meetings.json` | `columns` 中的人名**原文** | 同 `accountKey` | 按原文去重；**同原文即同一条**，重名者由人工判别 |
 
 **请求参数**：无。
@@ -1200,7 +1200,7 @@ erDiagram
 
 - **不返回**邮箱、令牌等敏感身份字段。
 - `claimedBy` 由 `identity-claims.json` 与 `persons.json` 关联派生。
-- 任一**来源文件**（`contributors.json` / `insights.json` / `meetings.json`）缺失或为空时**降级为空数组**并在 `warnings` 中说明，**不阻断**整个接口。
+- 任一**来源文件**（`contributors.json` / `wiki.json` / `meetings.json`）缺失或为空时**降级为空数组**并在 `warnings` 中说明，**不阻断**整个接口。
 
 **失败场景**：`50001`（`persons.json` 或 `identity-claims.json` 缺失/损坏）。
 

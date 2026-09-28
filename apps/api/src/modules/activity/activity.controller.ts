@@ -3,14 +3,14 @@ import {
   ContributionSummaryData,
   ContributorContribution,
   OrganizationContribution,
-  OrganizationInsight,
+  OrganizationWiki,
 } from '../../contract/entities';
 import { ActivityService } from './activity.service';
 import {
   ContributionSummaryQueryDto,
   ListContributionsQueryDto,
   ListContributorContributionsQueryDto,
-  ListInsightsQueryDto,
+  ListWikiQueryDto,
 } from './dto/activity-query.dto';
 
 @Controller()
@@ -39,9 +39,9 @@ export class ActivityController {
     return this.activityService.getSummary(query);
   }
 
-  /** GET /api/insights —— 社区活跃度：Confluence 成果明细 */
-  @Get('insights')
-  listInsights(@Query() query: ListInsightsQueryDto): Promise<OrganizationInsight[]> {
-    return this.activityService.listInsights(query);
+  /** GET /api/wiki —— 社区活跃度：wiki（Confluence）工作量明细 */
+  @Get('wiki')
+  listWiki(@Query() query: ListWikiQueryDto): Promise<OrganizationWiki[]> {
+    return this.activityService.listWiki(query);
   }
 }

@@ -45,7 +45,7 @@ export interface ConfluenceMetrics {
   bestPractices: number;
 }
 
-export interface OrganizationInsight {
+export interface OrganizationWiki {
   orgId: string;
   orgName: string;
   logoUrl: string;

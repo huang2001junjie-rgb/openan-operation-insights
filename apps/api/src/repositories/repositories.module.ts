@@ -10,7 +10,7 @@ import {
   SummitDetail,
   Organization,
   OrganizationContribution,
-  OrganizationInsight,
+  OrganizationWiki,
 } from '../contract/entities';
 import { JsonRepository } from './json-repository';
 import {
@@ -18,7 +18,7 @@ import {
   CONTRIBUTORS_REPOSITORY,
   HOME_REPOSITORY,
   IDENTITY_CLAIMS_REPOSITORY,
-  INSIGHTS_REPOSITORY,
+  WIKI_REPOSITORY,
   MEETINGS_REPOSITORY,
   PERSONS_REPOSITORY,
   SUMMITS_REPOSITORY,
@@ -29,7 +29,7 @@ import {
   isContributorArray,
   isHomeFileData,
   isIdentityClaimArray,
-  isInsightArray,
+  isWikiArray,
   isMeetingAttendanceMatrix,
   isPersonArray,
   isSummitDetailArray,
@@ -72,8 +72,8 @@ const repositoryProviders = [
     inject: [ConfigService],
   },
   {
-    provide: INSIGHTS_REPOSITORY,
-    useFactory: makeRepository<OrganizationInsight[]>('insights.json', isInsightArray),
+    provide: WIKI_REPOSITORY,
+    useFactory: makeRepository<OrganizationWiki[]>('wiki.json', isWikiArray),
     inject: [ConfigService],
   },
   {
@@ -121,7 +121,7 @@ export class DataBootstrapService implements OnApplicationBootstrap {
     @Inject(ORGANIZATIONS_REPOSITORY) private readonly organizations: JsonRepository<Organization[]>,
     @Inject(CONTRIBUTIONS_REPOSITORY)
     private readonly contributions: JsonRepository<OrganizationContribution[]>,
-    @Inject(INSIGHTS_REPOSITORY) private readonly insights: JsonRepository<OrganizationInsight[]>,
+    @Inject(WIKI_REPOSITORY) private readonly wiki: JsonRepository<OrganizationWiki[]>,
     @Inject(CONTRIBUTORS_REPOSITORY) private readonly contributors: JsonRepository<Contributor[]>,
     @Inject(SUMMITS_REPOSITORY) private readonly summits: JsonRepository<SummitDetail[]>,
     @Inject(MEETINGS_REPOSITORY)
@@ -136,7 +136,7 @@ export class DataBootstrapService implements OnApplicationBootstrap {
       this.home,
       this.organizations,
       this.contributions,
-      this.insights,
+      this.wiki,
       this.contributors,
       this.summits,
       this.meetings,
@@ -172,7 +172,7 @@ export class DataBootstrapService implements OnApplicationBootstrap {
     HOME_REPOSITORY,
     ORGANIZATIONS_REPOSITORY,
     CONTRIBUTIONS_REPOSITORY,
-    INSIGHTS_REPOSITORY,
+    WIKI_REPOSITORY,
     CONTRIBUTORS_REPOSITORY,
     SUMMITS_REPOSITORY,
     MEETINGS_REPOSITORY,

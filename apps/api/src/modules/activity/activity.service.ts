@@ -3,21 +3,21 @@ import {
   ContributionSummaryData,
   ContributorContribution,
   OrganizationContribution,
-  OrganizationInsight,
+  OrganizationWiki,
 } from '../../contract/entities';
 import {
   CONTRIBUTION_PORT,
   CONTRIBUTOR_CONTRIBUTION_PORT,
-  INSIGHT_PORT,
+  WIKI_PORT,
 } from '../../providers/tokens';
 import { ContributionPort } from '../../providers/ports/contribution.port';
 import { ContributorContributionPort } from '../../providers/ports/contributor-contribution.port';
-import { InsightPort } from '../../providers/ports/insight.port';
+import { WikiPort } from '../../providers/ports/wiki.port';
 import {
   ContributionSummaryQueryDto,
   ListContributionsQueryDto,
   ListContributorContributionsQueryDto,
-  ListInsightsQueryDto,
+  ListWikiQueryDto,
 } from './dto/activity-query.dto';
 
 function latestDate(dates: string[]): string {
@@ -30,7 +30,7 @@ export class ActivityService {
     @Inject(CONTRIBUTION_PORT) private readonly contributions: ContributionPort,
     @Inject(CONTRIBUTOR_CONTRIBUTION_PORT)
     private readonly contributorContributions: ContributorContributionPort,
-    @Inject(INSIGHT_PORT) private readonly insights: InsightPort,
+    @Inject(WIKI_PORT) private readonly wiki: WikiPort,
   ) {}
 
   async listContributions(query: ListContributionsQueryDto): Promise<OrganizationContribution[]> {
@@ -74,9 +74,9 @@ export class ActivityService {
     return query.limit ? sorted.slice(0, query.limit) : sorted;
   }
 
-  async listInsights(query: ListInsightsQueryDto): Promise<OrganizationInsight[]> {
+  async listWiki(query: ListWikiQueryDto): Promise<OrganizationWiki[]> {
     query.assertRange();
-    const list = await this.insights.getInsights({
+    const list = await this.wiki.getWiki({
       orgIds: query.orgIds,
       from: query.from,
       to: query.to,
@@ -94,23 +94,23 @@ export class ActivityService {
 
   async getSummary(query: ContributionSummaryQueryDto): Promise<ContributionSummaryData> {
     query.assertRange();
-    const [contributions, insights] = await Promise.all([
+    const [contributions, wiki] = await Promise.all([
       this.contributions.getContributions({
         orgIds: query.orgIds,
         from: query.from,
         to: query.to,
       }),
-      this.insights.getInsights({ orgIds: query.orgIds, from: query.from, to: query.to }),
+      this.wiki.getWiki({ orgIds: query.orgIds, from: query.from, to: query.to }),
     ]);
 
     const orgIds = new Set<string>([
       ...contributions.map((item) => item.orgId),
-      ...insights.map((item) => item.orgId),
+      ...wiki.map((item) => item.orgId),
     ]);
 
     const updatedDates = [
       ...contributions.map((item) => item.updatedAt),
-      ...insights.map((item) => item.updatedAt),
+      ...wiki.map((item) => item.updatedAt),
     ];
 
     return {
@@ -120,8 +120,8 @@ export class ActivityService {
         commits: contributions.reduce((sum, item) => sum + (item.github.commits ?? 0), 0),
         issues: contributions.reduce((sum, item) => sum + item.github.issues, 0),
         linesChanged: contributions.reduce((sum, item) => sum + item.github.linesChanged, 0),
-        requirements: insights.reduce((sum, item) => sum + item.confluence.requirements, 0),
-        bestPractices: insights.reduce((sum, item) => sum + item.confluence.bestPractices, 0),
+        requirements: wiki.reduce((sum, item) => sum + item.confluence.requirements, 0),
+        bestPractices: wiki.reduce((sum, item) => sum + item.confluence.bestPractices, 0),
       },
       orgCount: orgIds.size,
       updatedAt: updatedDates.length > 0 ? latestDate(updatedDates) : new Date().toISOString(),

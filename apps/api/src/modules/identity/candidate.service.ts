@@ -6,14 +6,14 @@ import {
   IdentityCandidatesData,
   IdentityClaim,
   MeetingAttendanceMatrix,
-  OrganizationInsight,
+  OrganizationWiki,
   Person,
 } from '../../contract/entities';
 import { JsonRepository } from '../../repositories/json-repository';
 import {
   CONTRIBUTORS_REPOSITORY,
   IDENTITY_CLAIMS_REPOSITORY,
-  INSIGHTS_REPOSITORY,
+  WIKI_REPOSITORY,
   MEETINGS_REPOSITORY,
   PERSONS_REPOSITORY,
 } from '../../repositories/repository.tokens';
@@ -34,7 +34,7 @@ export class CandidateService {
 
   constructor(
     @Inject(CONTRIBUTORS_REPOSITORY) private readonly contributors: JsonRepository<Contributor[]>,
-    @Inject(INSIGHTS_REPOSITORY) private readonly insights: JsonRepository<OrganizationInsight[]>,
+    @Inject(WIKI_REPOSITORY) private readonly wiki: JsonRepository<OrganizationWiki[]>,
     @Inject(MEETINGS_REPOSITORY) private readonly meetings: JsonRepository<MeetingAttendanceMatrix>,
     @Inject(PERSONS_REPOSITORY) private readonly persons: JsonRepository<Person[]>,
     @Inject(IDENTITY_CLAIMS_REPOSITORY) private readonly claims: JsonRepository<IdentityClaim[]>,
@@ -97,7 +97,7 @@ export class CandidateService {
 
   private async loadConfluence(warnings: string[]): Promise<IdentityCandidate[]> {
     try {
-      const { data } = await this.insights.read();
+      const { data } = await this.wiki.read();
       warnings.push(
         data.length === 0 ? 'confluence 数据源暂无数据' : 'confluence 账号级候选尚未接入',
       );

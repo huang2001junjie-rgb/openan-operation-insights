@@ -120,7 +120,7 @@ Routes 结构示意（实现时以此为准）：
 
 ### 4.2 字段清单
 
-**明细表与组织贡献分布共用同一份行数据**（前端按 `orgId` 合并三源：`GET /api/organizations` 组织档案 + `GET /api/contributions` + `GET /api/insights`）；**个人贡献排行走独立接口** `GET /api/contributor-contributions`（ADR-0004）：
+**明细表与组织贡献分布共用同一份行数据**（前端按 `orgId` 合并三源：`GET /api/organizations` 组织档案 + `GET /api/contributions` + `GET /api/wiki`）；**个人贡献排行走独立接口** `GET /api/contributor-contributions`（ADR-0004）：
 
 - **明细表**：以组织档案为**底表**，全量组织各占一行；无贡献记录的指标按 0 展示、更新时间与仓库数显示"—"，名称 / Logo / 官网以档案为准（ADR-0002）。档案接口失败时退回两源合并结果。
 - **组织贡献分布**：在行数据上按 `github.commits` 计算各组织占比（口径见本节末段，ADR-0003）。
@@ -338,7 +338,7 @@ flowchart TB
 | `useHomeSummary()` | GET | `/api/home/summary` | `['home','summary']` |
 | `useOrganizations(params?)` | GET | `/api/organizations` | `['organizations', params]` |
 | `useContributions(params)` | GET | `/api/contributions` | `['contributions', { from, to, orgIds }]` |
-| `useContributionInsights(params)` | GET | `/api/insights` | `['insights', { from, to, orgIds }]` |
+| `useWiki(params)` | GET | `/api/wiki` | `['wiki', { from, to, orgIds }]` |
 | `useSummits(params?)` | GET | `/api/summits` | `['summits', { year, includeDetail }]` |
 | `useMeetingAttendance()` | GET | `/api/meetings` | `['meetings']` |
 

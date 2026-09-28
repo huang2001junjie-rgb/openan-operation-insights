@@ -113,7 +113,7 @@ flowchart LR
 | 下一次峰会 | `data/home.json` → `nextSummitId` | 人工维护 | 自动推导（未结束峰会中最近一场） |
 | 贡献的组织 | `data/organizations.json` | 人工维护 | 同左 |
 | PR / Issue / 代码量 | `data/contributions.json` | 人工维护 | **GitHub API** |
-| 需求 / best-practice | `data/insights.json` | 人工维护 | **Confluence API** |
+| 需求 / best-practice | `data/wiki.json` | 人工维护 | **Confluence API** |
 | 个人贡献者档案 | `data/contributors.json` | 人工维护 | **GitHub API**（按 `githubId` 归并） |
 | 峰会时间线与详情 | `data/summits.json` | 人工维护 | 同左（人工维护） |
 | 例会参会矩阵 | `data/meetings.json`（源台账 `data/source/meetings.xlsx`） | 人工维护 Excel → 采集脚本 | **Zoom API**（远期） |
@@ -202,3 +202,4 @@ flowchart LR
 | v1.8 | 2026-09-27 | 新增**身份匹配控制台**（`/admin/identity`）与身份映射数据模型：`data/persons.json`（自然人＝**点**）、`data/identity-claims.json`（认领映射＝**边**）、`data/.identity-audit.jsonl`（审计流水，非契约）。04 新增 §3.9 `Person`、§3.10 `IdentityClaim`、§4.8/§4.9 样例、§5.3.10～§5.3.15（persons / claims / candidates / org-roster 只读接口 + `/api/identity/*` 写接口 + 审计），修订 §5.1「全部 GET」与新增鉴权约定、§2 主键表、§6.2 语义速查；08 登记 P5 自然人档案 / P6 身份认领映射 / P7 候选池（派生）/ P8 组织花名册（派生）；README §1 页面表、§4.2 范围、§4.3 数据来源表、术语表、后续待办同步修订。**归属唯一真相为 `Person.orgId`**（组织档案不存成员清单，花名册派生）；写接口仅存在于 `/api/identity/*` 且需 `X-Admin-Token`；**既有看板接口与取数口径不变** |
 | v1.9 | 2026-09-27 | 修复身份匹配控制台「账号认领」完全不可达（[ADR-0006](./adr/0006-identity-console-selection-vs-detail.md)）：`PersonRoster` 整行点击与行内「详情」按钮由同一个 `selectedPersonId` 驱动 `PersonDetailDrawer`，而该抽屉是全屏模态遮罩，导致候选池被覆盖、「认领」按钮恒为 disabled。把「认领目标」（行点击写入）与「详情抽屉」（详情按钮写入）拆为两个独立状态，关抽屉不清目标、认领成功后保持选中、新建即成为目标、「详情」按钮改常驻可见并补 `pointer-events` 与 `aria-pressed`；README 术语表新增「认领目标 / 详情抽屉」，06 补记该问题。**接口契约与数据文件不变** |
 | v1.10 | 2026-09-27 | 撤销 `07-feature-registry.md`「功能清单」登记册：该文件已按作者本意删除（偏离文档集本意），故本索引移除其条目、v1.7 条目标记为已撤销、`08-data-catalog.md` 脚注不再引用。**其余文档、接口契约与数据文件不变** |
+| v1.11 | 2026-09-28 | 修复身份匹配控制台「新建」自然人点击无反应：该按钮的"失效"实为**禁用态无视觉反馈**——空名即 `disabled`，而 `Button` 没有任何 `disabled:` 样式，外观与可用态完全一致；且原实现先清空输入再提交，提交被拒（如标签页未配置令牌 → `40101`）后输入已空、按钮回到禁用态，表现为「点过一次后彻底没反应」。现改为：`Button` 补禁用态样式；空名点击返回「提示 + 聚焦」而非静默；仅在成功后清空输入；`TextInput` 支持 `ref` 转发；未配置令牌时直接打开令牌弹窗并说明原因。06 补记该问题。**接口契约与数据文件不变** |

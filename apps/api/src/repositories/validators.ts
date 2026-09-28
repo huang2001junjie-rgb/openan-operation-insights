@@ -9,7 +9,7 @@ import {
   MetricValue,
   Organization,
   OrganizationContribution,
-  OrganizationInsight,
+  OrganizationWiki,
 } from '../contract/entities';
 
 /** 例会日期固定为 YYYY-MM-DD（04 文档 §3.8） */
@@ -83,7 +83,7 @@ export function isContributionArray(value: unknown): value is OrganizationContri
   return Array.isArray(value) && value.every(isContribution);
 }
 
-export function isInsight(value: unknown): value is OrganizationInsight {
+export function isWiki(value: unknown): value is OrganizationWiki {
   if (!isObject(value)) return false;
   const confluence = value.confluence;
   return (
@@ -97,8 +97,8 @@ export function isInsight(value: unknown): value is OrganizationInsight {
   );
 }
 
-export function isInsightArray(value: unknown): value is OrganizationInsight[] {
-  return Array.isArray(value) && value.every(isInsight);
+export function isWikiArray(value: unknown): value is OrganizationWiki[] {
+  return Array.isArray(value) && value.every(isWiki);
 }
 
 /** 贡献者内嵌的 GitHub 指标（ADR-0003）：整体可选，存在时字段校验与组织贡献一致（commits 兼容缺失） */

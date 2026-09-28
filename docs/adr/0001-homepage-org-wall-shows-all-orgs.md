@@ -6,10 +6,10 @@
 
 ## 背景
 
-原设计中，首页"贡献的组织"卡片墙通过 `GET /api/organizations?scope=contributing` 获取数据，后端只保留在 `contributions.json` 或 `insights.json` 中有记录的组织。实现后暴露两个问题：
+原设计中，首页"贡献的组织"卡片墙通过 `GET /api/organizations?scope=contributing` 获取数据，后端只保留在 `contributions.json` 或 `wiki.json` 中有记录的组织。实现后暴露两个问题：
 
 1. **社区全貌不可见**：贡献数据尚未接入完整（GitHub 采集刚上线且仅产出 `unattributed` 一条），过滤逻辑导致首页只剩一张"独立开发者"伪组织卡片，其余 10 个组织档案完全不可见。
-2. **种子数据遗留**：`insights.json` 中 6 条记录的 `orgId`（openan-labs、nova-silicon 等）在 `organizations.json` 中无对应档案，属于早期占位种子数据，其贡献分被静默丢弃。
+2. **种子数据遗留**：`wiki.json` 中 6 条记录的 `orgId`（openan-labs、nova-silicon 等）在 `organizations.json` 中无对应档案，属于早期占位种子数据，其贡献分被静默丢弃。
 
 ## 决策
 
@@ -18,7 +18,7 @@
 1. **展示逻辑**：首页组织墙默认展示 `organizations.json` **全量组织**，按**综合贡献分**降序排列；评分公式不变（`PR + Issue + 需求 + best-practice + 代码量(行)/10000`，四舍五入）。零分组织保留在末尾，同分之间保持默认顺序（`type` 权重 → `name` 升序，由稳定排序自然保证）。
 2. **接口契约**：URL 参数 `scope=contributing` **名字保留、语义变更**——不再过滤无贡献组织，改为"返回全部组织 + 附带 `contributionScore` / `contributionLevel` + 按分降序"。`scope=all`（默认）行为不变。
 3. **零分展示**：后端照旧对 0 分返回 `contributionLevel='low'`，**契约类型不变**；前端特判 `contributionScore === 0`，显示"暂无贡献"灰色徽章并将进度条置空。
-4. **数据治理**：删除 `insights.json` 中 6 条孤儿记录（`data` 置空），待真实 Confluence 数据接入后重新填充。
+4. **数据治理**：删除 `wiki.json` 中 6 条孤儿记录（`data` 置空），待真实 Confluence 数据接入后重新填充。
 
 **附带清理**：删除 `OrganizationPort.ListOrganizationsQuery` 中从未被使用的 `scope` 字段（Service 从未向 Port 传递该字段，JSON Provider 也从未实现其语义，注释"仅返回有贡献记录的组织"与实际行为不符）。`scope` 是 **HTTP 接口层**参数，由 `OrganizationService` 组合贡献数据实现，与 Port 无关。
 

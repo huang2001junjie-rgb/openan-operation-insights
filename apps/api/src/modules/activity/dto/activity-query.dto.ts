@@ -58,7 +58,7 @@ export class ListContributorContributionsQueryDto extends TimeRangeQueryDto {
   limit?: number;
 }
 
-export class ListInsightsQueryDto extends TimeRangeQueryDto {
+export class ListWikiQueryDto extends TimeRangeQueryDto {
   @IsOptional()
   @IsIn(['requirements', 'bestPractices'])
   sortBy?: 'requirements' | 'bestPractices';

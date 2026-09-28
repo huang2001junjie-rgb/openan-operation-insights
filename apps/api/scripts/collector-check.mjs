@@ -31,7 +31,7 @@ const DATA_FILES = [
   'contributors.json',
   'home.json',
   'organizations.json',
-  'insights.json',
+  'wiki.json',
   'summits.json',
 ];
 

@@ -197,7 +197,7 @@ flowchart LR
   CQL --> PAGE["分页拉取页面列表<br/>（_links.next 游标）"]
   PAGE --> RESOLVE["解析每页的<br/>归属组织（自定义字段）"]
   RESOLVE --> AGG["按 orgId 计数"]
-  AGG --> WRITE["写入 data/insights.json"]
+  AGG --> WRITE["写入 data/wiki.json"]
 ```
 
 | 要点 | 设计 |
