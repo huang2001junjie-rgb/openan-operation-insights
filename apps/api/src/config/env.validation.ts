@@ -43,12 +43,34 @@ export function validateEnv(raw: Record<string, unknown>): Record<string, unknow
     errors.push(`NODE_ENV 只能是 development / production / test，当前值：${String(nodeEnv)}`);
   }
 
+  // 口径选择器里的正则：提供了就必须能编译，否则在采集期才炸
+  for (const key of ['CONFLUENCE_MINUTES_PARENT_PATTERN', 'CONFLUENCE_MINUTES_TITLE_PATTERN']) {
+    const value = raw[key];
+    if (value === undefined || String(value).trim() === '') continue;
+    try {
+      new RegExp(String(value));
+    } catch (error) {
+      errors.push(`${key} 不是合法正则：${(error as Error).message}`);
+    }
+  }
+
   // 阶段三成对约束：只配置了一半即为配置错误，提前暴露而不是运行时报错。
   if (raw.GITHUB_TOKEN && !raw.GITHUB_ORGS && !raw.GITHUB_REPOS) {
     errors.push('已配置 GITHUB_TOKEN，但 GITHUB_ORGS 与 GITHUB_REPOS 均为空，无法确定采集范围');
   }
   if (raw.CONFLUENCE_TOKEN && !raw.CONFLUENCE_BASE_URL) {
     errors.push('已配置 CONFLUENCE_TOKEN，但缺少 CONFLUENCE_BASE_URL');
+  }
+  if (raw.CONFLUENCE_TOKEN && !String(raw.CONFLUENCE_SPACES ?? '').trim()) {
+    errors.push('已配置 CONFLUENCE_TOKEN，但 CONFLUENCE_SPACES 为空，无法确定采集范围');
+  }
+
+  const confluenceLookback = raw.CONFLUENCE_LOOKBACK_DAYS;
+  if (confluenceLookback !== undefined && confluenceLookback !== '') {
+    const parsed = Number.parseInt(String(confluenceLookback), 10);
+    if (!Number.isInteger(parsed) || parsed < 1) {
+      errors.push(`CONFLUENCE_LOOKBACK_DAYS 必须是正整数，当前值：${String(confluenceLookback)}`);
+    }
   }
 
   if (errors.length > 0) {

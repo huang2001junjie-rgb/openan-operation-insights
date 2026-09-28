@@ -2,6 +2,7 @@ import { Global, Logger, Module, OnApplicationBootstrap, Inject } from '@nestjs/
 import { ConfigService } from '@nestjs/config';
 import { join } from 'node:path';
 import {
+  ConfluenceAccount,
   Contributor,
   HomeFileData,
   IdentityClaim,
@@ -14,6 +15,7 @@ import {
 } from '../contract/entities';
 import { JsonRepository } from './json-repository';
 import {
+  CONFLUENCE_ACCOUNTS_REPOSITORY,
   CONTRIBUTIONS_REPOSITORY,
   CONTRIBUTORS_REPOSITORY,
   HOME_REPOSITORY,
@@ -25,6 +27,7 @@ import {
   ORGANIZATIONS_REPOSITORY,
 } from './repository.tokens';
 import {
+  isConfluenceAccountArray,
   isContributionArray,
   isContributorArray,
   isHomeFileData,
@@ -43,11 +46,16 @@ type RepositoryFactory<T> = (
 function makeRepository<T>(
   fileName: string,
   isValidData: (value: unknown) => value is T,
+  /**
+   * 数据结构版本：字段增删/改名即为不兼容变更，必须提升。
+   * 与 envelope 里的 schemaVersion 不一致会直接读失败（fail-fast，不静默错读）。
+   */
+  schemaVersion = 1,
 ): RepositoryFactory<T> {
   return (config: ConfigService) =>
     new JsonRepository<T>(join(config.getOrThrow<string>('dataDir'), fileName), {
       fileName,
-      schemaVersion: 1,
+      schemaVersion,
       isValidData,
     });
 }
@@ -66,19 +74,34 @@ const repositoryProviders = [
   {
     provide: CONTRIBUTIONS_REPOSITORY,
     useFactory: makeRepository<OrganizationContribution[]>(
-      'contributions.json',
+      'github-organizations.json',
       isContributionArray,
     ),
     inject: [ConfigService],
   },
   {
     provide: WIKI_REPOSITORY,
-    useFactory: makeRepository<OrganizationWiki[]>('wiki.json', isWikiArray),
+    // v2：ConfluenceMetrics 的 bestPractices 更名为 topicShares（口径重定，见 ADR-0009）
+    useFactory: makeRepository<OrganizationWiki[]>(
+      'confluence-organizations.json',
+      isWikiArray,
+      2,
+    ),
+    inject: [ConfigService],
+  },
+  {
+    provide: CONFLUENCE_ACCOUNTS_REPOSITORY,
+    // v3：新增 orgSource（采集口径归属来源，ADR-0010）
+    useFactory: makeRepository<ConfluenceAccount[]>(
+      'confluence-accounts.json',
+      isConfluenceAccountArray,
+      3,
+    ),
     inject: [ConfigService],
   },
   {
     provide: CONTRIBUTORS_REPOSITORY,
-    useFactory: makeRepository<Contributor[]>('contributors.json', isContributorArray),
+    useFactory: makeRepository<Contributor[]>('github-accounts.json', isContributorArray),
     inject: [ConfigService],
   },
   {
@@ -110,7 +133,7 @@ const repositoryProviders = [
 ];
 
 /**
- * 启动期数据自检：校验九个业务 JSON 文件的结构合法性。
+ * 启动期数据自检：校验十个业务 JSON 文件的结构合法性。
  * 校验失败不阻断启动（降级只读），由具体接口返回 50001。
  */
 export class DataBootstrapService implements OnApplicationBootstrap {
@@ -122,6 +145,8 @@ export class DataBootstrapService implements OnApplicationBootstrap {
     @Inject(CONTRIBUTIONS_REPOSITORY)
     private readonly contributions: JsonRepository<OrganizationContribution[]>,
     @Inject(WIKI_REPOSITORY) private readonly wiki: JsonRepository<OrganizationWiki[]>,
+    @Inject(CONFLUENCE_ACCOUNTS_REPOSITORY)
+    private readonly confluenceAccounts: JsonRepository<ConfluenceAccount[]>,
     @Inject(CONTRIBUTORS_REPOSITORY) private readonly contributors: JsonRepository<Contributor[]>,
     @Inject(SUMMITS_REPOSITORY) private readonly summits: JsonRepository<SummitDetail[]>,
     @Inject(MEETINGS_REPOSITORY)
@@ -137,6 +162,7 @@ export class DataBootstrapService implements OnApplicationBootstrap {
       this.organizations,
       this.contributions,
       this.wiki,
+      this.confluenceAccounts,
       this.contributors,
       this.summits,
       this.meetings,
@@ -173,6 +199,7 @@ export class DataBootstrapService implements OnApplicationBootstrap {
     ORGANIZATIONS_REPOSITORY,
     CONTRIBUTIONS_REPOSITORY,
     WIKI_REPOSITORY,
+    CONFLUENCE_ACCOUNTS_REPOSITORY,
     CONTRIBUTORS_REPOSITORY,
     SUMMITS_REPOSITORY,
     MEETINGS_REPOSITORY,

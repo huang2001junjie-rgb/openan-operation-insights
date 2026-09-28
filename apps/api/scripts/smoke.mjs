@@ -12,13 +12,17 @@ const cases = [
   { name: '个人贡献组织筛选', path: '/contributor-contributions?orgIds=huawei&sortBy=commits&order=desc', expect: (d) => Array.isArray(d) },
   { name: '汇总指标', path: '/contributions/summary', expect: (d) => typeof d.totals?.pullRequests === 'number' },
   { name: 'wiki 成果明细', path: '/wiki?sortBy=requirements&order=desc&limit=5', expect: (d) => Array.isArray(d) },
+  { name: '账号级 Confluence 明细', path: '/confluence-accounts?sortBy=requirements&order=desc&limit=5', expect: (d) => Array.isArray(d) },
+  { name: '账号级 Confluence 组织筛选', path: '/confluence-accounts?orgIds=unattributed&sortBy=requirements', expect: (d) => Array.isArray(d) },
   { name: '峰会列表', path: '/summits?includeDetail=false&page=1&pageSize=10', expect: (d) => Array.isArray(d.items) },
   { name: '峰会详情', path: '/summits/one-summit-2026', expect: (d) => d.id === 'one-summit-2026' },
   { name: '峰会不存在→40402', path: '/summits/not-exist', expectError: 40402 },
   { name: '例会参会矩阵', path: '/meetings', expect: (d) => Array.isArray(d.columns) && Array.isArray(d.rows) },
   { name: '非法排序字段→40001', path: '/contributions?sortBy=oops', expectError: 40001 },
+  { name: '账号级非法排序字段→40001', path: '/confluence-accounts?sortBy=oops', expectError: 40001 },
   { name: '非法年份→40003', path: '/summits?year=1999', expectError: 40003 },
-  { name: '自然人列表', path: '/identity/persons?status=all', expect: (d) => Array.isArray(d) },
+  // 注：ListPersonsQueryDto（04 §5.3.10）仅支持 keyword / orgId，不含 status；原用例的 `?status=all` 会被 40001 拒绝
+  { name: '自然人列表', path: '/identity/persons', expect: (d) => Array.isArray(d) },
   { name: '认领边列表', path: '/identity/claims', expect: (d) => Array.isArray(d) },
   {
     name: '候选池',
@@ -62,7 +66,9 @@ for (const testCase of cases) {
 }
 
 console.log(`\n冒烟结果：${cases.length - failed}/${cases.length} 通过`);
-process.exit(failed === 0 ? 0 : 1);
+// 用 exitCode 而非 process.exit()：后者在 Windows + Node 20 下会在异步句柄关闭时
+// 触发 libuv 断言崩溃（退出码 0xC0000409），使「全通过」被误报为失败。
+process.exitCode = failed === 0 ? 0 : 1;
 
 function pass(name, detail) {
   console.log(`  PASS  ${name}  (${detail})`);

@@ -1,0 +1,167 @@
+{
+  "schemaVersion": 2,
+  "lastSyncAt": "2026-09-28T09:30:10.107Z",
+  "lastRunAt": "2026-09-28T09:30:10.107Z",
+  "lastMode": "full",
+  "status": "success",
+  "pageCount": 53,
+  "requestCount": 18,
+  "accountCount": 15,
+  "spaces": [
+    "OpenAN"
+  ],
+  "requirementPageCount": 1,
+  "minutesPageCount": 16,
+  "minutesWithoutAgenda": [],
+  "unattributedAccounts": [
+    {
+      "accountId": "5da82cb11a43fe0ddbb47e83",
+      "displayName": "FeiGuo",
+      "requirements": 13,
+      "topicShares": 2
+    },
+    {
+      "accountId": "712020:eb69db15-9d15-4a5f-bcd0-2b95a967bf3b",
+      "displayName": "wangyonglong",
+      "requirements": 6,
+      "topicShares": 2
+    },
+    {
+      "accountId": "5e58b7c15a495e0c91a94b44",
+      "displayName": "Chuanyu Chen",
+      "requirements": 5,
+      "topicShares": 6
+    },
+    {
+      "accountId": "557058:822eb146-7cd1-4d0a-8772-22d2773be7c5",
+      "displayName": "Lorenzo Cipriani",
+      "requirements": 4,
+      "topicShares": 1
+    },
+    {
+      "accountId": "712020:fd6a8616-70b4-4ce8-b65a-01ca4856875e",
+      "displayName": "Junjie Huang",
+      "requirements": 3,
+      "topicShares": 1
+    },
+    {
+      "accountId": "712020:f2d4beb5-2f11-47ca-8063-348bc8ab896f",
+      "displayName": "Xunli Yang",
+      "requirements": 2,
+      "topicShares": 1
+    },
+    {
+      "accountId": "712020:c8f0d540-db5e-42ed-a79a-611184462341",
+      "displayName": "Ullas Krishnan",
+      "requirements": 2,
+      "topicShares": 0
+    },
+    {
+      "accountId": "712020:a0730888-323b-4928-80e4-fd39f1999b8d",
+      "displayName": "Xiaobin Shi",
+      "requirements": 1,
+      "topicShares": 2
+    },
+    {
+      "accountId": "712020:c719c77b-af77-4430-9760-4cd1ef4278c3",
+      "displayName": "Mohammed El Barhichi",
+      "requirements": 1,
+      "topicShares": 0
+    },
+    {
+      "accountId": "712020:c8c42c7b-07b4-4fcc-9b31-d9e2c7210713",
+      "displayName": "TianShu Zhang",
+      "requirements": 1,
+      "topicShares": 0
+    },
+    {
+      "accountId": "712020:20284c60-7d6e-4949-9d8f-3c6ef28c4eb3",
+      "displayName": "Jie Zhou",
+      "requirements": 0,
+      "topicShares": 2
+    },
+    {
+      "accountId": "5d00c37ddf6c8f0bbd781cd5",
+      "displayName": "Casey Cain",
+      "requirements": 0,
+      "topicShares": 1
+    },
+    {
+      "accountId": "712020:51549cbc-8272-4fc7-8720-c20b3a409769",
+      "displayName": "lionel Shi",
+      "requirements": 0,
+      "topicShares": 1
+    },
+    {
+      "accountId": "712020:60c80aad-c5b2-49e6-b103-749303dce5de",
+      "displayName": "Wenjun Zhang",
+      "requirements": 0,
+      "topicShares": 1
+    },
+    {
+      "accountId": "712020:e2ae8a82-d8c6-4bda-9ee1-082c56635505",
+      "displayName": "Tingyu Ding",
+      "requirements": 0,
+      "topicShares": 1
+    }
+  ],
+  "unresolvedContacts": [
+    {
+      "pageId": "1163362317",
+      "pageTitle": "Requirement Proposal",
+      "source": "requirements",
+      "rowIndex": 29,
+      "requirementTitle": "Registry Center Returns Only Published Agents in Semantic Search",
+      "handles": [
+        "syedbilalafzal"
+      ]
+    },
+    {
+      "pageId": "1349976065",
+      "pageTitle": "2026-09-01 TSC Minutes",
+      "source": "minutes",
+      "rowIndex": null,
+      "requirementTitle": "",
+      "handles": [
+        "Shaowei",
+        "Xuezhi"
+      ]
+    },
+    {
+      "pageId": "1406074883",
+      "pageTitle": "2026-09-22 TSC Minutes",
+      "source": "minutes",
+      "rowIndex": null,
+      "requirementTitle": "",
+      "handles": [
+        "syedbilalafzal"
+      ]
+    },
+    {
+      "pageId": "1423507458",
+      "pageTitle": "2026-09-29 TSC Minutes",
+      "source": "minutes",
+      "rowIndex": null,
+      "requirementTitle": "",
+      "handles": [
+        "Kailai"
+      ]
+    }
+  ],
+  "unattributedCreators": [
+    {
+      "accountId": "5da66d619810cf0c3ce3a7ff",
+      "displayName": "Yijun Yu",
+      "pageCount": 1
+    },
+    {
+      "accountId": "5e58b7c15a495e0c91a94b44",
+      "displayName": "Chuanyu Chen",
+      "pageCount": 1
+    }
+  ],
+  "matchedLabels": [],
+  "matchedTitleKeywords": [
+    "requirement"
+  ]
+}

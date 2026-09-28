@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { SearchInput } from '@/components/ui/Field';
 import { AsyncState } from '@/components/ui/AsyncState';
 import { SkeletonList } from '@/components/ui/Skeleton';
@@ -11,11 +12,17 @@ import { SourceBadge } from './SourceBadge';
 
 type GroupKey = 'github' | 'confluence' | 'meeting';
 
+/** 分组顺序固定为 GitHub → Confluence → 例会（02 文档 §14.2） */
 const GROUPS: Array<{ key: GroupKey; emptyLabel: string }> = [
   { key: 'github', emptyLabel: 'GitHub 账户取自贡献者档案，当前为空。' },
-  { key: 'confluence', emptyLabel: '当前来源暂无数据（待接入账号级采集）。' },
+  { key: 'confluence', emptyLabel: 'Confluence 账号级数据尚未采集，或全部已认领。' },
   { key: 'meeting', emptyLabel: '例会人名取自参会矩阵表头，当前为空。' },
 ];
+
+const GROUP_KEYS = new Set<GroupKey>(GROUPS.map((group) => group.key));
+
+const isGroupKey = (value: string | null): value is GroupKey =>
+  value !== null && GROUP_KEYS.has(value as GroupKey);
 
 export interface CandidatePoolProps {
   data?: IdentityCandidatesData;
@@ -45,6 +52,31 @@ export function CandidatePool({
 }: CandidatePoolProps) {
   const [keyword, setKeyword] = useState('');
   const [collapsed, setCollapsed] = useState<Set<GroupKey>>(new Set());
+
+  const [searchParams] = useSearchParams();
+  const focusSource = searchParams.get('source');
+
+  const groupRefs = useRef(new Map<GroupKey, HTMLDivElement>());
+  const didFocus = useRef(false);
+
+  // 深链预选（02 文档 §14.2）：?source= 命中分组时自动展开并滚动到位，供活跃度页「去账号认领」落地
+  useEffect(() => {
+    // 等骨架屏退场后再滚动（加载态下分组尚未渲染，ref 为空会滚不到目标）
+    if (didFocus.current || isLoading || !isGroupKey(focusSource)) return;
+    didFocus.current = true;
+
+    setCollapsed((current) => {
+      if (!current.has(focusSource)) return current;
+      const next = new Set(current);
+      next.delete(focusSource);
+      return next;
+    });
+
+    const frame = requestAnimationFrame(() => {
+      groupRefs.current.get(focusSource)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [focusSource, isLoading]);
 
   const needle = keyword.trim().toLowerCase();
 
@@ -136,7 +168,17 @@ export function CandidatePool({
             const isCollapsed = collapsed.has(group.key);
             const rowCount = bucket.claimed.length + bucket.pending.length;
             return (
-              <div key={group.key} className="rounded-2xl border border-white/[0.07] bg-white/[0.015]">
+              <div
+                key={group.key}
+                ref={(node) => {
+                  if (node) groupRefs.current.set(group.key, node);
+                  else groupRefs.current.delete(group.key);
+                }}
+                className={cn(
+                  'rounded-2xl border bg-white/[0.015] transition-colors',
+                  focusSource === group.key ? 'border-brand-400/40 bg-brand-500/[0.04]' : 'border-white/[0.07]',
+                )}
+              >
                 <button
                   type="button"
                   onClick={() => toggleCollapse(group.key)}

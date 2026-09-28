@@ -1,10 +1,15 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { resolve } from 'node:path';
-import configuration, { GithubConfig } from '../config/configuration';
+import configuration, { ConfluenceConfig, GithubConfig } from '../config/configuration';
 import { validateEnv } from '../config/env.validation';
 import { RepositoriesModule } from '../repositories/repositories.module';
-import { GITHUB_SOURCE } from './collector.tokens';
+import { GITHUB_SOURCE, CONFLUENCE_SOURCE } from './collector.tokens';
+import { ConfluenceCollectorService } from './confluence-collector.service';
+import { ConfluenceRestSource } from './confluence-rest.source';
+import { ConfluenceStateStore } from './confluence-state.store';
+import { FixtureConfluenceSource } from './fixture-confluence.source';
+import type { ConfluenceSource } from './confluence-source.types';
 import { ContributionCollectorService } from './contribution-collector.service';
 import { FixtureGithubSource } from './fixture-github.source';
 import { GithubSource } from './github-source.types';
@@ -28,10 +33,17 @@ import { SyncStateStore } from './sync-state.store';
   ],
   providers: [
     ContributionCollectorService,
+    ConfluenceCollectorService,
     {
       provide: SyncStateStore,
       useFactory: (config: ConfigService) =>
         new SyncStateStore(config.getOrThrow<string>('dataDir')),
+      inject: [ConfigService],
+    },
+    {
+      provide: ConfluenceStateStore,
+      useFactory: (config: ConfigService) =>
+        new ConfluenceStateStore(config.getOrThrow<string>('dataDir')),
       inject: [ConfigService],
     },
     {
@@ -53,7 +65,31 @@ import { SyncStateStore } from './sync-state.store';
       },
       inject: [ConfigService],
     },
+    {
+      provide: CONFLUENCE_SOURCE,
+      useFactory: (config: ConfigService): ConfluenceSource => {
+        // CONFLUENCE_FIXTURE：离线模式，从固定 JSON 读取页面事实，用于无 token 验证
+        const fixture = process.env.CONFLUENCE_FIXTURE?.trim();
+        if (fixture) {
+          return new FixtureConfluenceSource(resolve(process.cwd(), fixture));
+        }
+
+        const confluence = config.get<ConfluenceConfig>('confluence');
+        return new ConfluenceRestSource({
+          baseUrl: confluence?.baseUrl ?? '',
+          token: confluence?.token ?? '',
+        });
+      },
+      inject: [ConfigService],
+    },
   ],
-  exports: [ContributionCollectorService, SyncStateStore, GITHUB_SOURCE],
+  exports: [
+    ContributionCollectorService,
+    ConfluenceCollectorService,
+    SyncStateStore,
+    ConfluenceStateStore,
+    GITHUB_SOURCE,
+    CONFLUENCE_SOURCE,
+  ],
 })
 export class CollectorModule {}

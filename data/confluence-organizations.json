@@ -1,0 +1,116 @@
+{
+  "schemaVersion": 2,
+  "updatedAt": "2026-09-28T09:30:28.894Z",
+  "data": [
+    {
+      "orgId": "cmcc",
+      "orgName": "China Mobile",
+      "logoUrl": "/logos/china_mobile.png",
+      "confluence": {
+        "requirements": 0,
+        "topicShares": 0
+      },
+      "updatedAt": "2026-09-28T09:30:28.888Z"
+    },
+    {
+      "orgId": "huawei",
+      "orgName": "Huawei",
+      "logoUrl": "/logos/huawei.png",
+      "confluence": {
+        "requirements": 0,
+        "topicShares": 0
+      },
+      "updatedAt": "2026-09-28T09:30:28.888Z"
+    },
+    {
+      "orgId": "orange",
+      "orgName": "Orange",
+      "logoUrl": "/logos/orange.png",
+      "confluence": {
+        "requirements": 0,
+        "topicShares": 0
+      },
+      "updatedAt": "2026-09-28T09:30:28.888Z"
+    },
+    {
+      "orgId": "zte",
+      "orgName": "ZTE",
+      "logoUrl": "/logos/zte.webp",
+      "confluence": {
+        "requirements": 0,
+        "topicShares": 0
+      },
+      "updatedAt": "2026-09-28T09:30:28.888Z"
+    },
+    {
+      "orgId": "ais",
+      "orgName": "AIS",
+      "logoUrl": "/logos/ais.png",
+      "confluence": {
+        "requirements": 0,
+        "topicShares": 0
+      },
+      "updatedAt": "2026-09-28T09:30:28.888Z"
+    },
+    {
+      "orgId": "infosys",
+      "orgName": "Infosys",
+      "logoUrl": "/logos/infosys.webp",
+      "confluence": {
+        "requirements": 0,
+        "topicShares": 0
+      },
+      "updatedAt": "2026-09-28T09:30:28.888Z"
+    },
+    {
+      "orgId": "asiainfo",
+      "orgName": "AsiaInfo",
+      "logoUrl": "/logos/asianinfo.png",
+      "confluence": {
+        "requirements": 0,
+        "topicShares": 0
+      },
+      "updatedAt": "2026-09-28T09:30:28.888Z"
+    },
+    {
+      "orgId": "personal",
+      "orgName": "personal",
+      "logoUrl": "/logos/personal.webp",
+      "confluence": {
+        "requirements": 0,
+        "topicShares": 0
+      },
+      "updatedAt": "2026-09-28T09:30:28.888Z"
+    },
+    {
+      "orgId": "zain",
+      "orgName": "Zain",
+      "logoUrl": "/logos/zain.png",
+      "confluence": {
+        "requirements": 0,
+        "topicShares": 0
+      },
+      "updatedAt": "2026-09-28T09:30:28.888Z"
+    },
+    {
+      "orgId": "inspur",
+      "orgName": "Inspur",
+      "logoUrl": "/logos/Inspur.png",
+      "confluence": {
+        "requirements": 0,
+        "topicShares": 0
+      },
+      "updatedAt": "2026-09-28T09:30:28.888Z"
+    },
+    {
+      "orgId": "unattributed",
+      "orgName": "独立开发者",
+      "logoUrl": "",
+      "confluence": {
+        "requirements": 38,
+        "topicShares": 21
+      },
+      "updatedAt": "2026-09-28T09:30:28.888Z"
+    }
+  ]
+}

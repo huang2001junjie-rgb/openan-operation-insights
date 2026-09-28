@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-09-28T01:31:26.244Z",
+  "updatedAt": "2026-09-28T12:17:02.721Z",
   "data": [
     {
       "claimId": "clm_8f9e7a2d-a75c-496c-af24-cd7057d87834",
@@ -25,6 +25,54 @@
       "accountKey": "35390334",
       "displayName": "Tingyu Ding",
       "createdAt": "2026-09-28T01:31:26.244Z"
+    },
+    {
+      "claimId": "clm_a0496298-9a6e-4da3-9ba3-5e865ed8b9ab",
+      "personId": "fei-guo",
+      "source": "confluence",
+      "accountKey": "5da82cb11a43fe0ddbb47e83",
+      "displayName": "FeiGuo",
+      "createdAt": "2026-09-28T12:14:54.093Z"
+    },
+    {
+      "claimId": "clm_e1fe5681-f56b-41f3-b7cc-3b7747bcf572",
+      "personId": "xunli-yang",
+      "source": "confluence",
+      "accountKey": "712020:f2d4beb5-2f11-47ca-8063-348bc8ab896f",
+      "displayName": "Xunli Yang",
+      "createdAt": "2026-09-28T12:15:48.075Z"
+    },
+    {
+      "claimId": "clm_a8c6e901-1f4c-40c1-979c-67463d7202c3",
+      "personId": "xunli-yang",
+      "source": "github",
+      "accountKey": "211948174",
+      "displayName": "XunliYang",
+      "createdAt": "2026-09-28T12:16:00.243Z"
+    },
+    {
+      "claimId": "clm_a146c9f3-4e31-4eb3-83a3-b141362abe4e",
+      "personId": "yonglong-wang",
+      "source": "confluence",
+      "accountKey": "712020:eb69db15-9d15-4a5f-bcd0-2b95a967bf3b",
+      "displayName": "wangyonglong",
+      "createdAt": "2026-09-28T12:16:45.766Z"
+    },
+    {
+      "claimId": "clm_3b4276e0-f266-48b4-8de2-c8bef0fa803a",
+      "personId": "yonglong-wang",
+      "source": "github",
+      "accountKey": "127069813",
+      "displayName": "wangyonglong12111",
+      "createdAt": "2026-09-28T12:16:55.294Z"
+    },
+    {
+      "claimId": "clm_58be276f-6cb0-4baf-a8dd-f70d4a4921ac",
+      "personId": "chuanyu-chen",
+      "source": "confluence",
+      "accountKey": "5e58b7c15a495e0c91a94b44",
+      "displayName": "Chuanyu Chen",
+      "createdAt": "2026-09-28T12:17:02.721Z"
     }
   ]
 }

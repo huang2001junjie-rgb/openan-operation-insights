@@ -3,6 +3,7 @@
 - **状态**：已接受
 - **日期**：2026-09-21
 - **关联文档**：02 §3.1/3.2、03 §4.1 与请求时序、04 §5.3.2、README §5 术语表
+- **命名说明**：本文保留决策当时的文件名；`contributions.json` / `wiki.json` 已更名为 `github-organizations.json` / `confluence-organizations.json`，对照见 ADR-0008。
 
 ## 背景
 
@@ -15,7 +16,7 @@
 
 经评审拷问，确定以下四点：
 
-1. **展示逻辑**：首页组织墙默认展示 `organizations.json` **全量组织**，按**综合贡献分**降序排列；评分公式不变（`PR + Issue + 需求 + best-practice + 代码量(行)/10000`，四舍五入）。零分组织保留在末尾，同分之间保持默认顺序（`type` 权重 → `name` 升序，由稳定排序自然保证）。
+1. **展示逻辑**：首页组织墙默认展示 `organizations.json` **全量组织**，按**综合贡献分**降序排列；评分公式不变（`PR + Issue + 需求 + best-practice + 代码量(行)/10000`，四舍五入）。零分组织保留在末尾，同分之间保持默认顺序（`type` 权重 → `name` 升序，由稳定排序自然保证）。（**修订**：公式中的 `best-practice` 项已由 [ADR-0009](./0009-confluence-two-dimension-extraction-from-page-body.md) 更名为 `议题分享`，其余不变。）
 2. **接口契约**：URL 参数 `scope=contributing` **名字保留、语义变更**——不再过滤无贡献组织，改为"返回全部组织 + 附带 `contributionScore` / `contributionLevel` + 按分降序"。`scope=all`（默认）行为不变。
 3. **零分展示**：后端照旧对 0 分返回 `contributionLevel='low'`，**契约类型不变**；前端特判 `contributionScore === 0`，显示"暂无贡献"灰色徽章并将进度条置空。
 4. **数据治理**：删除 `wiki.json` 中 6 条孤儿记录（`data` 置空），待真实 Confluence 数据接入后重新填充。

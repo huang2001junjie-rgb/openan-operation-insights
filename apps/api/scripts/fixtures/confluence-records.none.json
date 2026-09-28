@@ -1,0 +1,21 @@
+{
+  "_comment": "反例固定数据：页面取自目标空间，但没有任何页面命中需求判定口径。用于验证空值校验会中止写入并保留既有 confluence-organizations.json（05 文档 §5.1，风险 R2）。",
+  "records": [
+    {
+      "pageId": "910001",
+      "title": "2026-09-15 TSC Minutes",
+      "spaceKey": "OPENAN",
+      "status": "current",
+      "labels": ["tsc-minutes"],
+      "creatorAccountId": "acct-tsc-1",
+      "creatorDisplayName": "Casey Cain",
+      "creatorAccountType": "atlassian",
+      "createdDate": "2026-09-15T02:00:00.000Z",
+      "lastModified": "2026-09-15T02:00:00.000Z",
+      "lastModifiedByAccountId": "acct-tsc-1",
+      "lastModifiedByDisplayName": "Casey Cain",
+      "versionNumber": 1,
+      "ancestorTitles": ["OpenAN Project Home", "Technical Steering Committee"]
+    }
+  ]
+}

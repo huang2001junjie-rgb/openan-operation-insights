@@ -35,7 +35,8 @@
 | `/activity` | `ActivityPage` | 社区活跃度情况 | 个人贡献排行 + 组织贡献分布 + 明细表 |
 | `/summits` | `SummitsPage` | 社区参展 | 时间线 + 峰会详情表格 |
 | `/meetings` | `MeetingsPage` | 例会参会情况 | 例会参会矩阵（人 × 日期） |
-| `*` | `NotFoundPage` | — | 兜底 404，提供返回首页入口 |
+| `/admin/identity` | `IdentityConsolePage` | 身份匹配 | 双模式控制台（组织↔开发者 / 自然人↔账号），支持 `?source=` 预选候选池分组 |
+| `/404` | `NotFoundPage` | — | 兜底 404，提供返回首页入口 |
 
 **路由级懒加载**：四个页面均为独立 chunk，通过 `React.lazy` + `Suspense` 加载，首屏只加载首页代码。
 
@@ -112,6 +113,7 @@ Routes 结构示意（实现时以此为准）：
 
 | # | 区块 | 组件 | 说明 |
 | --- | --- | --- | --- |
+| 0 | 活跃来源切换器 | `ActivitySourceSwitcher` | **紧贴 Navbar 下方**的分段控件，切换 GitHub / Confluence 两套口径；状态写入 URL query `?source=github\|confluence`（默认 `github`），可分享、刷新不丢 |
 | 1 | 筛选概览栏 | `ActivityFilterBar` | 时间范围下拉（近 30 天 / 近 90 天 / 近 1 年 / 全部）、组织多选、重置、导出按钮 |
 | 2 | 个人贡献排行 | `ContributorRankCard` | 头像列表 + 指标切换（合并 PR / 提交数 / Issue / 代码行数），默认按提交数取 Top 8（ADR-0004） |
 | 3 | 组织贡献分布 | `ContributionCompositionCard` | 环形图，按提交数统计各组织占比，低占比并入「其他」，中心显示提交总量（ADR-0003） |
@@ -120,7 +122,12 @@ Routes 结构示意（实现时以此为准）：
 
 ### 4.2 字段清单
 
-**明细表与组织贡献分布共用同一份行数据**（前端按 `orgId` 合并三源：`GET /api/organizations` 组织档案 + `GET /api/contributions` + `GET /api/wiki`）；**个人贡献排行走独立接口** `GET /api/contributor-contributions`（ADR-0004）：
+页面按**活跃来源**（`?source=`）渲染两套视图，区块骨架相同、数据源与列/维度不同：
+
+- **GitHub 视图（`?source=github`，默认）**：`ActivityFilterBar` + `ContributorRankCard`（个人）+ `ContributionCompositionCard`（组织结构分布）+ `ContributionDetailTable`（组织 × GitHub 指标）。
+- **Confluence 视图（`?source=confluence`）**：区块骨架复用，数据取自 `GET /api/wiki`（组织级，生效归属）与 `GET /api/confluence-accounts`（账号级，生效归属）；明细表列改为 Confluence 指标（见下），概览 KPI 与环形图口径随之切换。
+
+**GitHub 视图明细表与组织贡献分布共用同一份行数据**（前端按 `orgId` 合并三源：`GET /api/organizations` 组织档案 + `GET /api/contributions` + `GET /api/wiki`）；**个人贡献排行走独立接口** `GET /api/contributor-contributions`（ADR-0004）：
 
 - **明细表**：以组织档案为**底表**，全量组织各占一行；无贡献记录的指标按 0 展示、更新时间与仓库数显示"—"，名称 / Logo / 官网以档案为准（ADR-0002）。档案接口失败时退回两源合并结果。
 - **组织贡献分布**：在行数据上按 `github.commits` 计算各组织占比（口径见本节末段，ADR-0003）。
@@ -133,11 +140,27 @@ Routes 结构示意（实现时以此为准）：
 | PR 数量 | `github.pullRequests` | number | ✅ | 已合并 PR |
 | Issue 数量 | `github.issues` | number | ✅ | — |
 | 代码量 | `github.linesChanged` | number | ✅ | additions + deletions，千分位展示 |
-| 需求 | `confluence.requirements` | number | ✅ | Confluence 来源 |
-| best-practice 案例 | `confluence.bestPractices` | number | ✅ | Confluence 来源 |
+| 需求 | `confluence.requirements` | number | ✅ | Confluence 来源：需求页 `Contacts` 列的 @ 提及数 |
+| 议题分享 | `confluence.topicShares` | number | ✅ | Confluence 来源：会议纪要 `Agenda` 段内 @ 数（段落与表格行都算，按期去重） |
 | 更新时间 | `updatedAt` | ISO 8601 | ✅ | 相对时间展示 |
 
-**个人排行指标切换**：`pullRequests` / `commits` / `issues` / `linesChanged` 四个维度（默认「提交数」，与接口默认排序一致），切换时占比条 700ms 缓动过渡，固定取 Top 8（前端切片，不传接口 `limit`，避免与页面筛选参数形成第二套口径）。
+**Confluence 视图明细表**（`?source=confluence`，与组织档案以 `orgId` 关联，全量组织各占一行；归属为**生效归属** `effectiveOrgId`，见 ADR-0010）：
+
+| 列 | 字段 | 类型 | 可排序 | 备注 |
+| --- | --- | --- | --- | --- |
+| 组织 | `orgName` + `logoUrl` | string | ✅（字母序） | 行内展示 Logo 与官网外链；未归属归入「独立开发者」 |
+| 需求 | `confluence.requirements` | number | ✅ | 需求页 `Contacts` 列 @ 提及数（ADR-0009） |
+| 议题分享 | `confluence.topicShares` | number | ✅ | 会议纪要 `Agenda` 段内 @ 期数（按期去重） |
+| 更新时间 | `updatedAt` | ISO 8601 | ✅ | 相对时间展示 |
+
+**Confluence 视图口径**：明细表与环形图行数据取 `GET /api/wiki`（组织级，已按生效归属求和）；个人区块取 `GET /api/confluence-accounts`（账号级，生效归属），提供 `requirements` / `topicShares` 两个 Confluence 维度切换（不提供 GitHub 的 PR / 提交等维度）。组织名由 `GET /api/organizations` 的 `orgId → name` 映射解析。
+
+**Confluence 视图状态处理**（三态）：
+1. **有数据 + 部分未认领**：图表照常渲染，并在图表上方给出一条提示「{N} 个 Confluence 账号尚未归属组织，去账号认领 →」，链到 `/admin/identity?source=confluence`；
+2. **全部未认领**（仅「独立开发者」一块）：**不隐藏**图表，同样显示上述提示（这一形态最常见，因 `aliases.confluence` 与认领边初始为空）；
+3. **接口降级**：账号级接口失败时，个人区块以区块级错误态占位 + 重试入口（`warnings` 由后端日志记录），不阻塞其它区块；仅当账号级数据整体为空时才显示空图。
+
+**GitHub 视图个人排行指标切换**：`pullRequests` / `commits` / `issues` / `linesChanged` 四个维度（默认「提交数」，与接口默认排序一致），切换时占比条 700ms 缓动过渡，固定取 Top 8（前端切片，不传接口 `limit`，避免与页面筛选参数形成第二套口径）。
 
 **环形图口径**（ADR-0003）：按组织维度统计 `github.commits` 提交数占比，数据复用 `GET /api/contributions`；占比低于 3% 或超出 6 个具名扇区上限的组织并入「其他」扇区（中性灰着色），头部组织始终保留具名扇区，中心显示提交总量。
 
@@ -145,6 +168,7 @@ Routes 结构示意（实现时以此为准）：
 
 ### 4.3 交互细节
 
+- **来源切换**：`ActivitySourceSwitcher` 切换时改写 URL query `?source=`（`github` 为默认值，可省略；`confluence` 显式写入），并用 `replace` 语义避免污染浏览器历史；切换仅改变渲染的数据源与列，**筛选条件（`from`/`to`/`orgIds`）保留**在 query 中。切换时旧视图数据经 `keepPreviousData` 保留，避免闪空。
 - 筛选变更时更新 TanStack Query 的 `queryKey`（含 `from`/`to`/`orgIds`），自动触发重新请求；旧数据通过 `placeholderData: keepPreviousData` 保留，避免图表闪空。
 - 表格列排序为**前端排序**（数据量小），点击表头切换 `asc → desc → 无` 三态，排序图标使用 `lucide-react` 的 `ArrowUpDown` / `ArrowUp` / `ArrowDown`。
 - 小屏（<768px）时表格转为卡片列表，每个组织一张卡，指标以键值对展示。
@@ -282,6 +306,7 @@ flowchart TB
   P1 --> S12["HomeOrganizationsSection"] --> C2["OrganizationCard ×N"]
   P1 --> S13["NextSummitBanner"]
 
+  P2 --> S20["ActivitySourceSwitcher<br/>（紧贴 Navbar 下方，?source=）"]
   P2 --> S21["ActivityFilterBar"]
   P2 --> S22["ContributionRankChart"]
   P2 --> S23["ContributionCompositionCard"]
@@ -309,6 +334,7 @@ flowchart TB
 | `ErrorState` | 错误态 | `message`、`onRetry` |
 | `SectionHeader` | 区块标题 | `title`、`description?`、`action?` |
 | `ExternalLink` | 统一样式的外链 | `href`、`children` |
+| `Segmented` | 分段切换（活跃来源切换器、身份模式切换复用） | `value`、`options`、`onChange` |
 
 ### 7.3 复用原则
 
@@ -339,6 +365,7 @@ flowchart TB
 | `useOrganizations(params?)` | GET | `/api/organizations` | `['organizations', params]` |
 | `useContributions(params)` | GET | `/api/contributions` | `['contributions', { from, to, orgIds }]` |
 | `useWiki(params)` | GET | `/api/wiki` | `['wiki', { from, to, orgIds }]` |
+| `useConfluenceAccounts(params)` | GET | `/api/confluence-accounts` | `['confluence-accounts', { from, to, orgIds, sortBy, order, limit }]` |
 | `useSummits(params?)` | GET | `/api/summits` | `['summits', { year, includeDetail }]` |
 | `useMeetingAttendance()` | GET | `/api/meetings` | `['meetings']` |
 
@@ -487,3 +514,35 @@ bg-white/70 backdrop-blur-xl border border-white/60 shadow-glass rounded-2xl
 | 字段命名一致 | `types/` 中的类型与 04 文档逐字段对齐，作为 Code Review 检查项 |
 | 预留字段可选 | 契约中标注为可选的字段（如 `minutesUrl`、`delta`），前端必须有降级展示，不因缺失而报错 |
 | 不硬编码展示数据 | 所有数字、名称、日期均来自接口；前端仅维护**文案常量**与**格式化规则** |
+
+---
+
+## 14. 身份匹配控制台（`/admin/identity`）设计
+
+> 本节补记既有的身份匹配控制台设计中与 **Confluence 候选**相关的部分（ADR-0010 / 08 §P7）。
+
+### 14.1 页面结构
+
+沿用「左栏（自然人 / 组织花名册）+ 右栏（候选池 / 组织成员）」的双模式布局（模式由 `IdentityModeSwitch` 切换，ADR-0006）。本轮变更集中在**右栏候选池**：
+
+| 区块 | 组件 | 本轮变更 |
+| --- | --- | --- |
+| 候选池 | `CandidatePool` | `confluence` 分组由「恒空」改为接入**账号级** `confluence-accounts.json`；组标题带「待认领 N」徽标；每条候选显示来源指标 |
+| 候选行 | `ClaimRow` | `confluence` 候选展示 `metrics`（需求 / 议题分享） |
+
+### 14.2 分组、排序与深链
+
+- **分组顺序固定**：GitHub → Confluence → Meeting（`GROUPS` 常量顺序）；组内先「已认领」后「待认领」。
+- **深链预选**：URL query `?source=confluence`（或 `github` / `meeting`）时，自动滚动到并展开该分组；用于活跃度页「去账号认领」入口的落地。
+- **计数徽标**：组标题展示「待认领 N · 已认领 M」，与页面标题的汇总一致。
+
+### 14.3 候选指标展示
+
+- `confluence` 候选显示 `metrics: { requirements, topicShares }`（与 `github` 候选显示 `{pullRequests, commits, issues, linesChanged}` 对称，见 04 §5.3.11）。
+- `meeting` 候选无 `metrics`，不渲染指标区。
+- 指标为**只读派生值**，不参与认领动作；认领动作仍只提交 `source` + `accountKey`。
+
+### 14.4 状态处理
+
+- `confluence` 分组为空时的 `emptyLabel` 改为「Confluence 账号级数据尚未采集，或全部已认领」。
+- `warnings` 非空时在池顶部提示（既有行为），不阻塞其它分组。

@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 2,
+  "updatedAt": "2026-09-18T09:00:00.000Z",
+  "data": [
+    {
+      "accountId": "acct-stale-001",
+      "displayName": "Stale Person",
+      "orgId": null,
+      "personId": null,
+      "confluence": {
+        "requirements": 9,
+        "topicShares": 0
+      },
+      "updatedAt": "2026-09-18T09:00:00.000Z"
+    }
+  ]
+}

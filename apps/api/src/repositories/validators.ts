@@ -1,4 +1,5 @@
 import {
+  ConfluenceAccount,
   Contributor,
   HomeFileData,
   IdentityClaim,
@@ -92,13 +93,45 @@ export function isWiki(value: unknown): value is OrganizationWiki {
     isString(value.logoUrl) &&
     isObject(confluence) &&
     isNumber(confluence.requirements) &&
-    isNumber(confluence.bestPractices) &&
+    isNumber(confluence.topicShares) &&
     isString(value.updatedAt)
   );
 }
 
 export function isWikiArray(value: unknown): value is OrganizationWiki[] {
   return Array.isArray(value) && value.every(isWiki);
+}
+
+/** 落盘允许的采集口径归属来源（`'claim'` 只出现在接口出参，见 ADR-0010） */
+const CONFLUENCE_ORG_SOURCES = ['alias', 'space', 'unattributed'];
+
+/**
+ * 账号级 Confluence 条目（04 文档 §3.11）：
+ * - `accountId` 必填且非空（退化兜底值由采集器给出）；
+ * - `orgId` / `personId` 必须显式出现，取值 `string | null`（`null` = 未归属 / 未认领）；
+ * - `orgSource` 必须为 `alias` / `space` / `unattributed`（v3 新增，ADR-0010）；
+ * - `confluence` 计数与组织级同构。
+ */
+export function isConfluenceAccount(value: unknown): value is ConfluenceAccount {
+  if (!isObject(value)) return false;
+  const accountId = value.accountId;
+  if (!isString(accountId) || accountId.length === 0) return false;
+
+  const confluence = value.confluence;
+  return (
+    isString(value.displayName) &&
+    (value.orgId === null || isString(value.orgId)) &&
+    CONFLUENCE_ORG_SOURCES.includes(String(value.orgSource)) &&
+    (value.personId === null || isString(value.personId)) &&
+    isObject(confluence) &&
+    isNumber(confluence.requirements) &&
+    isNumber(confluence.topicShares) &&
+    isString(value.updatedAt)
+  );
+}
+
+export function isConfluenceAccountArray(value: unknown): value is ConfluenceAccount[] {
+  return Array.isArray(value) && value.every(isConfluenceAccount);
 }
 
 /** 贡献者内嵌的 GitHub 指标（ADR-0003）：整体可选，存在时字段校验与组织贡献一致（commits 兼容缺失） */

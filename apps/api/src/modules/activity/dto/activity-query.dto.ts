@@ -60,8 +60,25 @@ export class ListContributorContributionsQueryDto extends TimeRangeQueryDto {
 
 export class ListWikiQueryDto extends TimeRangeQueryDto {
   @IsOptional()
-  @IsIn(['requirements', 'bestPractices'])
-  sortBy?: 'requirements' | 'bestPractices';
+  @IsIn(['requirements', 'topicShares'])
+  sortBy?: 'requirements' | 'topicShares';
+
+  @IsOptional()
+  @IsIn(['asc', 'desc'])
+  order?: 'asc' | 'desc';
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(200)
+  limit?: number;
+}
+
+/** 账号级 Confluence 明细（ADR-0008）：sortBy 与组织级 wiki 同构，默认按 requirements 排序 */
+export class ListConfluenceAccountsQueryDto extends TimeRangeQueryDto {
+  @IsOptional()
+  @IsIn(['requirements', 'topicShares'])
+  sortBy?: 'requirements' | 'topicShares';
 
   @IsOptional()
   @IsIn(['asc', 'desc'])

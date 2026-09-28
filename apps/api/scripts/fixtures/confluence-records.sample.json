@@ -1,0 +1,190 @@
+{
+  "_comment": "Confluence 采集离线固定数据（合成，与 seed-data 配套）。records 覆盖页面结构选择器的命中与排除；bodies 是 storage 格式正文，覆盖两个口径（需求表格 Contacts 列、会议纪要 Agenda 段内的 @）；users 覆盖展示名查询。刻意包含：命中/不命中祖先链的需求页、Agenda 段内（段落与表格行）与段外（出席签到/行动项）的 @、Agenda 段内重复 @（按期去重）、纯文本 @人（需求行与纪要段各一处，无法解析）、以及空间外页面。展示名兜底顺序单独覆盖：views（渲染视图）给 acct-solo-1 真名、acct-ghost-1 占位文本；bodies 的 ri:username 给 acct-lumen-9；创建者展示名给 acct-nova-001；users 查询给 acct-orbit-1 —— 五档各有一个账号，accountId 兜底由 acct-ghost-1 承担。",
+  "records": [
+    {
+      "pageId": "900001",
+      "title": "Requirement Proposal",
+      "spaceKey": "OPENAN",
+      "status": "current",
+      "labels": [],
+      "creatorAccountId": "acct-nova-001",
+      "creatorDisplayName": "Nora Kim",
+      "creatorAccountType": "atlassian",
+      "createdDate": "2026-06-01T02:00:00.000Z",
+      "lastModified": "2026-09-20T02:00:00.000Z",
+      "lastModifiedByAccountId": "acct-nova-001",
+      "lastModifiedByDisplayName": "Nora Kim",
+      "versionNumber": 4,
+      "ancestorTitles": [
+        "OpenAN Project Home",
+        "Releases",
+        "Release Planning",
+        "OpenAN 26.12"
+      ],
+      "_case": "命中需求页选择器（标题 + 祖先含 Release Planning）；创建者展示名可反哺账号展示名"
+    },
+    {
+      "pageId": "900002",
+      "title": "Requirement Proposal",
+      "spaceKey": "ORBIT",
+      "status": "current",
+      "labels": [],
+      "creatorAccountId": "acct-orbit-bot",
+      "creatorDisplayName": "Orbit Bot",
+      "creatorAccountType": "app",
+      "createdDate": "2026-07-01T02:00:00.000Z",
+      "lastModified": "2026-09-01T02:00:00.000Z",
+      "lastModifiedByAccountId": "acct-orbit-bot",
+      "lastModifiedByDisplayName": "Orbit Bot",
+      "versionNumber": 1,
+      "ancestorTitles": [
+        "Orbit Space Home",
+        "Releases",
+        "Release Planning",
+        "ORBIT 26.12"
+      ],
+      "_case": "命中需求页选择器；其联系人只在 ORBIT 出现 → 走空间兜底归入 orbit-data。创建者刻意用机器人账号（非联系人），使联系人的展示名只能走 users 查询一档"
+    },
+    {
+      "pageId": "900003",
+      "title": "Requirement Proposal",
+      "spaceKey": "OPENAN",
+      "status": "current",
+      "labels": [],
+      "creatorAccountId": "acct-openan-1",
+      "creatorDisplayName": "OpenAN Bot",
+      "creatorAccountType": "app",
+      "createdDate": "2026-05-01T02:00:00.000Z",
+      "lastModified": "2026-05-01T02:00:00.000Z",
+      "lastModifiedByAccountId": "acct-openan-1",
+      "lastModifiedByDisplayName": "OpenAN Bot",
+      "versionNumber": 1,
+      "ancestorTitles": ["OpenAN Project Home", "Releases"],
+      "_case": "同名但祖先链不含 Release Planning（Releases 下的模板页）→ 必须被排除，其中的联系人不计入"
+    },
+    {
+      "pageId": "900004",
+      "title": "2026-09-15 TSC Minutes",
+      "spaceKey": "OPENAN",
+      "status": "current",
+      "labels": ["tsc-minutes"],
+      "creatorAccountId": "acct-tsc-1",
+      "creatorDisplayName": "Casey Cain",
+      "creatorAccountType": "atlassian",
+      "createdDate": "2026-09-15T02:00:00.000Z",
+      "lastModified": "2026-09-15T02:00:00.000Z",
+      "lastModifiedByAccountId": "acct-tsc-1",
+      "lastModifiedByDisplayName": "Casey Cain",
+      "versionNumber": 1,
+      "ancestorTitles": [
+        "OpenAN Project Home",
+        "Technical Steering Committee",
+        "2026 - TSC Minutes"
+      ],
+      "_case": "命中会议纪要选择器；Agenda 段内的 @（段落里的与表格行里的）都计入并按期去重，出席签到与行动项的 @ 一律不计；段内纯文本 @人 记入 unresolvedContacts"
+    },
+    {
+      "pageId": "900005",
+      "title": "2026-08-25 TSC Minutes",
+      "spaceKey": "OPENAN",
+      "status": "current",
+      "labels": ["tsc-minutes"],
+      "creatorAccountId": "acct-tsc-1",
+      "creatorDisplayName": "Casey Cain",
+      "creatorAccountType": "atlassian",
+      "createdDate": "2026-08-25T02:00:00.000Z",
+      "lastModified": "2026-08-25T02:00:00.000Z",
+      "lastModifiedByAccountId": "acct-tsc-1",
+      "lastModifiedByDisplayName": "Casey Cain",
+      "versionNumber": 1,
+      "ancestorTitles": [
+        "OpenAN Project Home",
+        "Technical Steering Committee",
+        "2025 - TSC Minutes"
+      ],
+      "_case": "父页年份不同（跨年）仍须命中：证明父页口径用模式而非写死年份"
+    },
+    {
+      "pageId": "900006",
+      "title": "2026-08-11 TSC Minutes",
+      "spaceKey": "OPENAN",
+      "status": "current",
+      "labels": ["tsc-minutes"],
+      "creatorAccountId": "acct-tsc-1",
+      "creatorDisplayName": "Casey Cain",
+      "creatorAccountType": "atlassian",
+      "createdDate": "2026-08-11T02:00:00.000Z",
+      "lastModified": "2026-08-11T02:00:00.000Z",
+      "lastModifiedByAccountId": "acct-tsc-1",
+      "lastModifiedByDisplayName": "Casey Cain",
+      "versionNumber": 1,
+      "ancestorTitles": [
+        "OpenAN Project Home",
+        "Technical Steering Committee",
+        "2026 - TSC Minutes"
+      ],
+      "_case": "命中会议纪要选择器但没有 Agenda 段 → 记入 minutesWithoutAgenda，不因单页异常中断整轮"
+    },
+    {
+      "pageId": "900007",
+      "title": "Requirement Proposal",
+      "spaceKey": "OTHERSPACE",
+      "status": "current",
+      "labels": [],
+      "creatorAccountId": "acct-outside-1",
+      "creatorDisplayName": "Outsider",
+      "creatorAccountType": "atlassian",
+      "createdDate": "2026-08-01T02:00:00.000Z",
+      "lastModified": "2026-08-01T02:00:00.000Z",
+      "lastModifiedByAccountId": "acct-outside-1",
+      "lastModifiedByDisplayName": "Outsider",
+      "versionNumber": 1,
+      "ancestorTitles": [
+        "Other Space Home",
+        "Releases",
+        "Release Planning",
+        "OTHER 26.12"
+      ],
+      "_case": "口径全部命中但在 CONFLUENCE_SPACES 之外 → 源层就该过滤掉，不得计入"
+    },
+    {
+      "pageId": "900008",
+      "title": "2026-07-01 TSC Minutes",
+      "spaceKey": "OPENAN",
+      "status": "current",
+      "labels": ["pac-minutes"],
+      "creatorAccountId": "acct-tsc-1",
+      "creatorDisplayName": "Casey Cain",
+      "creatorAccountType": "atlassian",
+      "createdDate": "2026-07-01T02:00:00.000Z",
+      "lastModified": "2026-07-01T02:00:00.000Z",
+      "lastModifiedByAccountId": "acct-tsc-1",
+      "lastModifiedByDisplayName": "Casey Cain",
+      "versionNumber": 1,
+      "ancestorTitles": [
+        "OpenAN Project Home",
+        "Technical Steering Committee",
+        "2026 - PAC Minutes"
+      ],
+      "_case": "标题像会议纪要但直接父页不是 TSC Minutes → 必须被父页条件排除"
+    }
+  ],
+  "bodies": {
+    "900001": "<h2>Requirement Proposal · OpenAN 26.12</h2><p>本页汇总本 release 的需求与承接联系人。</p><table><tbody><tr><th>Requirement Title</th><th>Owner</th><th>Contacts</th><th>Status</th></tr><tr><td>NPU Driver 适配</td><td>Platform</td><td><ac:link><ri:user ri:account-id=\"acct-nova-001\" /></ac:link> <ac:link><ri:user ri:account-id=\"acct-lumen-9\" /></ac:link></td><td>In Progress</td></tr><tr><td>可观测性接入</td><td>Data</td><td><ac:link><ri:user ri:account-id=\"acct-solo-1\" /></ac:link> <ac:link><ri:user ri:account-id=\"acct-ghost-1\" /></ac:link></td><td>Planned</td></tr><tr><td>调度优化</td><td>TBD</td><td>@mystery-person</td><td>Planned</td></tr></tbody></table><p>表格外的提及不计入：<ac:link><ri:user ri:account-id=\"acct-openan-1\" /></ac:link></p>",
+    "900002": "<h2>Requirement Proposal · ORBIT 26.12</h2><table><tbody><tr><th>Requirement Title</th><th>Contacts</th></tr><tr><td>数据面组件接入</td><td><ac:link><ri:user ri:account-id=\"acct-orbit-1\" /></ac:link></td></tr><tr><td>数据面可观测性</td><td><ac:link><ri:user ri:account-id=\"acct-orbit-1\" /></ac:link> <ac:link><ri:user ri:account-id=\"acct-nova-001\" /></ac:link></td></tr></tbody></table>",
+    "900003": "<h2>Release 模板</h2><table><tbody><tr><th>Requirement Title</th><th>Contacts</th></tr><tr><td>模板行</td><td><ac:link><ri:user ri:account-id=\"acct-delta-1\" /></ac:link></td></tr></tbody></table>",
+    "900004": "<h2>Attendees &amp; Representation</h2><table><tbody><tr><th>Name</th><th>Role</th></tr><tr><td><ac:link><ri:user ri:account-id=\"acct-tsc-1\" /></ac:link></td><td>Chair</td></tr><tr><td><ac:link><ri:user ri:account-id=\"acct-solo-1\" /></ac:link></td><td>Member</td></tr></tbody></table><h2>Agenda</h2><p>开场由 <ac:link><ri:user ri:account-id=\"acct-solo-1\" /></ac:link> 代讲；另有一项议题待认领：@pending-speaker</p><table><tbody><tr><th>Topic</th><th>Presenter</th></tr><tr><td>NPU 驱动路线</td><td><ac:link><ri:user ri:account-id=\"acct-nova-001\" /></ac:link></td></tr><tr><td>NPU 驱动路线（续）</td><td><ac:link><ri:user ri:account-id=\"acct-nova-001\" /></ac:link></td></tr><tr><td>中文文档与上手指南</td><td><ac:link><ri:user ri:account-id=\"acct-lumen-9\" /></ac:link></td></tr></tbody></table><h2>Action Items</h2><p>Follow up with <ac:link><ri:user ri:account-id=\"acct-ghost-1\" /></ac:link>.</p>",
+    "900005": "<h2>Agenda</h2><table><tbody><tr><th>Topic</th><th>Presenter</th></tr><tr><td>文档体系改版</td><td><ac:link><ri:user ri:account-id=\"acct-lumen-9\" ri:username=\"Lumen\" /></ac:link></td></tr></tbody></table>",
+    "900006": "<h2>Attendees &amp; Representation</h2><p>Quorum reached. <ac:link><ri:user ri:account-id=\"acct-tsc-1\" /></ac:link></p>",
+    "900007": "<h2>Requirement Proposal · OTHER 26.12</h2><table><tbody><tr><th>Requirement Title</th><th>Contacts</th></tr><tr><td>空间外需求</td><td><ac:link><ri:user ri:account-id=\"acct-outside-1\" /></ac:link></td></tr></tbody></table>",
+    "900008": "<h2>Agenda</h2><table><tbody><tr><th>Topic</th><th>Presenter</th></tr><tr><td>PAC 议题</td><td><ac:link><ri:user ri:account-id=\"acct-delta-1\" /></ac:link></td></tr></tbody></table>"
+  },
+  "views": {
+    "900001": "<p>需求页联系人（渲染视图）：<a class=\"confluence-userlink user-mention\" data-account-id=\"acct-solo-1\" href=\"https://example.atlassian.net/wiki/people/acct-solo-1?ref=confluence\" data-linked-resource-type=\"userinfo\">Solo Hacker</a> <a class=\"confluence-userlink user-mention\" data-account-id=\"acct-ghost-1\" href=\"https://example.atlassian.net/wiki/people/acct-ghost-1?ref=confluence\">Unknown user</a> 注意：acct-nova-001 的锚点刻意不在此渲染视图里，用于覆盖「创建者展示名」这一档。</p>"
+  },
+  "users": {
+    "acct-lumen-9": "Lumen",
+    "acct-orbit-1": "Orbit Person",
+    "acct-solo-1": "solo-hacker"
+  }
+}

@@ -95,7 +95,7 @@ apps/api/src/
 │   ├── collector.module.ts          # 采集上下文装配，与 AppModule 解耦
 │   ├── collector.tokens.ts          # GITHUB_SOURCE 注入 Token（真实 / 离线可切换）
 │   ├── collector.constants.ts       # 分页、限流阈值、请求间隔等常量
-│   ├── contribution-collector.service.ts   # 记录按 orgId 归并后写入 contributions.json
+│   ├── contribution-collector.service.ts   # 记录按 orgId 归并后写入 github-organizations.json
 │   ├── github-source.types.ts       # GithubSource 抽象与记录类型
 │   ├── graphql-github.source.ts     # 真实实现（原生 fetch 调 GitHub GraphQL）
 │   ├── fixture-github.source.ts     # 离线实现（GITHUB_FIXTURE，无 token 自检用）
@@ -201,8 +201,8 @@ export interface OrganizationWiki {
   orgName: string;
   logoUrl: string;
   confluence: {
-    requirements: number;  // 需求
-    bestPractices: number; // best-practice 案例
+    requirements: number; // 需求数（Requirement Proposal 表格 Contacts 列的 @ 提及数）
+    topicShares: number;  // 议题分享次数（会议纪要 Agenda 段内 @ 数，段落与表格行都算，按期去重）
   };
   updatedAt: string;
 }
@@ -373,10 +373,12 @@ export interface JsonRepository<T> {
 | --- | --- | --- | --- |
 | `data/home.json` | `HomeSummary`（首页指标 + `nextSummitId`） | 极低 | 1 条记录 |
 | `data/organizations.json` | `Organization[]` | 低 | 数十条 |
-| `data/contributions.json` | `OrganizationContribution[]` | 低（阶段三为定时采集） | 数十条 |
-| `data/wiki.json` | `OrganizationWiki[]` | 低 | 数十条 |
+| `data/github-organizations.json` | `OrganizationContribution[]` | 低（阶段三为定时采集） | 数十条 |
+| `data/confluence-organizations.json` | `OrganizationWiki[]` | 低 | 数十条 |
 | `data/summits.json` | `SummitDetail[]` | 极低 | 十余条 |
 | `data/meetings.json` | `MeetingAttendanceMatrix` | 极低（运营手动触发导入） | 1 个矩阵（约数十行 × 数十列） |
+
+> **命名规则（ADR-0008）**：数据文件名统一为 `<source>-<grain>.json`，`source ∈ {github, confluence}`、`grain ∈ {organizations, accounts}`。个人级用 `accounts`（**平台账号**层，GitHub `githubId` / Confluence `accountId`），与自然人档案 `persons.json` 区分层级。
 
 > `nextSummit` 在 `home.json` 中只存 `nextSummitId` 引用，实际峰会对象由 `SummitProvider` 提供，避免同一峰会数据两处维护导致不一致。
 
@@ -548,7 +550,7 @@ export class ListSummitsQueryDto {
 | 工具 | NestJS 内置 `Logger`，按模块创建上下文：`new Logger(HomeService.name)` |
 | 级别 | `error`（影响功能）、`warn`（可降级）、`log`（关键流程）、`debug`（开发期细节，生产关闭） |
 | 请求日志 | 记录 `method`、`path`、`status`、`durationMs`；**不记录**请求体全文与查询串完整值（避免敏感信息） |
-| 数据访问 | 记录文件名与记录条数，如 `loaded contributions.json (23 records)`，**不 dump 内容** |
+| 数据访问 | 记录文件名与记录条数，如 `loaded github-organizations.json (23 records)`，**不 dump 内容** |
 | 外部调用（`collector/`） | 记录目标资源标识与状态码（如 `GET /repos/openan/x/pulls → 200`），**严禁**记录 Token、Authorization 头、完整响应体 |
 | 异常日志 | 未预期异常记录完整堆栈与请求上下文（路径、参数键名），不回传客户端 |
 | 禁止项 | 任何凭据、个人身份信息、完整数据文件内容 |
@@ -584,9 +586,18 @@ export class ListSummitsQueryDto {
 | `GITHUB_ORGS` | 否 | — | 待采集组织，逗号分隔 |
 | `GITHUB_REPOS` | 否 | — | 可选，显式指定仓库白名单 |
 | `GITHUB_LOOKBACK_DAYS` | 否 | `3650` | **兜底**回溯窗口；仅当本地游标缺失/损坏时生效，正常增量以 `lastSyncAt` 为准 |
-| `CONFLUENCE_BASE_URL` | 否 | — | Confluence 站点地址 |
-| `CONFLUENCE_TOKEN` | 否 | — | Confluence API Token |
+| `CONFLUENCE_BASE_URL` | 否 | — | Confluence 站点地址（不含 `/wiki` 后缀） |
+| `CONFLUENCE_TOKEN` | 否 | — | Confluence API Token（Bearer 认证） |
 | `CONFLUENCE_SPACES` | 否 | — | 待采集空间 Key，逗号分隔 |
+| `CONFLUENCE_LOOKBACK_DAYS` | 否 | `3650` | 兜底回溯窗口（当前恒全量重算，暂未使用） |
+| `CONFLUENCE_FIXTURE` | 否 | — | 离线 fixture 路径；配置后跳过网络请求，用于无 token 自检 |
+| `CONFLUENCE_REQUIREMENT_PAGE_TITLE` | 否 | `Requirement Proposal` | 需求来源页标题（留空取默认） |
+| `CONFLUENCE_REQUIREMENT_ANCESTOR_TITLE` | 否 | `Release Planning` | 需求页必须位于该祖先标题之下（留空取默认） |
+| `CONFLUENCE_REQUIREMENT_CONTACT_COLUMN` | 否 | `Contacts` | 需求表格联系人列名（留空取默认） |
+| `CONFLUENCE_REQUIREMENT_TITLE_COLUMN` | 否 | `Requirement Title` | 需求表格标题列名（仅快照/日志用，留空取默认） |
+| `CONFLUENCE_MINUTES_PARENT_PATTERN` | 否 | `^\d{4} - TSC Minutes$` | 会议纪要父页标题正则（留空取默认） |
+| `CONFLUENCE_MINUTES_TITLE_PATTERN` | 否 | `^\d{4}-\d{2}-\d{2} TSC Minutes$` | 会议纪要页标题正则（留空取默认） |
+| `CONFLUENCE_MINUTES_AGENDA_HEADING` | 否 | `Agenda` | 议题分享所取的段名（留空取默认） |
 
 **安全约定**：`.env` 必须加入 `.gitignore`；仓库提供 `.env.example` 只含键名与注释，不含真实值。
 

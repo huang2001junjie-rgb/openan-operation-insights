@@ -137,7 +137,7 @@ export function PersonDetailDrawer({
                     >
                       <PersonAvatar
                         name={candidate?.displayName ?? claim.displayName ?? claim.accountKey}
-                        src={candidate?.avatarUrl}
+                        src={candidate?.source === 'github' ? candidate.avatarUrl : undefined}
                         fallbackId={claim.accountKey}
                         size="sm"
                       />

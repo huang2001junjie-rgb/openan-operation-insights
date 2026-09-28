@@ -15,7 +15,8 @@
 ```mermaid
 flowchart LR
   GH["GitHub API"] --> C["collector<br/>(apps/api/src/collector)"]
-  CF["Confluence API<br/>（计划）"] -.-> C
+  CF["Confluence API"] --> C
+  C -.-> SN["data/source/confluence<br/>（原始快照，非契约）"]
   XL["meetings.xlsx<br/>（人工台账）"] --> MS["import-meetings.ts"]
   MAN["人工编辑 data/*.json"] --> D
   C --> D["data/*.json"]
@@ -44,10 +45,12 @@ flowchart LR
 | --- | --- | --- | --- | --- |
 | A1 | 组织 GitHub 贡献明细 | 各组织的已合并 PR、PR 内提交、Issue、代码量与参与仓库数 | ✅ | 外部 API（GitHub GraphQL） |
 | A2 | 个人贡献排行 | 以 GitHub 账号为维度、带协作指标的个人贡献者（含独立开发者） | ✅ | 外部 API 回填 |
-| A3 | Confluence 成果（需求 / best-practice） | 各组织在 Confluence 登记的需求数与最佳实践案例数 | 🟡 | 外部 API（Confluence CQL） |
-| A4 | 组织贡献分布（环形图） | 按组织提交数（`github.commits`）计算的占比，低于 3% 并入「其他」 | ➖ | 派生（复用 A1） |
+| A3 | Confluence 成果（需求 / 议题分享） | 各组织在 Confluence 的需求数（需求页 `Contacts` 列的 @）与议题分享次数（会议纪要 `Agenda` 段的 @，按期去重）；归属为**生效归属**（人工认领优先，ADR-0010） | ✅ | 外部 API（Confluence CQL + 正文） |
+| A4 | 组织贡献分布（环形图） | 按组织提交数（`github.commits`）计算的占比，低于 3% 并入「其他」；Confluence 视图下按 `requirements` | ➖ | 派生（复用 A1 / A3） |
 | A5 | 贡献聚合总量 | 各指标总量与数据更新时间（页头展示） | ➖ | 派生（A1 + A3） |
 | A6 | 时间区间筛选 | `from` / `to` 区间过滤，阶段一接收但不生效 | 🟡 | —（阶段三由采集游标切片） |
+| A7 | Confluence 账号级明细 | 账号 × 两个维度（需求 / 议题分享）的明细，供 Confluence 视图个人区块与候选池取数 | ✅ | 外部 API（同 A3，落后 `confluence-accounts.json`） |
+| A8 | 活跃来源切换 | 顶部切换 GitHub / Confluence 两套口径，状态写入 URL `?source=` | ➖ | 派生（前端） |
 
 ### 1.3 社区参展 `/summits`
 
@@ -93,8 +96,8 @@ flowchart LR
 
 **H2 外部开发者数 `externalDeveloperCount`**
 - 状态：✅（GitHub 采集器自动回填）。
-- 来源：`data/home.json` → `data.externalDeveloperCount`；数值派生自 `data/contributors.json`。
-- 采集：外部 API —— 采集器每轮统计 `contributors.json` 中 `orgId` 为空的条数并写回 `home.json`。
+- 来源：`data/home.json` → `data.externalDeveloperCount`；数值派生自 `data/github-accounts.json`。
+- 采集：外部 API —— 采集器每轮统计 `github-accounts.json` 中 `orgId` 为空的条数并写回 `home.json`。
 - 归类：`orgId` 为空 = 未归属的独立贡献者（判定见 §3.2）。当前 `value=13`，与 `.sync-state.json` 的 `unattributedLogins`（13 个登录名）一致。
 - 口径边界（重要）：统计的是**参与过贡献**的独立开发者，不等于「注册的外部开发者总数」。
 - 未实现需补：如需统计「仅注册未贡献」者，需要新增独立的人才/会员数据源。
@@ -107,7 +110,7 @@ flowchart LR
 **H4 应用案例数 `useCaseCount`**
 - 状态：✅ 数字已展示，但**缺底层数据**（仅手工数字，无案例清单）。
 - 来源：`data/home.json` → `data.useCaseCount`；口径写作「年度案例登记表中通过评审的案例数」，但当前**不存在**对应数据文件。
-- 未实现需补：① 新建 `data/use-cases.json`（名称、`orgId`、年份、链接、评审状态、是否可运行）；② 新增 `GET /api/use-cases`，首页聚合「评审通过」案例数；③ 若登记在 Confluence，可与 A3 共用采集器按标签统计。
+- 未实现需补：① 新建 `data/use-cases.json`（名称、`orgId`、年份、链接、评审状态、是否可运行）；② 新增 `GET /api/use-cases`，首页聚合「评审通过」案例数；③ 若登记在 Confluence，可复用 A3 采集器（按结构选择器或标签统计）。
 
 **H5 下一次峰会 `nextSummit`**
 - 状态：➖ 派生。
@@ -118,7 +121,7 @@ flowchart LR
 
 **H6 贡献组织卡片墙**
 - 状态：➖ 派生。
-- 来源：`organizations.json`（全量档案）+ `contributions.json`（A1）+ `wiki.json`（A3）。
+- 来源：`organizations.json`（全量档案）+ `github-organizations.json`（A1）+ `confluence-organizations.json`（A3）。
 - 口径：展示**全部**组织（含零贡献），按 `contributionScore` 降序；公式与阈值见 §3.3；零分组织渲染为「暂无贡献」。
 - 独立开发者卡片：未归属贡献者以伪组织 `unattributed`（`type=individual`）参与展示，人数取 H2；该伪组织**不计入**伙伴/外部/社区组织计数。
 - 未实现需补：计分公式现为固定常量。若需可配置权重或排除机器账号（如 `dependabot`），需把权重与排除名单落为配置项。
@@ -126,7 +129,7 @@ flowchart LR
 ### 2.2 社区活跃度 `/activity`
 
 **A1 组织 GitHub 贡献明细**
-- 状态：✅ 已实现。来源：`data/contributions.json`（每组织一条）。
+- 状态：✅ 已实现。来源：`data/github-organizations.json`（每组织一条）。
 - 采集：外部 API —— `apps/api/src/collector`（`ContributionCollectorService` + `GraphqlGithubSource`），`npm run collect`（增量）/ `npm run collect:full`（全量）。
   - 全量：逐仓库遍历 `repository.pullRequests(states: MERGED)` + `repository.issues`，**规避搜索接口单查询 1000 条上限**；
   - 增量：`search` 限定 `is:pr is:merged merged:>lastSyncAt` 与 `is:issue created:>lastSyncAt`，以 `total_count ≥ 1000` 作截断告警。
@@ -145,18 +148,28 @@ flowchart LR
 - 未实现需补：范围配置目前依赖 `.env`；若需多环境共享口径，建议纳入受版本管理的配置。
 
 **A2 个人贡献排行**
-- 状态：✅ 已实现。来源：`data/contributors.json`（同时服务 P2 与个人排行）；接口 `GET /api/contributor-contributions`。
+- 状态：✅ 已实现。来源：`data/github-accounts.json`（同时服务 P2 与个人排行）；接口 `GET /api/contributor-contributions`。
 - 采集：外部 API —— 采集器以 `githubId`/`contributorId`（GitHub login）归并个人 PR/Issue/提交后写入 `github` 指标。
 - 口径：字段结构与 A1 完全一致；**个人之和 = 组织之和**（含伪组织 `unattributed`），可互相核对。
 - 筛选/排序：`orgIds` 命中时，`orgId` 为空的独立贡献者按 `unattributed` 匹配；默认按 `commits` 降序，前端二次排序取 Top 8。
 - 未实现需补：`from`/`to` 阶段一接受但不生效（采集侧无个人级时间切片）；如需区间排行，需按时间维度保留明细。
 
-**A3 Confluence 成果（需求 / best-practice）**
-- 状态：🟡 计划中（`data/wiki.json` 当前 `data: []`，接口 `GET /api/wiki` 与前端已就绪，按 0 值兜底）。
-- 采集（计划）：外部 API —— Confluence REST + CQL，按 `space + label + lastmodified` 检索，标签约定 `需求`/`best-practice`，分页用 `_links.next` 游标。
-- 字段：`confluence.requirements`（需求条数）、`confluence.bestPractices`（最佳实践条数）。
-- 归类：**优先读页面自定义字段「所属组织」** 映射到 `orgId`；缺失时退化为按创建者映射并记 `WARN`（避免凭创建者误判）。
-- 未实现需补（前置条件，缺一不可）：① 与运营确认空间（`CONFLUENCE_SPACES`）、标签命名，并确保「所属组织」字段已规范化；② 提供 `CONFLUENCE_TOKEN`（最小读权限）；③ 实现采集器并按 A1 模式落盘 `wiki.json`；④ 补齐 `organizations.json` 的 `aliases.confluence`（当前多为空）。
+**A3 Confluence 成果（需求 / 议题分享）**
+- 状态：✅ 已实现（两个维度均取真实值）。来源：`data/confluence-organizations.json`；接口 `GET /api/wiki`。执行 `npm run collect:wiki`（详见 `docs/05` §3 与 `docs/adr/0009`）。
+- 采集：外部 API —— 两段式：① Confluence REST v1 `/search` + CQL（`space in (...) and type=page`，`expand=space,version,history,metadata.labels,ancestors`）列举目标空间全部页面，分页用 `_links.next` 游标（`limit=100`）；② 对**结构选择器命中页**逐页 `GET /rest/api/content/{id}?expand=body.storage,body.view` 取正文并解析（`body.view` 用于取展示名，不额外发请求）。串行 + 固定间隔。**全量重算**：每轮整体替换 `confluence-organizations.json`（唯一键 `orgId`），不做增量（增量需逐页台账，风险大于收益）。
+- 粒度（ADR-0008 / ADR-0010）：同轮落**账号级** `data/confluence-accounts.json`（`ConfluenceAccount`，主体是平台账号而非自然人；`schemaVersion` 已升至 **3**，新增 `orgSource`）。接口对外按**生效归属** `effectiveOrgId` **读时派生**（`GET /api/wiki` 不再读组织级文件，见 04 §5.3.4 / §5.3.16）；`confluence-organizations.json` 仍由采集器写入，但降级为**基线快照**（非读路径来源）。
+- 字段：`confluence.requirements`（需求条数）、`confluence.topicShares`（议题分享次数）。账号级另含 `orgId`（采集口径）、`orgSource`（`alias`/`space`/`unattributed`）、`personId`。
+- 口径（ADR-0009）：
+  - **需求** = `Requirement Proposal` 页（须位于 `Release Planning` 之下，排除 `Releases` 下的同名模板页）需求表格 `Contacts` 列里**每个 @ 提及各算 1 条**（一行两位联系人则两位各 1 条，故条数 = 提及数，不等于页数/行数；只取该列，表外 @ 不计）。
+  - **议题分享** = 会议纪要页（标题匹配 `^\d{4}-\d{2}-\d{2} TSC Minutes$` 且父页匹配 `^\d{4} - TSC Minutes$`）`Agenda` 段**内**的全部 @（段落与表格行都算），**同一期同一账号最多 1 次**（同页 `Attendees & Representation` 段的 @ 是出席签到，不计入）。首次真实采集（2026-09-28 复核）：16 期会议 / 21 次分享 / 12 个分享账号（段内原始 @ 25 处，同期重复去重 4 处）。
+  - 选页用**结构选择器**（标题 + 祖先链 / 正则），**不看标签、不看标题关键字**（实测空间无任何需求标签）。
+  - 全部选择器与列/段名均可经 `CONFLUENCE_REQUIREMENT_*` / `CONFLUENCE_MINUTES_*` 环境变量就地校正（留空取内置默认）。
+- `bestPractices` 已**移除**：best-practice 内容不在 Confluence wiki 内，第二维改为真实可得的 `topicShares`（见 ADR-0009）。
+- 归类（**生效归属**，ADR-0010）：**被 @ 的账号**归属（优先级从高到低）——① **身份认领边**（P6 `identity-claims.json` 中 `source=confluence` 且 `accountKey=accountId` → `Person.orgId`，**人工优先**）；② `Organization.aliases.confluence` 精确匹配（accountId / 展示名 / 空间 key）；③ 空间兜底；④ 伪组织 `unattributed`。其中 ②③④ 为**采集口径**（写入账号级 `orgId` + `orgSource`），① 为**读时派生覆写**。未命中账号写入独立状态文件 `unattributedAccounts[]`（语义为「未经认领 / 别名归属的待办清单」）；正文里写成纯文本 `@人`（解析不出 accountId）写入 `unresolvedContacts[]`，均供运营补录（补录后**认领即生效**，无需重跑采集器；补别名仍需重跑）。
+- 展示名（只影响可读性，不参与计数与归属）：兜底顺序为**渲染视图 `body.view`**（随正文一并取回，零额外请求）→ 正文 `ri:username` → 页面创建者展示名 → `GET /rest/api/user` → accountId。实测正文只有 `ri:account-id`、`/rest/api/user` 返回 403，但渲染视图已带出展示名，故 15 个账号**全部为真名**；日志按来源分档计数。
+- 输出兜底：聚合覆盖组织档案全部组织（含 `unattributed`），未命中者记 0，保证活跃度页 join 无空洞。**两个维度全为 0 视为异常，中止写入并保留旧数据**。
+- 状态与快照：独立状态文件 `data/.sync-state.confluence.json`（不复用 GitHub 的 `.sync-state.json`，避免覆盖其游标）；原始页面快照落 `data/source/confluence/`（非契约、接口与前端不可见）。
+- 未实现需补：① `aliases.confluence` 与 `source=confluence` 认领边仍为空，首次真实采集两维度暂全部落 `unattributed`（账号级落盘已能给出**具体账号 + 两个维度的量**；运营据此**补认领边后活跃页立即生效**，补别名则需重跑采集器）；② 口径依赖正文结构（列名/段名/层级），改版即解析不到（已全部做成环境变量 + 两条自检信号）；③ `from`/`to` 时间切片不适用（全量累计值）。
 
 **A4 组织贡献分布（环形图）**
 - 状态：➖ 派生。来源：复用 A1（`GET /api/contributions`）。
@@ -165,13 +178,24 @@ flowchart LR
 
 **A5 贡献聚合总量**
 - 状态：➖ 派生。来源：A1 + A3 的服务端聚合；接口 `GET /api/contributions/summary`。
-- 口径：`totals`（`pullRequests`/`commits`/`issues`/`linesChanged`/`requirements`/`bestPractices`）+ `orgCount` + `updatedAt`（取参与记录的最新 `updatedAt`）。
-- 未实现需补：`requirements`/`bestPractices` 依赖 A3 落地，当前恒为 0。
+- 口径：`totals`（`pullRequests`/`commits`/`issues`/`linesChanged`/`requirements`/`topicShares`）+ `orgCount` + `updatedAt`（取参与记录的最新 `updatedAt`）。
+- 未实现需补：`requirements` 与 `topicShares` 均已随 A3 落地取真实值（各组织求和）。
 
 **A6 时间区间筛选**
 - 状态：🟡 计划中（参数已接收，阶段一不过滤）。来源：请求参数 `from`/`to`（ISO 8601）。
 - 采集：阶段三由采集器在落盘时按 `lastSyncAt` 游标切片决定区间；接口恒只读落盘结果。
 - 未实现需补：采集侧需保留时间维度明细（当前落盘为累计值），否则区间筛选无法真正生效；接口与前端无需改动。
+
+**A7 Confluence 账号级明细**
+- 状态：✅ 已实现。来源：`data/confluence-accounts.json`；接口 `GET /api/confluence-accounts`（生效口径）。
+- 采集：与 A3 同轮同源，账号级落盘。
+- 用途：活跃度页 Confluence 视图的个人区块、身份控制台候选池（P7）取数；每条记录都**至少被 @ 过一次**。
+- 未实现需补：无。
+
+**A8 活跃来源切换**
+- 状态：➖ 派生（前端）。来源：URL query `?source=github|confluence`。
+- 口径：切换只改变渲染的数据源与列（GitHub 指标 / Confluence 指标），筛选条件保留；默认 `github`。
+- 未实现需补：无。
 
 ### 2.3 社区参展 `/summits`
 
@@ -218,7 +242,7 @@ flowchart LR
 - 未实现需补：当前多数组织 `aliases.github`/`aliases.confluence` 为空，归属只能依赖邮箱域名兜底；建议运营补齐别名，提高归并准确率。
 
 **P2 个人贡献者档案**
-- 状态：✅ 已实现（混合实体）。来源：`data/contributors.json`。
+- 状态：✅ 已实现（混合实体）。来源：`data/github-accounts.json`。
 - 字段：`contributorId`（主键，对齐 GitHub login）、`githubId`（去重/归并键）、`name`、`orgId`（可空）、`avatarUrl`、`joinedAt`、`description`、`github`（采集回填）。
 - 归类：**人工维护字段**（`joinedAt`/`description`/人工指定的 `orgId`）与**采集字段**（`github` 指标、`name`/`avatarUrl` 回填）分离；采集**不会覆盖**人工已指定的 `orgId` 与已填名称。
 - 未实现需补：`joinedAt`/`description` 无采集来源，需运营手工补；若希望自动获取加入时间，可用其首个贡献时间回填（当前未实现）。
@@ -248,10 +272,10 @@ flowchart LR
 
 **P7 身份候选池**
 - 状态：➖ 派生（不落盘、无数据文件）。
-- 来源：`github` ← P2 `contributors.json`（`accountKey = githubId`）；`confluence` ← `wiki.json`（**当前为空，返回空数组且不报错**）；`meeting` ← M1 `meetings.json` 的 `columns` 去重（`accountKey = 人名原文`）。
+- 来源：`github` ← P2 `github-accounts.json`（`accountKey = githubId`）；`confluence` ← **数据已就绪、服务端尚未接线**（账号级 `data/confluence-accounts.json` 已随 ADR-0008 落地，`accountKey = accountId`，但 `CandidateService` 仍只读组织级 `confluence-organizations.json`：为空时提示「暂无数据」、非空时提示「账号级候选尚未接入」，两种情形都返回空数组且不报错）；`meeting` ← M1 `meetings.json` 的 `columns` 去重（`accountKey = 人名原文`）。
 - 字段（`IdentityCandidate`）：`source`、`accountKey`、`displayName`、`avatarUrl`（仅 github）、`claimedBy[]`（空数组 = 待认领；长度 > 1 = 冲突）。
 - 归类：候选池随来源采集自动同步，**零维护**；响应**不含邮箱等敏感身份字段**；单一来源缺失时仅降级为空数组并在 `warnings` 中说明。
-- 未实现需补：无分页（当前量级数十～数百，全量返回）；Confluence 分组需等 A3 采集器落地后才有数据。
+- 未实现需补：无分页（当前量级数十～数百，全量返回）；**Confluence 分组尚未接线**——账号级来源 `data/confluence-accounts.json` 已就绪，待 `CandidateService` 改读该文件（并复用 `aliases.confluence` / 认领边判定已认领）后，候选池 `confluence` 分组即可产出数据。
 
 **P8 组织花名册**
 - 状态：➖ 派生（不落盘、无数据文件）。
@@ -273,21 +297,34 @@ flowchart LR
 
 ### 3.2 贡献归属判定（优先级从高到低）
 
-结果写入 `contributors.json` 的 `orgId`；未命中任何组织 → 伪组织 `unattributed`。
+结果写入 `github-accounts.json` 的 `orgId`；未命中任何组织 → 伪组织 `unattributed`。
 
 1. **登录名别名**：`Organization.aliases.github` 与贡献者 login（小写）精确匹配；
 2. **邮箱域名**：命中 `Organization.emailDomains`（精确匹配优先，其次按 `.域名` 后缀匹配子域，如 `mail.huawei.com` → `huawei.com`）。邮箱信号优先取 **PR 首个提交的作者邮箱**，缺失时退化为账户**公开资料邮箱**；
 3. **独立开发者兜底**：以上均未命中 → `unattributed`。
 
-补充：邮箱**仅用于内存判定，不写入任何数据文件**（`@users.noreply.github.com` 等自然不命中）；人工在 `contributors.json` 已指定的 `orgId` **不会被自动覆盖**；多组织配置相同域名时按组织档案顺序取第一个。
+补充：邮箱**仅用于内存判定，不写入任何数据文件**（`@users.noreply.github.com` 等自然不命中）；人工在 `github-accounts.json` 已指定的 `orgId` **不会被自动覆盖**；多组织配置相同域名时按组织档案顺序取第一个。
 
 > **本节只适用于 `Contributor.orgId`（GitHub 账号级归属）。** 身份匹配控制台维护的 `Person.orgId`（自然人级归属，见 P5/P8）是**独立口径**：不参与本节判定，也不被采集器改写；两者并存且互不覆盖。
 
+### 3.2.1 Confluence 归属（A3，ADR-0009）
+
+Confluence 归属是**两层**：**采集口径**写入账号级 `confluence-accounts.json` 的 `orgId`（+ `orgSource`）；**生效归属** `effectiveOrgId`（接口对外值）在其上叠加认领边（ADR-0010）。与 3.2 的 GitHub 口径**相互独立**。生效归属优先级从高到低：
+
+1. **身份认领边**（**人工优先**，读时派生）：`identity-claims.json` 中 `source=confluence` 且 `accountKey=accountId`（小写归一）的认领边 → `Person.orgId`；命中则 `orgSource='claim'`；
+2. **空间别名**（采集口径）：`Organization.aliases.confluence` 与**被 @ 的账号** `accountId` / 展示名 / 空间 key 精确匹配（大小写不敏感）；命中 `orgSource='alias'`；
+3. **空间兜底**（采集口径）：账号所属空间命中某组织映射；命中 `orgSource='space'`；
+4. **独立开发者兜底**：以上均未命中 → `unattributed`（`orgSource='unattributed'`），并把账号写入独立状态文件 `unattributedAccounts[]`。
+
+> 关于「页面显式归属字段」：Confluence 侧登记的组织标识在当前空间未启用，采集器**未实现**该路径，故不列入优先级。
+
+说明：**按被 @ 的账号归属**（需求取 `Contacts` 列、议题分享取 `Agenda` 段内 @），不按页面创建者、也不逐页继承父页面组织；`requirements` 与 `topicShares` **共用同一套归属结果**。**采集口径每轮全量重算**（整体替换 `confluence-accounts.json`），**生效归属每请求读时派生**——故**补认领边后活跃页立即生效**（无需重跑采集器），补 `aliases.confluence` 则需重跑采集器。组织级 `confluence-organizations.json` 由账号级求和派生，但**已非读路径来源**（`GET /api/wiki` 读时按 `effectiveOrgId` 求和）。
+
 ### 3.3 综合贡献分（H6 卡片墙）
 
-- **公式**：`score = (PR + Issue + 需求 + best-practice) + linesChanged / 10000`（协作频次为主，代码量按万行折算，避免体量压倒频次），四舍五入取整。
+- **公式**：`score = (PR + Issue + 需求 + 议题分享) + linesChanged / 10000`（协作频次为主，代码量按万行折算，避免体量压倒频次），四舍五入取整。
 - **等级阈值**：`high ≥ 300`、`medium ≥ 100`、其余 `low`；零分组织同样返回且排末尾。
-- **输入**：`contributions.json`（GitHub）+ `wiki.json`（Confluence），均以 `orgId` 关联；两者缺失即视为 0。
+- **输入**：`github-organizations.json`（GitHub）+ `confluence-organizations.json`（Confluence），均以 `orgId` 关联；两者缺失即视为 0。
 
 ### 3.4 派生的共同原则
 
@@ -300,13 +337,13 @@ flowchart LR
 | 优先级 | 编号 | 待办 | 依赖 / 前置 |
 | --- | --- | --- | --- |
 | 高 | H4 | 新建 `data/use-cases.json` + `GET /api/use-cases`，让「应用案例数」可追溯 | 运营确认案例字段 |
-| 高 | A3 | 实现 Confluence 采集器，落盘 `wiki.json` | `CONFLUENCE_SPACES`/标签规范/`CONFLUENCE_TOKEN`/`别名` |
 | 高 | M1 | 按真实台账校准出席记号映射，确认列名规范 | 真实 `meetings.xlsx` |
 | 中 | H1/H3 | 由组织档案 / `summits.json` 自动聚合 `partnerCount`、`summitCount` | 无（Service 层即可） |
 | 中 | P1 | 补齐组织 `aliases`，提升归属准确率 | 运营录入 |
 | 中 | S2 | 补录峰会 `attendeeCount`；补齐参会组织档案 | 运营录入 / 报名系统 |
 | 低 | A6 | 采集侧保留时间维度，使 `from`/`to` 生效 | 采集器改造（阶段三）|
-| 中 | P7 | 落地 Confluence 采集器，使候选池 `confluence` 分组真正有数据 | A3 |
+| 中 | A3 | Confluence 归属回归：运营补 `source=confluence` 认领边（**认领后活跃页立即生效**）或 `aliases.confluence`（需重跑采集器）、修正正文纯文本 `@人`（当前真实数据全部落 `unattributed`，见状态文件 `unattributedAccounts` / `unresolvedContacts`） | 运营录入（采集器已就绪） |
+| 中 | A9 | GitHub 侧归属收敛：让人工认领同样影响 GitHub 展示口径（与 Confluence 对齐），并消除组织级 / 账号级双写 | 需另立 ADR（当前 GitHub 仍为双口径并存） |
 | 中 | P6 | 自动匹配建议（按 GitHub login / 人名相似度推荐认领对象） | P5/P6 数据积累后 |
 | 低 | M3 | 接 Zoom API 自动采集参会，并把参会账号认领到 P5 自然人 | P5 已就绪；依赖 M1 列名规范化 |
 | 低 | H6 | 贡献分权重 / 排除名单（如 `dependabot`）可配置化 | 配置项设计 |

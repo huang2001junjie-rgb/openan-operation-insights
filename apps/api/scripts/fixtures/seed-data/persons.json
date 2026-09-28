@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-09-18T09:00:00Z",
+  "data": [
+    {
+      "personId": "nora-kim",
+      "displayName": "Nora Kim",
+      "orgId": "nova-silicon",
+      "avatarUrl": null,
+      "createdAt": "2026-05-01T00:00:00Z",
+      "updatedAt": "2026-09-18T09:00:00Z"
+    },
+    {
+      "personId": "lin-chen",
+      "displayName": "Lin Chen",
+      "orgId": "openan-labs",
+      "avatarUrl": null,
+      "createdAt": "2026-05-01T00:00:00Z",
+      "updatedAt": "2026-09-18T09:00:00Z"
+    },
+    {
+      "personId": "solo-hacker",
+      "displayName": "Solo Hacker",
+      "orgId": null,
+      "avatarUrl": null,
+      "createdAt": "2026-05-01T00:00:00Z",
+      "updatedAt": "2026-09-18T09:00:00Z"
+    }
+  ]
+}

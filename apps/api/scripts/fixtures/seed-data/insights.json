@@ -1,33 +1,33 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "updatedAt": "2026-09-18T09:00:00Z",
   "data": [
     {
       "orgId": "openan-labs",
       "orgName": "OpenAN Labs",
       "logoUrl": "https://avatars.githubusercontent.com/u/0000001?v=4",
-      "confluence": { "requirements": 42, "bestPractices": 18 },
+      "confluence": { "requirements": 42, "topicShares": 18 },
       "updatedAt": "2026-09-18T09:00:00Z"
     },
     {
       "orgId": "nova-silicon",
       "orgName": "NovaSilicon",
       "logoUrl": "https://avatars.githubusercontent.com/u/0000002?v=4",
-      "confluence": { "requirements": 26, "bestPractices": 11 },
+      "confluence": { "requirements": 26, "topicShares": 11 },
       "updatedAt": "2026-09-18T09:00:00Z"
     },
     {
       "orgId": "harbor-cloud",
       "orgName": "HarborCloud",
       "logoUrl": "https://avatars.githubusercontent.com/u/0000003?v=4",
-      "confluence": { "requirements": 17, "bestPractices": 7 },
+      "confluence": { "requirements": 17, "topicShares": 7 },
       "updatedAt": "2026-09-18T09:00:00Z"
     },
     {
       "orgId": "lumen-dev",
       "orgName": "Lumen Dev",
       "logoUrl": "https://avatars.githubusercontent.com/u/0000004?v=4",
-      "confluence": { "requirements": 4, "bestPractices": 3 },
+      "confluence": { "requirements": 4, "topicShares": 3 },
       "updatedAt": "2026-09-18T09:00:00Z"
     }
   ]

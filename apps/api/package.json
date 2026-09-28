@@ -13,6 +13,12 @@
     "collect:full": "node dist/collector/main.js --mode=full",
     "collect:dev:full": "ts-node -r tsconfig-paths/register src/collector/main.ts --mode=full",
     "collect:check": "node scripts/collector-check.mjs",
+    "collect:wiki": "node dist/collector/confluence-main.js",
+    "collect:wiki:full": "node dist/collector/confluence-main.js --mode=full",
+    "collect:wiki:dev": "ts-node -r tsconfig-paths/register src/collector/confluence-main.ts",
+    "collect:wiki:probe": "node dist/collector/confluence-main.js --report-only",
+    "collect:wiki:dev:probe": "ts-node -r tsconfig-paths/register src/collector/confluence-main.ts --report-only",
+    "collect:wiki:check": "node scripts/confluence-check.mjs",
     "collect:meetings": "ts-node -r tsconfig-paths/register scripts/import-meetings.ts",
     "identity:check": "node scripts/identity-check.mjs",
     "smoke": "node scripts/smoke.mjs"

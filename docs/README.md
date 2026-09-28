@@ -14,7 +14,7 @@
 | 页面 | 路由 | 核心内容 |
 | --- | --- | --- |
 | 首页 | `/` | 社区伙伴数量、外部开发者数量、参加的峰会、应用案例、下一次峰会、贡献的组织 |
-| 社区活跃度情况 | `/activity` | 按组织汇总的 PR / Issue / 代码量，需求 / best-practice 案例，以及组织提交占比分布 |
+| 社区活跃度情况 | `/activity` | 按组织汇总的 PR / Issue / 代码量，需求 / 议题分享，以及组织提交占比分布 |
 | 社区参展 | `/summits` | 峰会时间线（名称、时间、地点、官网）+ 每场峰会的详情表格 |
 | 例会参会情况 | `/meetings` | 例会参会矩阵（人 × 日期），行头附当次出席人数、列头附个人出席率 |
 | 身份匹配控制台（管理页） | `/admin/identity` | 双模式：**自然人 ↔ 账号**（认领 / 解除认领 / 归属，默认）、**组织 ↔ 开发者**（收纳 / 移出）。是本站**唯一的写入口**，见 04 第 5.3 节 |
@@ -112,9 +112,9 @@ flowchart LR
 | 首页四项指标 | `data/home.json` | 人工维护 | 聚合自贡献数据 |
 | 下一次峰会 | `data/home.json` → `nextSummitId` | 人工维护 | 自动推导（未结束峰会中最近一场） |
 | 贡献的组织 | `data/organizations.json` | 人工维护 | 同左 |
-| PR / Issue / 代码量 | `data/contributions.json` | 人工维护 | **GitHub API** |
-| 需求 / best-practice | `data/wiki.json` | 人工维护 | **Confluence API** |
-| 个人贡献者档案 | `data/contributors.json` | 人工维护 | **GitHub API**（按 `githubId` 归并） |
+| PR / Issue / 代码量 | `data/github-organizations.json` | 人工维护 | **GitHub API** |
+| 需求 / 议题分享 | `data/confluence-organizations.json` | 人工维护 | **Confluence API**（已接入） |
+| 个人贡献者档案 | `data/github-accounts.json` | 人工维护 | **GitHub API**（按 `githubId` 归并） |
 | 峰会时间线与详情 | `data/summits.json` | 人工维护 | 同左（人工维护） |
 | 例会参会矩阵 | `data/meetings.json`（源台账 `data/source/meetings.xlsx`） | 人工维护 Excel → 采集脚本 | **Zoom API**（远期） |
 | 自然人档案 | `data/persons.json` | 身份匹配控制台（人工） | 同左（人工维护） |
@@ -131,8 +131,8 @@ flowchart LR
 | **贡献者** | Contributor | 以 GitHub 账号为维度的个人档案（人工维护字段 + 采集回填的 `github` 指标）。`orgId` 为空表示独立贡献者，见 04 文档 3.7 节 |
 | **社区组织** | Community Org | 社区自身的运营与维护组织。对应 `Organization.type = 'community'` |
 | **应用案例** | Use Case | 基于 OpenAN 能力构建并对外发布的实践案例，计入首页 `useCaseCount` |
-| **需求** | Requirement | 在 Confluence 中登记的功能或适配需求，按条数统计 |
-| **best-practice 案例** | Best Practice | 经过验证、可被其他单位复用的最佳实践文档 |
+| **需求** | Requirement | Confluence `Requirement Proposal` 页（`Release Planning` 之下）需求表格 `Contacts` 列的 @ 提及数，**每个 @ 各计 1 条** |
+| **议题分享** | Topic Share | Confluence 会议纪要页 `Agenda` 段**内**的 @ 提及数（段落里与表格行里都算；同页出席签到段不计；同一期同一账号去重）。取代原「best-practice 案例」（wiki 内无该内容，见 ADR-0009） |
 | **代码量** | Lines Changed | PR 级 `additions + deletions` 累加值（含全部文件类型，不做文件级过滤） |
 | **下一次峰会** | Next Summit | `endDate` 最晚且尚未结束的峰会；无未来峰会时为 `null` |
 | **贡献的组织** | Contributing Organizations | 首页展示的组织卡片墙：展示**全部**组织档案，按综合贡献分降序排列；零分组织居末并显示「暂无贡献」（见 ADR-0001） |
@@ -146,7 +146,7 @@ flowchart LR
 | **契约** | Contract | 由 04 文档定义的字段与接口规范，前后端共同遵守 |
 | **自然人** | Person | 跨来源被认定为同一个人的**身份根**（`personId` + 展示名 + 归属组织），是身份认领的唯一锚点，由身份匹配控制台维护；一经创建仅可改名与调整归属（见 04 §3.9） |
 | **身份认领** | Identity Claim | 「把某来源账号判定为某自然人」的单条映射**边**（`source` + `accountKey`）；解除匹配 = 物理删除该边（见 04 §3.10） |
-| **候选池** | Identity Candidate | 待认领 / 已认领的来源账号集合，由 `contributors.json`、`meetings.json` 与 Confluence 来源**派生**，不落盘（见 04 §5.3.11） |
+| **候选池** | Identity Candidate | 待认领 / 已认领的来源账号集合，由 `github-accounts.json`、`meetings.json` 与 Confluence 来源**派生**，不落盘（见 04 §5.3.11） |
 | **组织花名册** | Org Roster | 「组织 → 其下开发者」视图，由 `Person.orgId` **派生**；组织档案上不存成员清单，避免两份真相（见 04 §5.3.13） |
 | **认领目标** | Claim Target | 自然人模式下左栏花名册中被选中的自然人，是候选池「认领」动作的唯一对象；页面级瞬时状态，不落盘、不进 URL。**与「详情抽屉」是两个独立状态**——选中不开抽屉、关抽屉不清目标（见 [ADR-0006](./adr/0006-identity-console-selection-vs-detail.md)） |
 | **详情抽屉** | Person Detail Drawer | 自然人模式下由行内「详情」按钮单独打开的模态面板，用于改名 / 调整归属 / 解除认领 / 物理删除；开关不影响认领目标（见 [ADR-0006](./adr/0006-identity-console-selection-vs-detail.md)） |
@@ -202,4 +202,8 @@ flowchart LR
 | v1.8 | 2026-09-27 | 新增**身份匹配控制台**（`/admin/identity`）与身份映射数据模型：`data/persons.json`（自然人＝**点**）、`data/identity-claims.json`（认领映射＝**边**）、`data/.identity-audit.jsonl`（审计流水，非契约）。04 新增 §3.9 `Person`、§3.10 `IdentityClaim`、§4.8/§4.9 样例、§5.3.10～§5.3.15（persons / claims / candidates / org-roster 只读接口 + `/api/identity/*` 写接口 + 审计），修订 §5.1「全部 GET」与新增鉴权约定、§2 主键表、§6.2 语义速查；08 登记 P5 自然人档案 / P6 身份认领映射 / P7 候选池（派生）/ P8 组织花名册（派生）；README §1 页面表、§4.2 范围、§4.3 数据来源表、术语表、后续待办同步修订。**归属唯一真相为 `Person.orgId`**（组织档案不存成员清单，花名册派生）；写接口仅存在于 `/api/identity/*` 且需 `X-Admin-Token`；**既有看板接口与取数口径不变** |
 | v1.9 | 2026-09-27 | 修复身份匹配控制台「账号认领」完全不可达（[ADR-0006](./adr/0006-identity-console-selection-vs-detail.md)）：`PersonRoster` 整行点击与行内「详情」按钮由同一个 `selectedPersonId` 驱动 `PersonDetailDrawer`，而该抽屉是全屏模态遮罩，导致候选池被覆盖、「认领」按钮恒为 disabled。把「认领目标」（行点击写入）与「详情抽屉」（详情按钮写入）拆为两个独立状态，关抽屉不清目标、认领成功后保持选中、新建即成为目标、「详情」按钮改常驻可见并补 `pointer-events` 与 `aria-pressed`；README 术语表新增「认领目标 / 详情抽屉」，06 补记该问题。**接口契约与数据文件不变** |
 | v1.10 | 2026-09-27 | 撤销 `07-feature-registry.md`「功能清单」登记册：该文件已按作者本意删除（偏离文档集本意），故本索引移除其条目、v1.7 条目标记为已撤销、`08-data-catalog.md` 脚注不再引用。**其余文档、接口契约与数据文件不变** |
+| v1.12 | 2026-09-28 | 接入 Confluence **账号级**数据契约与读接口（[ADR-0008](./adr/0008-org-person-data-grain-and-attribution.md)）：新增 `data/confluence-accounts.json`（`ConfluenceAccount`，主体是平台账号的**原子事实**），组织级 `confluence-organizations.json` 改为由其按 `orgId` 求和**派生**（不再独立计算，消除双写漂移）；数据文件命名收敛为 `<source>-<粒度>.json`（`contributions.json`→`github-organizations.json`、`wiki.json`→`confluence-organizations.json`、`contributors.json`→`github-accounts.json`）；新增只读接口 `GET /api/confluence-accounts`（04 §5.3.16，**暂未对接前端**）。04 补 §1.2 ER 与关联规则、§2 主键表、§3.11 实体、§4.10 样例、§5.2 清单；08 同步 A3 粒度说明与 P7 待办。**现有看板接口、取数口径与前端均不变** |
 | v1.11 | 2026-09-28 | 修复身份匹配控制台「新建」自然人点击无反应：该按钮的"失效"实为**禁用态无视觉反馈**——空名即 `disabled`，而 `Button` 没有任何 `disabled:` 样式，外观与可用态完全一致；且原实现先清空输入再提交，提交被拒（如标签页未配置令牌 → `40101`）后输入已空、按钮回到禁用态，表现为「点过一次后彻底没反应」。现改为：`Button` 补禁用态样式；空名点击返回「提示 + 聚焦」而非静默；仅在成功后清空输入；`TextInput` 支持 `ref` 转发；未配置令牌时直接打开令牌弹窗并说明原因。06 补记该问题。**接口契约与数据文件不变** |
+| v1.13 | 2026-09-28 | Confluence 两个维度改为「结构选页 + 正文按人计数」（[ADR-0009](./adr/0009-confluence-two-dimension-extraction-from-page-body.md)，**取代** ADR-0007 的决策 1 / 决策 5）：`confluence.requirements` 改为 `Requirement Proposal` 页（`Release Planning` 之下）需求表格 `Contacts` 列的 **@ 提及数**（每个 @ 各 1 条，含一行多联系人）；第二维 `confluence.bestPractices` **更名为** `confluence.topicShares`（会议纪要页 `Agenda` 段表格行 @，同一期去重）；选页改用**结构选择器**（标题 + 祖先链 / 正则），不再看标签或标题关键字。`data/confluence-organizations.json` 与 `data/confluence-accounts.json` 的 `schemaVersion` **1→2**（不兼容字段改名，读侧 fail-fast）。04 §1.2/§3.3/§3.11/§4.4/§4.10/§5.3.3/§5.3.16、02 §4.1、03 §5 环境变量表、05 §3 / §5.3、08 A3、README 术语表与 `CONTEXT.md` 同步；前端活跃度列「最佳实践」→「议题分享」，贡献分公式同步。新增 ADR-0009，ADR-0001 / 0007 / 0008 加注。**API 路由与前端结构不变** |
+| v1.14 | 2026-09-28 | 议题分享取数范围**修订**为「`Agenda` 段**内**全部 @」（[ADR-0009](./adr/0009-confluence-two-dimension-extraction-from-page-body.md)「后续修订」，**取代** v1.13 的"段内表格行"）：实测该段只有一张布局表格、分享人写在「议题标题 + @分享人」的**段落**里，故原口径恒 0。解析改为段内全取 + 按期去重，段外（出席签到 / 行动项）仍不计；`Agenda` 段内写成纯文本的 `@人` 与需求行一样记入状态文件 `unresolvedContacts`（新增 `source` 字段区分 `requirements` / `minutes`）；新增「有纪要页却解析出 0 个分享人」中止写入自检。首次真实采集：53 页 / 16 期会议 / 需求 38 条 · 议题分享 20 次 / 15 个账号（段内原始 @ 24 处，同期重复去重 4 处），**全部仍落「独立开发者」**（归属待补）；展示名实测 `/rest/api/user` 返回 403，15 个账号只有 4 个有真名。04 §3.11、02 §4.1、03 §5、05 §3.2/§5.1/§5.3/§5.4、08 A3、README 术语表与 `CONTEXT.md` 同步。**API 路由与前端结构不变** |
+| v1.15 | 2026-09-28 | 展示名改从**渲染视图**解析（[ADR-0009](./adr/0009-confluence-two-dimension-extraction-from-page-body.md)「后续修订之二」）：采集令牌读用户资料恒 **403**、正文 mention 只有 `ri:account-id`，故此前 15 个账号仅 4 个有真名、其余呈现 accountId；现改为 `?expand=body.storage,body.view` 随正文一并取回渲染视图（**零额外请求**），从中取 `<a class="…user-mention" data-account-id="…">FeiGuo</a>` 的展示名，兜底顺序定为「**渲染视图** → 正文 `ri:username` → 创建者展示名 → `/rest/api/user` → accountId」，日志按来源分档计数（`展示名来源：渲染视图 N｜正文 username N｜创建者 N｜账号查询 N｜降级 accountId N`）。重跑后 15 个账号**全部为真名**；同日复核取数与首采同量级（53 页 / 16 期会议 / 需求 38 条 · 议题分享 **21** 次 / 段内原始 @ **25** 处；待修正纯文本 `@人` **4** 处）。离线自检 **70 项**（新增渲染视图抽取单元断言与兜底顺序断言）。04 §3.11、05 §3.1/§3.2/§5.4、08 A3、ADR-0009 同步。**计数口径、契约结构、API 路由与前端不变** |

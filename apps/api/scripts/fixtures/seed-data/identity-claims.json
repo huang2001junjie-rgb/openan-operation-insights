@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-09-18T09:00:00Z",
+  "data": [
+    {
+      "claimId": "claim-nora-confluence",
+      "personId": "nora-kim",
+      "source": "confluence",
+      "accountKey": "acct-nova-001",
+      "displayName": "Nora Kim",
+      "createdAt": "2026-09-01T00:00:00Z",
+      "createdBy": null
+    },
+    {
+      "claimId": "claim-nora-github",
+      "personId": "nora-kim",
+      "source": "github",
+      "accountKey": "nora-kim",
+      "displayName": "Nora Kim",
+      "createdAt": "2026-09-01T00:00:00Z",
+      "createdBy": null
+    },
+    {
+      "claimId": "claim-solo-confluence",
+      "personId": "solo-hacker",
+      "source": "confluence",
+      "accountKey": "acct-not-in-fixture",
+      "displayName": "Solo Hacker",
+      "createdAt": "2026-09-01T00:00:00Z",
+      "createdBy": null
+    }
+  ]
+}

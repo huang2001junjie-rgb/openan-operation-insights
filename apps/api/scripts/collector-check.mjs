@@ -27,11 +27,11 @@ const realDataDir = resolve(apiDir, '../../data');
 const cliPath = join(apiDir, 'dist/collector/main.js');
 const fixture = 'scripts/fixtures/github-records.sample.json';
 const DATA_FILES = [
-  'contributions.json',
-  'contributors.json',
+  'github-organizations.json',
+  'github-accounts.json',
   'home.json',
   'organizations.json',
-  'wiki.json',
+  'confluence-organizations.json',
   'summits.json',
 ];
 
@@ -94,13 +94,13 @@ function snapshotDir(dir) {
 }
 
 function contributionsMap(dir) {
-  const envelope = readJson(join(dir, 'contributions.json'));
+  const envelope = readJson(join(dir, 'github-organizations.json'));
   return new Map(envelope.data.map((item) => [item.orgId, item]));
 }
 
 /** 个人维度指标快照：contributorId → github（缺失为 undefined） */
 function contributorsGithubMap(dir) {
-  const envelope = readJson(join(dir, 'contributors.json'));
+  const envelope = readJson(join(dir, 'github-accounts.json'));
   return new Map(envelope.data.map((item) => [item.contributorId, item.github]));
 }
 
@@ -144,9 +144,9 @@ function totalsOf(map) {
   return totals;
 }
 
-/** 未归属组织数：contributors.json 中 orgId 为空的条数（04 文档 §3.7 口径） */
+/** 未归属组织数：github-accounts.json 中 orgId 为空的条数（04 文档 §3.7 口径） */
 function externalDeveloperCount(dir) {
-  return readJson(join(dir, 'contributors.json')).data.filter((item) => !item.orgId).length;
+  return readJson(join(dir, 'github-accounts.json')).data.filter((item) => !item.orgId).length;
 }
 
 /** 固定数据中出现过的全部邮箱，用于校验「邮箱不落盘」 */
@@ -232,7 +232,7 @@ function main() {
       shortGithub(map.get('unattributed')?.github),
     );
 
-    const contributors = readJson(join(fullDir, 'contributors.json')).data;
+    const contributors = readJson(join(fullDir, 'github-accounts.json')).data;
     const byId = new Map(contributors.map((item) => [item.contributorId, item]));
     check(
       'nora-kim 按 PR 提交邮箱子域（mail.novasilicon.com）归属 nova-silicon',
@@ -331,13 +331,13 @@ function main() {
       `value=${home.data.externalDeveloperCount.value}`,
     );
     check(
-      'home.json 与 contributors.json 口径一致',
+      'home.json 与 github-accounts.json 口径一致',
       externalDeveloperCount(fullDir) === home.data.externalDeveloperCount.value,
       `contributors 空 orgId=${externalDeveloperCount(fullDir)}`,
     );
 
     const fixtureEmails = collectFixtureEmails();
-    const persisted = ['contributions.json', 'contributors.json', 'home.json', 'organizations.json']
+    const persisted = ['github-organizations.json', 'github-accounts.json', 'home.json', 'organizations.json']
       .map((name) => readFileSync(join(fullDir, name), 'utf8'))
       .join('\n');
     const leaked = fixtureEmails.filter((email) => persisted.includes(email));
@@ -350,11 +350,11 @@ function main() {
 
   console.log('\n[3] 全量幂等：重复运行结果一致');
   {
-    const first = stripTimestamps(readJson(join(fullDir, 'contributions.json')));
-    const firstContributors = stripTimestamps(readJson(join(fullDir, 'contributors.json')));
+    const first = stripTimestamps(readJson(join(fullDir, 'github-organizations.json')));
+    const firstContributors = stripTimestamps(readJson(join(fullDir, 'github-accounts.json')));
     runCollector(fullDir, ['--mode=full']);
-    const second = stripTimestamps(readJson(join(fullDir, 'contributions.json')));
-    const secondContributors = stripTimestamps(readJson(join(fullDir, 'contributors.json')));
+    const second = stripTimestamps(readJson(join(fullDir, 'github-organizations.json')));
+    const secondContributors = stripTimestamps(readJson(join(fullDir, 'github-accounts.json')));
     check(
       '重复全量运行贡献内容不变',
       JSON.stringify(first) === JSON.stringify(second),

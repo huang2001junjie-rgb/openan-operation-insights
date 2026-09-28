@@ -65,13 +65,35 @@ export interface OrganizationContribution {
 
 export interface ConfluenceMetrics {
   requirements: number;
-  bestPractices: number;
+  topicShares: number;
 }
 
 export interface OrganizationWiki {
   orgId: string;
   orgName: string;
   logoUrl: string;
+  confluence: ConfluenceMetrics;
+  updatedAt: string;
+}
+
+/** 采集口径归属来源（落盘值，ADR-0010）；`'claim'` 只出现在接口出参 */
+export type ConfluenceOrgSource = 'alias' | 'space' | 'unattributed';
+/** 读时派生的归属来源：人工认领优先 */
+export type ConfluenceEffectiveOrgSource = ConfluenceOrgSource | 'claim';
+
+/**
+ * 账号级 Confluence 明细（`GET /api/confluence-accounts` 的响应条目）。
+ * `effectiveOrgId` / `orgSource` / `personId` 为**读时派生**的生效值（ADR-0010）。
+ */
+export interface ConfluenceAccountView {
+  accountId: string;
+  displayName: string;
+  /** 采集口径归属；`null` = 采集器未归属 */
+  orgId: string | null;
+  orgSource: ConfluenceEffectiveOrgSource;
+  /** 生效归属；未归属时为伪组织 `unattributed` */
+  effectiveOrgId: string;
+  personId: string | null;
   confluence: ConfluenceMetrics;
   updatedAt: string;
 }
@@ -127,7 +149,7 @@ export interface ContributionTotals {
   issues: number;
   linesChanged: number;
   requirements: number;
-  bestPractices: number;
+  topicShares: number;
 }
 
 export interface ContributionSummaryData {
@@ -196,21 +218,42 @@ export interface IdentityCandidateOwner {
   displayName: string;
 }
 
-/** 候选池条目（04 §5.3.11） */
-export interface IdentityCandidate {
-  source: IdentitySource;
+interface IdentityCandidateBase {
   accountKey: string;
   displayName: string;
-  avatarUrl?: string;
   /** 空数组 = 待认领；长度 > 1 = 冲突（同一账号被多个自然人引用） */
   claimedBy: IdentityCandidateOwner[];
 }
 
+/** GitHub 候选：`metrics` 取自贡献者档案的人工维护值（无采集记录时缺失） */
+export interface GithubIdentityCandidate extends IdentityCandidateBase {
+  source: 'github';
+  avatarUrl?: string;
+  metrics?: Omit<GithubMetrics, 'repos'>;
+}
+
+/** Confluence 候选：每条都至少被 @ 过一次，`metrics` 恒有值 */
+export interface ConfluenceIdentityCandidate extends IdentityCandidateBase {
+  source: 'confluence';
+  metrics: ConfluenceMetrics;
+}
+
+/** 例会候选：人名原文，无指标 */
+export interface MeetingIdentityCandidate extends IdentityCandidateBase {
+  source: 'meeting';
+}
+
+/** 候选池条目（04 §5.3.11）：按 `source` 收窄的判别联合 */
+export type IdentityCandidate =
+  | GithubIdentityCandidate
+  | ConfluenceIdentityCandidate
+  | MeetingIdentityCandidate;
+
 /** `GET /api/identity/candidates` 的响应 data */
 export interface IdentityCandidatesData {
-  github: IdentityCandidate[];
-  confluence: IdentityCandidate[];
-  meeting: IdentityCandidate[];
+  github: GithubIdentityCandidate[];
+  confluence: ConfluenceIdentityCandidate[];
+  meeting: MeetingIdentityCandidate[];
   warnings: string[];
 }
 

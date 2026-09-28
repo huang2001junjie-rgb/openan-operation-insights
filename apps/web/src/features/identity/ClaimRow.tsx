@@ -2,12 +2,46 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Field';
 import { IconAlert, IconCheck, IconLink, IconUnlink } from '@/components/icons';
 import { cn } from '@/lib/cn';
+import { formatNumber } from '@/lib/format';
 import type { IdentityCandidate, IdentityClaim } from '@/types/contract';
 import { PersonAvatar } from './PersonAvatar';
 
 export interface ClaimTarget {
   personId: string;
   displayName: string;
+}
+
+/** 候选的来源指标（只读派生值，不参与认领动作）：GitHub 四项 / Confluence 两项 / 例会无指标 */
+function CandidateMetrics({ candidate }: { candidate: IdentityCandidate }) {
+  if (candidate.source === 'meeting') return null;
+
+  const metrics =
+    candidate.source === 'github'
+      ? candidate.metrics
+        ? [
+            { label: 'PR', value: candidate.metrics.pullRequests },
+            { label: '提交', value: candidate.metrics.commits },
+            { label: 'Issue', value: candidate.metrics.issues },
+            { label: '代码行', value: candidate.metrics.linesChanged },
+          ]
+        : []
+      : [
+          { label: '需求', value: candidate.metrics.requirements },
+          { label: '议题分享', value: candidate.metrics.topicShares },
+        ];
+
+  if (metrics.length === 0) return null;
+
+  return (
+    <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[0.68rem]">
+      {metrics.map((metric) => (
+        <span key={metric.label} className="inline-flex items-center gap-1">
+          <span className="text-slate-500">{metric.label}</span>
+          <span className="numeric font-semibold text-slate-300">{formatNumber(metric.value)}</span>
+        </span>
+      ))}
+    </div>
+  );
 }
 
 export interface ClaimRowProps {
@@ -44,10 +78,16 @@ export function ClaimRow({
       )}
     >
       <div className="flex items-center gap-3">
-        <PersonAvatar name={candidate.displayName} src={candidate.avatarUrl} fallbackId={candidate.accountKey} size="sm" />
+        <PersonAvatar
+          name={candidate.displayName}
+          src={candidate.source === 'github' ? candidate.avatarUrl : undefined}
+          fallbackId={candidate.accountKey}
+          size="sm"
+        />
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm text-slate-100">{candidate.displayName || candidate.accountKey}</p>
           <p className="mt-0.5 truncate text-[0.7rem] text-slate-500">{candidate.accountKey}</p>
+          <CandidateMetrics candidate={candidate} />
         </div>
 
         {ownedByTarget ? (

@@ -19,7 +19,7 @@ function computeScore(contribution?: OrganizationContribution, wiki?: Organizati
     (contribution?.github.pullRequests ?? 0) +
     (contribution?.github.issues ?? 0) +
     (wiki?.confluence.requirements ?? 0) +
-    (wiki?.confluence.bestPractices ?? 0);
+    (wiki?.confluence.topicShares ?? 0);
   const volume = (contribution?.github.linesChanged ?? 0) / 10_000;
   return Math.round(behaviors + volume);
 }

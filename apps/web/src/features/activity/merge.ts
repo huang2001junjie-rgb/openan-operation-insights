@@ -12,7 +12,7 @@ export interface ActivityRow {
   linesChanged: number;
   repos: number;
   requirements: number;
-  bestPractices: number;
+  topicShares: number;
   updatedAt: string;
 }
 
@@ -42,7 +42,7 @@ export function mergeActivityRows(
       linesChanged: 0,
       repos: 0,
       requirements: 0,
-      bestPractices: 0,
+      topicShares: 0,
       updatedAt: '',
     });
   }
@@ -68,7 +68,7 @@ export function mergeActivityRows(
         linesChanged: item.github.linesChanged,
         repos: item.github.repos,
         requirements: 0,
-        bestPractices: 0,
+        topicShares: 0,
         updatedAt: item.updatedAt,
       });
     }
@@ -78,7 +78,7 @@ export function mergeActivityRows(
     const existing = rows.get(item.orgId);
     if (existing) {
       existing.requirements = item.confluence.requirements;
-      existing.bestPractices = item.confluence.bestPractices;
+      existing.topicShares = item.confluence.topicShares;
       if (!existing.updatedAt || Date.parse(item.updatedAt) > Date.parse(existing.updatedAt)) {
         existing.updatedAt = item.updatedAt;
       }
@@ -95,7 +95,7 @@ export function mergeActivityRows(
         linesChanged: 0,
         repos: 0,
         requirements: item.confluence.requirements,
-        bestPractices: item.confluence.bestPractices,
+        topicShares: item.confluence.topicShares,
         updatedAt: item.updatedAt,
       });
     }
@@ -111,9 +111,77 @@ export type SortKey =
   | 'issues'
   | 'linesChanged'
   | 'requirements'
-  | 'bestPractices';
+  | 'topicShares';
 
 export function sortRows(rows: ActivityRow[], key: SortKey, direction: 'asc' | 'desc'): ActivityRow[] {
+  const factor = direction === 'asc' ? 1 : -1;
+
+  return [...rows].sort((a, b) => {
+    if (key === 'orgName') {
+      return a.orgName.localeCompare(b.orgName, 'zh-Hans-CN') * factor;
+    }
+    return (a[key] - b[key]) * factor;
+  });
+}
+
+/** Confluence 明细表行：组织档案为底表，组织级成果（已按生效归属求和）按 orgId 连接 */
+export interface ConfluenceRow {
+  orgId: string;
+  orgName: string;
+  logoUrl: string;
+  homepageUrl: string;
+  requirements: number;
+  topicShares: number;
+  updatedAt: string;
+}
+
+/**
+ * Confluence 视图明细表（ADR-0010）：组织级 `wiki` 已覆盖**组织档案全部组织**（含伪组织
+ * `unattributed`，未命中记 0），故直接以其为行来源；再从组织档案补齐展示用的官网外链。
+ * `wiki` 未加载/加载失败时退回全量组织档案，指标按 0（由表格的错误态兜底）。
+ */
+export function mergeConfluenceRows(
+  wiki: OrganizationWiki[] = [],
+  organizations: Organization[] = [],
+): ConfluenceRow[] {
+  const archive = new Map(organizations.map((org) => [org.orgId, org]));
+  const rows = new Map<string, ConfluenceRow>();
+
+  for (const org of organizations) {
+    rows.set(org.orgId, {
+      orgId: org.orgId,
+      orgName: org.name,
+      logoUrl: org.logoUrl,
+      homepageUrl: org.homepageUrl,
+      requirements: 0,
+      topicShares: 0,
+      updatedAt: '',
+    });
+  }
+
+  for (const item of wiki) {
+    const org = archive.get(item.orgId);
+    rows.set(item.orgId, {
+      orgId: item.orgId,
+      orgName: org?.name || item.orgName || item.orgId,
+      logoUrl: org?.logoUrl ?? item.logoUrl,
+      homepageUrl: org?.homepageUrl ?? '',
+      requirements: item.confluence.requirements,
+      topicShares: item.confluence.topicShares,
+      updatedAt: item.updatedAt,
+    });
+  }
+
+  return [...rows.values()];
+}
+
+export type ConfluenceSortKey = 'orgName' | 'requirements' | 'topicShares';
+
+export function sortConfluenceRows(
+  rows: ConfluenceRow[],
+  key: ConfluenceSortKey,
+  direction: 'asc' | 'desc',
+): ConfluenceRow[] {
   const factor = direction === 'asc' ? 1 : -1;
 
   return [...rows].sort((a, b) => {

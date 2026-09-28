@@ -41,8 +41,10 @@ export interface OrganizationContribution {
 }
 
 export interface ConfluenceMetrics {
+  /** 需求数：Requirement Proposal 表格 Contacts 列的 @ 提及数（每个提及各 1 条） */
   requirements: number;
-  bestPractices: number;
+  /** 议题分享次数：会议纪要 Agenda 段内 @ 的期数（段落与表格行都算，按期去重） */
+  topicShares: number;
 }
 
 export interface OrganizationWiki {
@@ -51,6 +53,53 @@ export interface OrganizationWiki {
   logoUrl: string;
   confluence: ConfluenceMetrics;
   updatedAt: string;
+}
+
+/**
+ * 采集口径归属的来源（落盘值，ADR-0010）。
+ * 认领命中的 `'claim'` **不落盘**，由读时派生层覆写（见 `ConfluenceEffectiveOrgSource`）。
+ */
+export type ConfluenceOrgSource = 'alias' | 'space' | 'unattributed';
+
+/** 接口对外（读时派生）的归属来源：在采集口径之上叠加人工认领。 */
+export type ConfluenceEffectiveOrgSource = ConfluenceOrgSource | 'claim';
+
+/**
+ * 账号级 Confluence 事实（04 §3.11 / ADR-0008 / ADR-0010）。
+ *
+ * 主体是**平台账号**而非自然人：未认领时只到账号级（"先落到账号，再谈自然人"）。
+ *
+ * - `orgId` / `orgSource` 是**采集口径**（`aliases.confluence` → 空间兜底 → 伪组织）：
+ *   记「采集器看到了什么」，是落盘的兜底归属与审计线索。
+ * - `personId` 为由 `identity-claims.json` 派生的落盘快照，**不是键**：为空即尚未认领。
+ * - **对外展示**一律用读时派生的 `effectiveOrgId`（人工认领优先），见 `ConfluenceAccountView`。
+ */
+export interface ConfluenceAccount {
+  /** 稳定键：Confluence `accountId`；取不到时退化为 `displayName:<展示名>` */
+  accountId: string;
+  displayName: string;
+  /** 采集口径的所属组织；`null` = 采集器未归属（前端归入「独立开发者」） */
+  orgId: string | null;
+  /** 采集口径 `orgId` 的来源（`'claim'` 不在此列，见类型注释） */
+  orgSource: ConfluenceOrgSource;
+  /** 认领到的自然人（落盘快照）；`null` = 尚未认领 */
+  personId: string | null;
+  confluence: ConfluenceMetrics;
+  updatedAt: string;
+}
+
+/**
+ * 账号级 Confluence 的**接口出参**（04 §5.3.16 / ADR-0010）：叠加读时派生的**生效归属**。
+ *
+ * - `effectiveOrgId = 认领边派生的 Person.orgId ?? orgId ?? 'unattributed'`（人工优先）；
+ * - `orgSource` 在认领命中时覆写为 `'claim'`，否则等于落盘值；
+ * - `personId` 亦以认领边为准（不再依赖落盘快照）。
+ */
+export interface ConfluenceAccountView extends Omit<ConfluenceAccount, 'orgSource' | 'personId'> {
+  orgSource: ConfluenceEffectiveOrgSource;
+  /** 生效归属；未归属时为伪组织 `'unattributed'` */
+  effectiveOrgId: string;
+  personId: string | null;
 }
 
 export interface Contributor {
@@ -126,7 +175,7 @@ export interface ContributionTotals {
   issues: number;
   linesChanged: number;
   requirements: number;
-  bestPractices: number;
+  topicShares: number;
 }
 
 export interface ContributionSummaryData {
@@ -202,21 +251,47 @@ export interface IdentityCandidateOwner {
   displayName: string;
 }
 
-/** 候选池条目：派生、不落盘（04 §5.3.11）；响应不含邮箱等敏感字段 */
-export interface IdentityCandidate {
-  source: IdentitySource;
+/**
+ * 候选池条目：派生、不落盘（04 §5.3.11）；响应不含邮箱等敏感字段。
+ *
+ * 按 `source` 收窄的**判别联合**：每种来源只带自己的 `metrics`，
+ * 避免出现「confluence 候选却带 github 字段」这类非法组合。
+ */
+export type IdentityCandidate =
+  | GithubIdentityCandidate
+  | ConfluenceIdentityCandidate
+  | MeetingIdentityCandidate;
+
+interface IdentityCandidateBase {
   accountKey: string;
   displayName: string;
-  avatarUrl?: string;
   /** 空数组 = 待认领；长度 > 1 = 冲突（同一账号被多个自然人引用） */
   claimedBy: IdentityCandidateOwner[];
 }
 
+/** GitHub 候选：`metrics` 取自 `github-accounts.json` 的人工维护值（无采集记录时缺失） */
+export interface GithubIdentityCandidate extends IdentityCandidateBase {
+  source: 'github';
+  avatarUrl?: string;
+  metrics?: Omit<GithubMetrics, 'repos'>;
+}
+
+/** Confluence 候选：每条都至少被 @ 过一次，`metrics` 恒有值 */
+export interface ConfluenceIdentityCandidate extends IdentityCandidateBase {
+  source: 'confluence';
+  metrics: ConfluenceMetrics;
+}
+
+/** 例会候选：人名原文，无指标 */
+export interface MeetingIdentityCandidate extends IdentityCandidateBase {
+  source: 'meeting';
+}
+
 /** `GET /api/identity/candidates` 的响应 data */
 export interface IdentityCandidatesData {
-  github: IdentityCandidate[];
-  confluence: IdentityCandidate[];
-  meeting: IdentityCandidate[];
+  github: GithubIdentityCandidate[];
+  confluence: ConfluenceIdentityCandidate[];
+  meeting: MeetingIdentityCandidate[];
   /** 来源降级说明，如「confluence 数据源暂无数据」 */
   warnings: string[];
 }

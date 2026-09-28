@@ -56,8 +56,8 @@ function makeRepos(dir, seed) {
     persons: makeRepo(dir, 'persons.json', validators.isPersonArray),
     claims: makeRepo(dir, 'identity-claims.json', validators.isIdentityClaimArray),
     organizations: makeRepo(dir, 'organizations.json', validators.isOrganizationArray),
-    contributors: makeRepo(dir, 'contributors.json', validators.isContributorArray),
-    wiki: makeRepo(dir, 'wiki.json', validators.isWikiArray),
+    contributors: makeRepo(dir, 'github-accounts.json', validators.isContributorArray),
+    wiki: makeRepo(dir, 'confluence-organizations.json', validators.isWikiArray),
     meetings: makeRepo(dir, 'meetings.json', validators.isMeetingAttendanceMatrix),
     seed,
   };
@@ -81,8 +81,8 @@ function makeDataDir(withSources = true) {
   writeFileSync(join(dir, 'identity-claims.json'), JSON.stringify(envelope([]), null, 2));
   writeFileSync(join(dir, 'organizations.json'), JSON.stringify(envelope(ORGS), null, 2));
   if (withSources) {
-    writeFileSync(join(dir, 'contributors.json'), JSON.stringify(envelope(CONTRIBUTORS), null, 2));
-    writeFileSync(join(dir, 'wiki.json'), JSON.stringify(envelope([]), null, 2));
+    writeFileSync(join(dir, 'github-accounts.json'), JSON.stringify(envelope(CONTRIBUTORS), null, 2));
+    writeFileSync(join(dir, 'confluence-organizations.json'), JSON.stringify(envelope([]), null, 2));
     writeFileSync(join(dir, 'meetings.json'), JSON.stringify(envelope(MEETINGS), null, 2));
   }
   return dir;

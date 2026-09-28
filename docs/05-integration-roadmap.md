@@ -88,7 +88,7 @@ flowchart TB
   BATCH --> GQL["GraphQL 查询：<br/>PR(merged, additions, deletions, commits, author) + Issue(author)"]
   GQL --> MAP["按 author 归属 → orgId<br/>（登录名 aliases.github → 邮箱域名 emailDomains）"]
   MAP --> AGG["聚合：sum / count / 去重仓库数"]
-  AGG --> PERSIST["写入 data/contributions.json<br/>（原子写）"]
+  AGG --> PERSIST["写入 data/github-organizations.json<br/>（原子写）"]
   PERSIST --> STATE["更新 data/.sync-state.json<br/>（游标、ETag、时间戳）"]
 ```
 
@@ -167,7 +167,7 @@ GITHUB_LOOKBACK_DAYS=3650
 4. 仍未匹配到 → 归类为**独立开发者**（`orgId = "unattributed"` 伪组织），在首页以**独立卡片**展示（人数 + 贡献量），并把未匹配的 `login` 记入 `.sync-state.json` 的 `unattributedLogins[]`，供运营人工补充映射；
 5. 匹配到 → 累加到对应 `orgId`。
 
-> **邮箱信号的两个来源**：`@users.noreply.github.com` 等非组织域名不命中任何 `emailDomains`，自然落入独立开发者；邮箱**仅用于内存判定，不写入任何数据文件**；同一贡献者的全部记录（含其 Issue）共用同一邮箱信号（两遍聚合：先按 `login` 汇总邮箱，再统一归属）；人工在 `contributors.json` 中已指定的 `orgId` 不会被自动判定覆盖；多个组织配置相同域名时按档案顺序先到先得并输出 `WARN`。
+> **邮箱信号的两个来源**：`@users.noreply.github.com` 等非组织域名不命中任何 `emailDomains`，自然落入独立开发者；邮箱**仅用于内存判定，不写入任何数据文件**；同一贡献者的全部记录（含其 Issue）共用同一邮箱信号（两遍聚合：先按 `login` 汇总邮箱，再统一归属）；人工在 `github-accounts.json` 中已指定的 `orgId` 不会被自动判定覆盖；多个组织配置相同域名时按档案顺序先到先得并输出 `WARN`。
 
 > **这是全流程中最容易出错的一环**。建议在阶段二先导出作者 login 清单，人工确认映射后再进入阶段三。
 
@@ -175,38 +175,80 @@ GITHUB_LOOKBACK_DAYS=3650
 
 ## 3. Confluence 采集设计
 
-### 3.1 采集目标与映射
+> **实施状态（2026-09-28）**：已落地并接入真实空间。当前口径见 `docs/adr/0009-confluence-two-dimension-extraction-from-page-body.md`，
+> 它**取代**了 `docs/adr/0007-confluence-requirements-counting.md` 的"页面级启发式 + `bestPractices` 恒 0"。
+> 原设计假设"标签与'所属组织'字段已规范化落地"，**实测不成立**；下列条目以真实数据为准。
+
+### 3.1 采集目标与映射（ADR-0009 实测定稿）
 
 | 目标字段 | Confluence 来源 | 说明 |
 | --- | --- | --- |
-| `confluence.requirements` | 指定空间下带 `需求` 标签的页面数 | 按页面标签或页面属性过滤 |
-| `confluence.bestPractices` | 带 `best-practice` 标签的页面数 | 标签命名需在配置中约定 |
-| `orgId` | 页面创建者 / 自定义字段"归属组织" | 优先取显式字段，避免依赖创建者推断 |
+| `confluence.requirements` | `Requirement Proposal` 页（`Release Planning` 之下）需求表格 `Contacts` 列的 **@ 提及数** | 每个 @ 各算 1 条（一行两位联系人则两位各 1 条）；**选页用结构选择器**，非标签、非标题关键字 |
+| `confluence.topicShares` | 会议纪要页 `Agenda` 段**内**的 **@ 提及数**（段落与表格行都算，按期去重） | 同一期同一账号最多 1 次；**取代**原 `bestPractices`（wiki 内无该维度） |
+| `orgId` | ① `aliases.confluence` ② 身份认领边 `source=confluence` → `Person.orgId` ③ 空间兜底 ④ 伪组织 | 页面级**无**"所属组织"字段（实测），按**被 @ 的账号**归属 |
 
-### 3.2 检索方案
+**实测事实（空间 `OpenAN`，2026-09-28）**：
 
-Confluence REST API 支持 CQL（Confluence Query Language）按标签、空间、时间检索：
+- 空间内**不存在任何需求标签**（标签全集仅 `tsc-minutes` / `pac-minutes` / `marketing-minutes`）；需求以**页面树**存在：
+  `Releases / Release Planning / <release> / Requirement Proposal`。`Releases` 根目录下另有一张**同名模板页**，
+  故选页**必须叠加祖先链条件**（只按标题匹配会多算）。
+- **页面不是计数单位**：需求页里的需求是**表格行**（29 行），联系人写在 `Contacts` 列，且 10/29 行有**两个联系人**；
+  真正与人相关的量是**提及数**（38 处），不是页数（首采 1 页）。**只取该单元格**：表外另有约 33 处 @（`Status` 等列），不得计入。
+- 会议纪要页存在第二个可得维度：`Agenda` 段是「议题标题 + @分享人」的段落流（25 处 @）；
+  该段唯一那张布局表格的**行内没有 @**（只看表格行会得到恒 0），分享人写在段落里，
+  故口径定为「段内全部 @」。同页 `Attendees & Representation` 段的 125 处 @ 是**出席签到**
+  （占全页 156 处的 80%），取错得到的是"出席次数"。
+- 首次真实采集（16 期会议）：段内原始 @ 25 处 → **按期去重 21 次 / 12 个分享账号**（两维度账号并集 15）；
+  其余期段内**没有可解析的 @**（正文没写分享人，或把名字写成了纯文本，见 `unresolvedContacts`），
+  故该维度天然稀疏：6 月三期只有 1 期有，其后多数期有。
+- 展示名实测（2026-09-28 修订）：正文 mention 标签只有 `ri:account-id` / `ri:local-id` 两个属性（**没有** `ri:username`），
+  `GET /rest/api/user?accountId=` 返回 **403**（令牌无读用户资料权限）；但
+  `?expand=body.storage,body.view` 的**渲染视图**里服务端已把 mention 换成了带展示名的锚点
+  （`<a class="…user-mention" data-account-id="…">FeiGuo</a>`），故展示名**随正文一并取回**：
+  15 个账号 **15 个全部换出真名**，不再有 accountId 兜底，也不必额外申请读用户资料权限。
+  渲染视图给出 `Unknown user` 之类占位（账号停用/被删）时仍按下面的顺序继续兜底。
+  （本轮修订前，这 11 个账号在需求页 `Requirement Proposal`（`pageId=1163362317`）与 8 期纪要页上呈现 accountId。）
+- 页面级**没有组织概念**：只有个人账号（`creatorAccountId`，稳定可得）；组织归属只能走"人 → 组织"的既有档案通路。
+
+### 3.2 检索方案（ADR-0009）
+
+两段式：**先按空间取全页面元数据**（CQL 只负责"取全"，不在检索侧收敛口径），**再按结构选择器命中目标页并拉取正文**。
+改口径只需重算聚合，不必重新列举全空间；正文**只对命中页拉取**（十几页），不做全空间展开 —— 正文体积远大于元数据，
+全量展开是纯浪费且放大限流风险。
 
 ```text
-space in ("OPENAN") and label in ("需求") and lastmodified >= "2026-06-18"
+space in ("OPENAN") and type=page order by created asc
 ```
+
+> `order by` 是 CQL 的独立子句，**不能**用 `and` 连接（否则报 `Could not parse cql`）。
+> 另需显式 `expand=space,version,history,metadata.labels,ancestors`：v1 search 默认不回传 `space`，
+> 漏了会导致 `spaceKey` 全为空。
 
 ```mermaid
 flowchart LR
-  S["采集任务启动"] --> CQL["构造 CQL<br/>space + label + lastModified"]
-  CQL --> PAGE["分页拉取页面列表<br/>（_links.next 游标）"]
-  PAGE --> RESOLVE["解析每页的<br/>归属组织（自定义字段）"]
-  RESOLVE --> AGG["按 orgId 计数"]
-  AGG --> WRITE["写入 data/wiki.json"]
+  CQL["CQL 取全页面元数据<br/>space in (...) and type=page"] --> SEL{"结构选择器命中？<br/>标题 + 祖先链 / 父页模式"}
+  SEL -->|否| SKIP["跳过（仅计入页面总数）"]
+  SEL -->|是| BODY["按页取正文<br/>fetchPageBodies(命中页)"]
+  BODY --> PARSE["纯函数解析器<br/>Contacts 列 @ / Agenda 段内 @"]
+  PARSE --> RESOLVE["归属解析<br/>aliases → 认领边 → 空间兜底"]
+  RESOLVE --> AGG["按 orgId 聚合<br/>requirements / topicShares"]
+  AGG --> VAL{"结构 / 数值 / 空值校验"}
+  VAL -->|通过| WRITE["原子写 confluence-organizations.json<br/>（+ 账号级）"]
+  VAL -->|失败| KEEP["中止写入，保留旧数据"]
 ```
 
-| 要点 | 设计 |
+| 要点 | 设计（ADR-0009） |
 | --- | --- |
-| 标签约定 | 预先在 Confluence 中约定 `需求` / `best-practice` 两个标签，采集器只认标签 |
-| 空间约定 | 通过 `CONFLUENCE_SPACES` 限定空间，避免误采集其他团队文档 |
-| 归属解析 | 优先读页面的自定义字段（如"所属组织"）；缺失时退化为按页面创建者映射，并在日志中记 `WARN` |
-| 增量 | 使用 `lastmodified >= lastSyncAt`，与 GitHub 采样游标策略一致 |
-| 认证 | 使用 API Token（Basic Auth）或 PAT（Bearer），存于 `CONFLUENCE_TOKEN` |
+| 选页口径 | **结构选择器**：需求页 = 标题 `Requirement Proposal` 且祖先链含 `Release Planning`；纪要页 = 标题匹配 `^\d{4}-\d{2}-\d{2} TSC Minutes$` 且父页匹配 `^\d{4} - TSC Minutes$`（用正则以支持跨年）。全部可经 `CONFLUENCE_REQUIREMENT_*` / `CONFLUENCE_MINUTES_*` 环境变量就地校正，改口径不必改代码 |
+| 取数口径 | 需求 = `Contacts` 列**每个 @ 各 1 条**（**只取该列**，表外 @ 不计）；议题分享 = `Agenda` 段**内**每个 @（段落与表格行都算），**按期去重** |
+| 空间约定 | 通过 `CONFLUENCE_SPACES` 限定空间，源层即过滤，避免误采集其他团队文档 |
+| 归属解析 | 按序：页面显式归属字段 → `aliases.confluence` 精确匹配（accountId / 展示名 / 空间 key，多 token 用 `,` `;` 分隔）→ 身份认领边（`source=confluence` + `accountKey=accountId` → `Person.orgId`）→ 空间兜底 → 伪组织 `unattributed`；不按展示名模糊匹配，避免静默错归 |
+| 未归属闭环 | 未归属**账号**写入状态文件 `unattributedAccounts`（accountId + 展示名 + 两个维度的量），并在日志中列出，供运营补认领边后重跑；**纯文本** `@人`（解析不出 accountId）写入 `unresolvedContacts`，`source` 区分 `requirements`（页 + 行号 + 需求标题 + handle）与 `minutes`（页 + `Agenda` 段 + handle），运营修正正文后重跑。首次真实采集：账号 15 个（全部未归属）、待修正提及 4 处 |
+| 展示名 | 兜底顺序：**渲染视图 `body.view`**（随正文一并取回，零额外请求）→ 正文 `ri:username` → 页面创建者展示名 → `GET /rest/api/user` → accountId。**不参与计数与归属**，故各档失败只降级、不报错（单页取不到正文则跳过并告警，单页异常不中断整轮；全页无 `Agenda` 段、或有 `Agenda` 段却解析出 0 个分享人，都会判为口径失配而中止）。采集日志按来源分档计数（`展示名来源：渲染视图 N｜正文 username N｜创建者 N｜账号查询 N｜降级 accountId N`）。**实测（2026-09-28）**：正文 mention 只有 `ri:account-id` / `ri:local-id`（`ri:username` 永不命中），`/rest/api/user` 返回 **403**；而渲染视图已给出名字，15 个账号全部换出真名、0 个降级 |
+| 增量 | **暂不做，恒全量重算**。聚合是"按 orgId 整体重写"的全量替换语义，只取增量页面会把未变更页面的计数一起洗掉；安全增量需按页账本，页面量级（数十~数百）尚不值当 |
+| 认证 | Bearer PAT，存于 `CONFLUENCE_TOKEN`；日志绝不输出 token 与完整响应体 |
+| 状态文件 | **独立** `data/.sync-state.confluence.json`：GitHub 的 `SyncStateStore.write()` 会整体覆盖 `.sync-state.json`，复用会清掉 GitHub 游标 |
+| 离线自检 | `npm run collect:wiki:check`（固定 fixture + 合成档案，70 项断言，不联网） |
 
 ### 3.3 与 GitHub 采集的差异
 
@@ -214,10 +256,14 @@ flowchart LR
 | --- | --- | --- |
 | 限流 | 明确配额（5000/h），需主动管理 | 无公开硬配额，但仍需串行与退避 |
 | 分页 | Cursor / Link 头 | `_links.next` 游标 |
-| 数据形态 | 天然结构化（PR/Issue） | 半结构化，依赖标签与自定义字段约定 |
-| 主要风险 | 限流、作者归属 | **标签与字段约定不落实**，导致采集为空 |
+| 数据形态 | 天然结构化（PR/Issue） | 半结构化，计数藏在**正文结构**（表格列名、段名、层级）中 |
+| 主要风险 | 限流、作者归属 | **正文结构改版**（列名/段名/层级一变即解析不到）；归属依赖"人 → 组织"档案的完备度 |
 
-> **前置动作**：进入阶段三前，必须与社区运营确认 Confluence 的标签与"所属组织"字段已规范化落地，否则采集器无论怎么写都拿不到数据。
+> **前置动作（已完成，结论与原预设不同）**：2026-09-28 已实测目标空间，标签与"所属组织"字段**均未规范化落地** ——
+> 空间内没有任何需求标签，页面级也没有组织字段。采集器因此改为**结构选页 + 正文按人计数**
+> （ADR-0009），并把未归属账号与未解析联系人分别输出成待补清单。
+> 原判断"拿不到数据"应修正为"拿不到**按标签**的数据"。
+> **遗留运营动作**：为 `aliases.confluence` 补组织别名、为未归属账号补身份认领边、把纯文本 `@人` 改成真正的提及。
 
 ---
 
@@ -229,7 +275,7 @@ flowchart LR
 | --- | --- | --- |
 | GitHub 增量采集 | 每 6 小时 | 拉取 `mergedAt > lastSyncAt` 的 PR 与新增 Issue |
 | GitHub 全量对账 | 每周一次（周日 02:00） | 重算全部历史，纠正漏采与口径漂移 |
-| Confluence 增量采集 | 每 12 小时 | 按 `lastmodified` 增量 |
+| Confluence 采集 | 每 12 小时 | **恒全量重算**（聚合为全量替换语义，增量需按页账本，见 §3.2） |
 | 缓存预热 | 服务启动时 | 读取全部 JSON 到内存，避免首请求冷启动延迟 |
 | 例会台账导入 | 运营更新台账后手动触发 | `npm run collect:meetings`，全量重算矩阵（无游标） |
 
@@ -273,6 +319,7 @@ flowchart LR
 | 数值校验 | 所有计数 ≥ 0；`linesChanged` ≥ 0 | 中止写入 |
 | 波动校验 | 与上次值相比，单次变化超过阈值（如 ±50%）时告警 | **仍然写入**但标记 `hasAnomaly`，等待人工确认 |
 | 空值校验 | 全部组织贡献均为 0 → 视为采集异常 | 中止写入，保留旧数据 |
+| 口径校验（Confluence） | 选到 0 个需求页 / 全部纪要页无 `Agenda` 段 / **有 `Agenda` 段却解析出 0 个议题分享人** | 中止写入，保留旧数据 |
 | 矩阵校验（例会） | `attendance.length === columns.length`、`date` 匹配 `YYYY-MM-DD`、`columns` 非空 | 中止写入，保留旧数据 |
 
 > **波动校验的意义**：GitHub/Confluence 的口径或查询条件一旦被误改，最直观的表现就是数据突然暴涨或归零。此校验是防止"错误数据污染看板"的最后一道防线。
@@ -286,7 +333,9 @@ flowchart LR
 | 变更记录 | `.sync-state.json` 记录每次采集的 `startedAt`/`finishedAt`/`status`/`records`/`error` |
 | schema 演进 | 结构不兼容时提升 `schemaVersion`，加载器保留对旧版本的兼容读取（至少一个迭代周期） |
 
-### 5.3 `.sync-state.json` 结构
+### 5.3 采集状态文件
+
+**GitHub：`data/.sync-state.json`**
 
 ```json
 {
@@ -297,15 +346,52 @@ flowchart LR
     "rateLimitRemaining": 4380,
     "status": "success",
     "unattributedLogins": ["some-user", "another-dev"]
-  },
-  "confluence": {
-    "lastSyncAt": "2026-09-18T00:00:00Z",
-    "status": "success"
   }
 }
 ```
 
-> 该文件**不属于业务契约**，前端不可见，可随时删除（删除后触发全量采集）。
+**Confluence：独立文件 `data/.sync-state.confluence.json`（ADR-0009）**
+
+```json
+{
+  "schemaVersion": 2,
+  "lastSyncAt": "2026-09-28T08:22:01.228Z",
+  "lastRunAt": "2026-09-28T08:22:01.228Z",
+  "lastMode": "full",
+  "status": "success",
+  "pageCount": 53,
+  "requestCount": 19,
+  "accountCount": 15,
+  "spaces": ["OpenAN"],
+  "requirementPageCount": 1,
+  "minutesPageCount": 16,
+  "minutesWithoutAgenda": [],
+  "unattributedAccounts": [
+    { "accountId": "5e58b7c15a495e0c91a94b44", "displayName": "Chuanyu Chen", "requirements": 5, "topicShares": 5 },
+    { "accountId": "712020:fd6a8616-...", "displayName": "712020:fd6a8616-...", "requirements": 3, "topicShares": 1 }
+  ],
+  "unresolvedContacts": [
+    { "pageId": "1163362317", "pageTitle": "Requirement Proposal", "source": "requirements", "rowIndex": 29, "requirementTitle": "Registry Center Returns Only Published Agents in Semantic Search", "handles": ["syedbilalafzal"] },
+    { "pageId": "1349976065", "pageTitle": "2026-09-01 TSC Minutes", "source": "minutes", "rowIndex": null, "requirementTitle": "", "handles": ["Shaowei", "Xuezhi"] }
+  ],
+  "unattributedCreators": [
+    { "accountId": "5da66d619810cf0c3ce3a7ff", "displayName": "Yijun Yu", "pageCount": 1 }
+  ],
+  "matchedLabels": [],
+  "matchedTitleKeywords": ["requirement"]
+}
+```
+
+> **为何另立文件**：GitHub 的 `SyncStateStore.write()` 是**整体覆盖**写入，若把 Confluence 状态塞进同一文件，
+> 每次 GitHub 采集都会把它清掉（反之亦然）。独立文件零风险，语义等价于原设计的"多来源状态"。
+>
+> 两个状态文件都**不属于业务契约**，前端不可见，可随时删除。
+> `unattributedAccounts` 是运营补身份认领边的**输入清单**（accountId 对 `IdentityClaim.accountKey`）；
+> `unresolvedContacts` 是正文里写成纯文本 `@人`（解析不出 accountId）的清单，`source` 区分
+> `requirements`（带行号与需求标题）与 `minutes`（`Agenda` 段，无行号），运营修正后重跑。
+> `requirementPageCount` / `minutesPageCount` / `minutesWithoutAgenda` 是**口径自检信号**：
+> 选到 0 页、全部会议页都找不到 `Agenda` 段、或有 `Agenda` 段却解析出 0 个议题分享人，
+> 都说明文档结构选择器 / 取数口径与实际不符，会中止写入。
 
 ### 5.4 离线自检（无需 token）
 
@@ -313,12 +399,25 @@ flowchart LR
 
 ```bash
 npm run build -w @openan/api
-npm run collect:check -w @openan/api   # 期望输出：33/33 通过
+npm run collect:check -w @openan/api        # GitHub，期望输出：46/46 通过
+npm run collect:wiki:check -w @openan/api   # Confluence，期望输出：全部通过（70 项）
 ```
 
 - 合成种子刻意与仓库 `data/` 解耦：真实 `data/` 会随每次线上采集而变化，若直接作为校验输入，断言将随数据漂移而失效；脚本结尾会逐字节比对，确认真实 `data/` 与种子均未被改动。
 - 固定记录中的 `commitEmail`（PR 首提交作者邮箱）与 `author.email`（账户公开资料邮箱）**仅用于内存归属判定**，脚本会断言其未出现在任何落盘文件中。
 - 覆盖的归属场景：登录名别名精确命中、提交邮箱子域命中（`mail.novasilicon.com` → `novasilicon.com`）、公开资料邮箱兜底、提交邮箱优先于资料邮箱、`@users.noreply.github.com` 不误判。
+
+**Confluence 自检**：固定页面记录（含 `bodies` 覆盖正文口径、`views` 覆盖渲染视图取展示名、`users` 覆盖账号查询兜底）在 `apps/api/scripts/fixtures/confluence-records.sample.json`，空结果反例在 `confluence-records.none.json`；`scripts/confluence-check.mjs` 用 `CONFLUENCE_FIXTURE` 指向它们跑**编译产物**，**70 项断言**覆盖：
+
+- **结构选页**：标题 + 祖先链命中 `Requirement Proposal`（且排除 `Releases` 下的同名模板页）、纪要页父页/标题正则命中；
+- **两个取数口径**：`Contacts` 列每个 @ 各 1 条（含一行两位联系人）、`Agenda` 段**内** @（段落里的与表格行里的都算）按期去重，同页出席签到段与行动项的 @ 一律不计；
+- **四条归属路径**（页面显式字段、`aliases.confluence`、认领边派生 `Person.orgId`、空间兜底）与兜底伪组织 `unattributed`；未归属账号写入 `unattributedAccounts`、纯文本 `@人` 写入 `unresolvedContacts`；
+- **展示名兜底顺序**（渲染视图 → 正文 `ri:username` → 创建者 → 账号查询 → accountId，样例中五档各有一个账号）、渲染视图锚点抽取的单元断言（含嵌套标签取纯文本、`Unknown user` 占位与空文本跳过）、以及来源分档计数的日志断言；
+- 空间白名单在源层生效（空间外页面不得进入统计）；
+- 组织级 = 账号级按 `orgId` 求和的**不变式**（两个维度）；wiki 条目数与 `organizations.json` 等长（无空洞）；
+- 幂等（连续两次全量重算结果一致）、`--dry-run` 不落盘；
+- 空值兜底：无页命中口径 / 全部纪要页无 `Agenda` 段 / 有 `Agenda` 段却 0 个议题分享人时以非 0 退出、保留既有 `confluence-organizations.json`、状态标记 `failed`；
+- 未配置 `CONFLUENCE_SPACES` 时快速失败；脚本结尾比对哈希，确认仓库真实 `data/` 未被触碰。
 
 ---
 

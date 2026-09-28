@@ -1,4 +1,5 @@
 import { Global, Module } from '@nestjs/common';
+import { JsonConfluenceAccountProvider } from './json/json-confluence-account.provider';
 import { JsonContributionProvider } from './json/json-contribution.provider';
 import { JsonContributorContributionProvider } from './json/json-contributor-contribution.provider';
 import { JsonHomeMetricProvider } from './json/json-home-metric.provider';
@@ -7,6 +8,7 @@ import { JsonMeetingAttendanceProvider } from './json/json-meeting-attendance.pr
 import { JsonSummitProvider } from './json/json-summit.provider';
 import { JsonOrganizationProvider } from './json/json-organization.provider';
 import {
+  CONFLUENCE_ACCOUNT_PORT,
   CONTRIBUTION_PORT,
   CONTRIBUTOR_CONTRIBUTION_PORT,
   HOME_METRIC_PORT,
@@ -35,6 +37,8 @@ import {
     { provide: CONTRIBUTION_PORT, useClass: JsonContributionProvider },
     { provide: CONTRIBUTOR_CONTRIBUTION_PORT, useClass: JsonContributorContributionProvider },
     { provide: WIKI_PORT, useClass: JsonWikiProvider },
+    // 账号级 Confluence 事实（ADR-0008）：与组织级 WIKI_PORT 平行，恒为 JSON 读实现
+    { provide: CONFLUENCE_ACCOUNT_PORT, useClass: JsonConfluenceAccountProvider },
     { provide: SUMMIT_PORT, useClass: JsonSummitProvider },
     // 例会台账经采集脚本落盘，接口侧恒为 JSON 读实现（ADR-0005）
     { provide: MEETING_ATTENDANCE_PORT, useClass: JsonMeetingAttendanceProvider },
@@ -45,6 +49,7 @@ import {
     CONTRIBUTION_PORT,
     CONTRIBUTOR_CONTRIBUTION_PORT,
     WIKI_PORT,
+    CONFLUENCE_ACCOUNT_PORT,
     SUMMIT_PORT,
     MEETING_ATTENDANCE_PORT,
   ],

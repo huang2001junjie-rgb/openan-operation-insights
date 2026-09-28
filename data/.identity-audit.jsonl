@@ -26,3 +26,17 @@
 {"at":"2026-09-28T01:31:48.601Z","action":"person.update","personId":"tingyu-ding","detail":{"orgId":"huawei"}}
 {"at":"2026-09-28T01:31:49.162Z","action":"person.update","personId":"jie-zhou","detail":{"orgId":"huawei"}}
 {"at":"2026-09-28T01:31:49.781Z","action":"person.update","personId":"chuanyu-chen","detail":{"orgId":"huawei"}}
+{"at":"2026-09-28T12:14:38.699Z","action":"person.create","personId":"fei-guo","detail":{"displayName":"Fei Guo"}}
+{"at":"2026-09-28T12:14:54.097Z","action":"claim.create","personId":"fei-guo","claimId":"clm_a0496298-9a6e-4da3-9ba3-5e865ed8b9ab","source":"confluence","accountKey":"5da82cb11a43fe0ddbb47e83"}
+{"at":"2026-09-28T12:14:59.459Z","action":"person.update","personId":"fei-guo","detail":{"orgId":"huawei"}}
+{"at":"2026-09-28T12:15:30.633Z","action":"person.create","personId":"xunli-yang","detail":{"displayName":"Xunli Yang"}}
+{"at":"2026-09-28T12:15:48.079Z","action":"claim.create","personId":"xunli-yang","claimId":"clm_e1fe5681-f56b-41f3-b7cc-3b7747bcf572","source":"confluence","accountKey":"712020:f2d4beb5-2f11-47ca-8063-348bc8ab896f"}
+{"at":"2026-09-28T12:16:00.247Z","action":"claim.create","personId":"xunli-yang","claimId":"clm_a8c6e901-1f4c-40c1-979c-67463d7202c3","source":"github","accountKey":"211948174"}
+{"at":"2026-09-28T12:16:14.744Z","action":"claim.create","personId":"zhiqiang-tang","claimId":"clm_63f56b2c-7ddc-4a3a-8ee2-ce130b7dbfd1","source":"github","accountKey":"127069813"}
+{"at":"2026-09-28T12:16:21.304Z","action":"claim.create","personId":"zhiqiang-tang","claimId":"clm_650cdfe7-382c-44c3-95a7-f51a2e03df7b","source":"confluence","accountKey":"712020:eb69db15-9d15-4a5f-bcd0-2b95a967bf3b"}
+{"at":"2026-09-28T12:16:33.283Z","action":"claim.delete","personId":"zhiqiang-tang","claimId":"clm_650cdfe7-382c-44c3-95a7-f51a2e03df7b","source":"confluence","accountKey":"712020:eb69db15-9d15-4a5f-bcd0-2b95a967bf3b"}
+{"at":"2026-09-28T12:16:34.424Z","action":"claim.delete","personId":"zhiqiang-tang","claimId":"clm_63f56b2c-7ddc-4a3a-8ee2-ce130b7dbfd1","source":"github","accountKey":"127069813"}
+{"at":"2026-09-28T12:16:43.071Z","action":"person.create","personId":"yonglong-wang","detail":{"displayName":"Yonglong Wang"}}
+{"at":"2026-09-28T12:16:45.770Z","action":"claim.create","personId":"yonglong-wang","claimId":"clm_a146c9f3-4e31-4eb3-83a3-b141362abe4e","source":"confluence","accountKey":"712020:eb69db15-9d15-4a5f-bcd0-2b95a967bf3b"}
+{"at":"2026-09-28T12:16:55.298Z","action":"claim.create","personId":"yonglong-wang","claimId":"clm_3b4276e0-f266-48b4-8de2-c8bef0fa803a","source":"github","accountKey":"127069813"}
+{"at":"2026-09-28T12:17:02.724Z","action":"claim.create","personId":"chuanyu-chen","claimId":"clm_58be276f-6cb0-4baf-a8dd-f70d4a4921ac","source":"confluence","accountKey":"5e58b7c15a495e0c91a94b44"}

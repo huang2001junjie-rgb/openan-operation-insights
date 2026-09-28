@@ -1,20 +1,24 @@
 import { Inject, Injectable } from '@nestjs/common';
 import {
+  ConfluenceAccountView,
   ContributionSummaryData,
   ContributorContribution,
   OrganizationContribution,
   OrganizationWiki,
 } from '../../contract/entities';
 import {
+  CONFLUENCE_ACCOUNT_PORT,
   CONTRIBUTION_PORT,
   CONTRIBUTOR_CONTRIBUTION_PORT,
   WIKI_PORT,
 } from '../../providers/tokens';
+import { ConfluenceAccountPort } from '../../providers/ports/confluence-account.port';
 import { ContributionPort } from '../../providers/ports/contribution.port';
 import { ContributorContributionPort } from '../../providers/ports/contributor-contribution.port';
 import { WikiPort } from '../../providers/ports/wiki.port';
 import {
   ContributionSummaryQueryDto,
+  ListConfluenceAccountsQueryDto,
   ListContributionsQueryDto,
   ListContributorContributionsQueryDto,
   ListWikiQueryDto,
@@ -31,6 +35,8 @@ export class ActivityService {
     @Inject(CONTRIBUTOR_CONTRIBUTION_PORT)
     private readonly contributorContributions: ContributorContributionPort,
     @Inject(WIKI_PORT) private readonly wiki: WikiPort,
+    @Inject(CONFLUENCE_ACCOUNT_PORT)
+    private readonly confluenceAccounts: ConfluenceAccountPort,
   ) {}
 
   async listContributions(query: ListContributionsQueryDto): Promise<OrganizationContribution[]> {
@@ -92,6 +98,31 @@ export class ActivityService {
     return query.limit ? sorted.slice(0, query.limit) : sorted;
   }
 
+  /**
+   * 账号级 Confluence 明细（ADR-0008 / ADR-0010）：回答「谁在 Confluence 提交了需求」，
+   * 与组织维度接口（5.3.4）互补——两者由同一批账号级事实派生（组织级按生效归属求和），合计恒等。
+   * 出参为**生效口径**（人工认领优先）。
+   */
+  async listConfluenceAccounts(
+    query: ListConfluenceAccountsQueryDto,
+  ): Promise<ConfluenceAccountView[]> {
+    query.assertRange();
+    const list = await this.confluenceAccounts.getConfluenceAccounts({
+      orgIds: query.orgIds,
+      from: query.from,
+      to: query.to,
+    });
+
+    const sortBy = query.sortBy ?? 'requirements';
+    const order = query.order ?? 'desc';
+    const sorted = [...list].sort((a, b) => {
+      const diff = a.confluence[sortBy] - b.confluence[sortBy];
+      return order === 'asc' ? diff : -diff;
+    });
+
+    return query.limit ? sorted.slice(0, query.limit) : sorted;
+  }
+
   async getSummary(query: ContributionSummaryQueryDto): Promise<ContributionSummaryData> {
     query.assertRange();
     const [contributions, wiki] = await Promise.all([
@@ -121,7 +152,7 @@ export class ActivityService {
         issues: contributions.reduce((sum, item) => sum + item.github.issues, 0),
         linesChanged: contributions.reduce((sum, item) => sum + item.github.linesChanged, 0),
         requirements: wiki.reduce((sum, item) => sum + item.confluence.requirements, 0),
-        bestPractices: wiki.reduce((sum, item) => sum + item.confluence.bestPractices, 0),
+        topicShares: wiki.reduce((sum, item) => sum + item.confluence.topicShares, 0),
       },
       orgCount: orgIds.size,
       updatedAt: updatedDates.length > 0 ? latestDate(updatedDates) : new Date().toISOString(),

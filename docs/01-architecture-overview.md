@@ -40,7 +40,7 @@
 OpenAN 是一个开放协作社区，其运营工作长期面临信息分散的问题：
 
 - 社区规模数据（伙伴数、开发者数、应用案例数）散落在文档与人工统计表中；
-- 各成员单位对社区的贡献（PR、Issue、代码量、需求、最佳实践）缺少统一口径的汇总视图；
+- 各成员单位对社区的贡献（PR、Issue、代码量、需求、议题分享）缺少统一口径的汇总视图；
 - 历次峰会信息（时间、地点、官网、参会组织）缺少可检索、可追溯的沉淀载体。
 
 本平台将这些信息集中到一个**后台看板式网站**中，供社区运营团队与成员单位查看。网站结构极其简单——顶部导航栏 + 内容区，四个一级页面：
@@ -73,7 +73,7 @@ mindmap
         代码量
       Confluence 维度
         需求
-        best-practice 案例
+        议题分享
     社区参展
       峰会时间线
         峰会名称
@@ -229,7 +229,7 @@ flowchart TB
 flowchart LR
   S["ActivityService<br/>（业务逻辑）"] -->|依赖| P["ContributionPort<br/>（接口）"]
   P -->|DI Token 绑定| A1["JsonContributionProvider<br/>（唯一实现）"]
-  A1 --> D[("data/contributions.json")]
+  A1 --> D[("data/github-organizations.json")]
   G[("GitHub API")] -->|GraphQL| C["collector/<br/>（独立采集上下文）"]
   C -->|映射后写入，唯一写入方| D
 ```
@@ -376,9 +376,9 @@ openan-operation-insights/
 │   │   └── meetings.xlsx                  # 例会参会台账（运营手工更新）
 │   ├── home.json                          # 首页指标 + 下一次峰会
 │   ├── organizations.json                 # 组织档案（伙伴 / 外部开发者）
-│   ├── contributions.json                 # 组织 × 贡献指标（GitHub 类）
-│   ├── wiki.json                      # 组织 × Confluence 类指标
-│   ├── contributors.json                  # 个人贡献者档案（GitHub 账号维度）
+│   ├── github-organizations.json          # 组织 × 贡献指标（GitHub 类）
+│   ├── confluence-organizations.json      # 组织 × Confluence 类指标
+│   ├── github-accounts.json               # 个人贡献者档案（GitHub 账号维度）
 │   ├── summits.json                       # 峰会列表 + 详情
 │   └── meetings.json                      # 例会参会矩阵（人 × 日期）
 │

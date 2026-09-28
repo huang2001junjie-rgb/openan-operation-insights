@@ -163,7 +163,7 @@ export function HomePage() {
           <dl className="mt-5 grid gap-4 text-xs sm:grid-cols-2 lg:grid-cols-4">
             {[
               { term: '伙伴单位', def: 'organizations.json 中 type=partner 的档案数' },
-              { term: '外部开发者', def: 'contributors.json 中 orgId 为空的贡献者数' },
+              { term: '外部开发者', def: 'github-accounts.json 中 orgId 为空的贡献者数' },
               {
                 term: '独立开发者',
                 def: '未归属到任何组织的贡献者；贡献归入伪组织 unattributed（type=individual）',

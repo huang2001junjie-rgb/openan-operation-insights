@@ -1,5 +1,6 @@
 import { Controller, Get, Query } from '@nestjs/common';
 import {
+  ConfluenceAccountView,
   ContributionSummaryData,
   ContributorContribution,
   OrganizationContribution,
@@ -8,6 +9,7 @@ import {
 import { ActivityService } from './activity.service';
 import {
   ContributionSummaryQueryDto,
+  ListConfluenceAccountsQueryDto,
   ListContributionsQueryDto,
   ListContributorContributionsQueryDto,
   ListWikiQueryDto,
@@ -43,5 +45,13 @@ export class ActivityController {
   @Get('wiki')
   listWiki(@Query() query: ListWikiQueryDto): Promise<OrganizationWiki[]> {
     return this.activityService.listWiki(query);
+  }
+
+  /** GET /api/confluence-accounts —— Confluence：账号级贡献明细（生效口径，ADR-0008 / ADR-0010） */
+  @Get('confluence-accounts')
+  listConfluenceAccounts(
+    @Query() query: ListConfluenceAccountsQueryDto,
+  ): Promise<ConfluenceAccountView[]> {
+    return this.activityService.listConfluenceAccounts(query);
   }
 }

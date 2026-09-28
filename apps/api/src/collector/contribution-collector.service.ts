@@ -272,7 +272,7 @@ export class ContributionCollectorService {
     baseline.forEach((item) => {
       seed.set(item.orgId, {
         pullRequests: item.github.pullRequests,
-        // 旧 contributions.json 可能无 commits 字段：按 0 兼容
+        // 旧 github-organizations.json 可能无 commits 字段：按 0 兼容
         commits: item.github.commits ?? 0,
         issues: item.github.issues,
         linesChanged: item.github.linesChanged,
@@ -283,7 +283,7 @@ export class ContributionCollectorService {
     return seed;
   }
 
-  /** 个人维度增量基线（ADR-0003）：把 contributors.json 已入库的 github 指标作为聚合初值 */
+  /** 个人维度增量基线（ADR-0003）：把 github-accounts.json 已入库的 github 指标作为聚合初值 */
   private buildContributorSeed(
     previousState: SyncState,
     baseline: Contributor[] | null,
@@ -296,7 +296,7 @@ export class ContributionCollectorService {
       if (!item.github) return;
       seed.set(item.contributorId, {
         pullRequests: item.github.pullRequests,
-        // 旧 contributors.json 的 github 可能无 commits 字段：按 0 兼容
+        // 旧 github-accounts.json 的 github 可能无 commits 字段：按 0 兼容
         commits: item.github.commits ?? 0,
         issues: item.github.issues,
         linesChanged: item.github.linesChanged,
@@ -515,7 +515,7 @@ export class ContributionCollectorService {
     await this.contributions.write(contributions);
     written.push(this.contributions.label);
 
-    // 独立开发者人数口径：contributors.json 中 orgId 为空的条数（见 04 文档 §3.7）
+    // 独立开发者人数口径：github-accounts.json 中 orgId 为空的条数（见 04 文档 §3.7）
     const counters = { externalDeveloperCount: 0 };
     await this.contributors.update((current) => {
       const merged = this.mergeContributors(current, authors, personAggregates, mode);
