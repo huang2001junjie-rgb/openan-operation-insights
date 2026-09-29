@@ -50,6 +50,20 @@ export function MultiSelect({
     };
   }, [open]);
 
+  // 宿主玻璃卡片因 backdrop-blur 形成独立层叠上下文，浮层的 z-30 无法越过
+  // DOM 顺序靠后的兄弟卡片；展开期间临时抬升宿主层级（30 < TopNav 的 40），
+  // 关闭后还原，保证下拉浮层覆盖页面其余内容。
+  useEffect(() => {
+    if (!open) return;
+    const host = containerRef.current?.closest<HTMLElement>('.glass-card');
+    if (!host) return;
+    const previous = host.style.zIndex;
+    host.style.zIndex = '30';
+    return () => {
+      host.style.zIndex = previous;
+    };
+  }, [open]);
+
   const filtered = useMemo(() => {
     const kw = keyword.trim().toLowerCase();
     if (!kw) return options;
