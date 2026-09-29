@@ -126,19 +126,28 @@ export function deriveOrganizationWiki(
 ): OrganizationWiki[] {
   const counts = new Map<string, ConfluenceMetrics>();
   for (const view of views) {
-    const bucket = counts.get(view.effectiveOrgId) ?? { requirements: 0, topicShares: 0 };
+    const bucket = counts.get(view.effectiveOrgId) ?? {
+      requirements: 0,
+      topicShares: 0,
+      edits: 0,
+    };
     bucket.requirements += view.confluence.requirements;
     bucket.topicShares += view.confluence.topicShares;
+    bucket.edits += view.confluence.edits;
     counts.set(view.effectiveOrgId, bucket);
   }
 
   return organizations.map((org) => {
-    const metrics = counts.get(org.orgId) ?? { requirements: 0, topicShares: 0 };
+    const metrics = counts.get(org.orgId) ?? { requirements: 0, topicShares: 0, edits: 0 };
     return {
       orgId: org.orgId,
       orgName: org.name,
       logoUrl: org.logoUrl,
-      confluence: { requirements: metrics.requirements, topicShares: metrics.topicShares },
+      confluence: {
+        requirements: metrics.requirements,
+        topicShares: metrics.topicShares,
+        edits: metrics.edits,
+      },
       updatedAt,
     };
   });

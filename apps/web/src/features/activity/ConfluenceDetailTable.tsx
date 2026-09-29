@@ -13,6 +13,7 @@ const COLUMNS: Array<{ key: ConfluenceSortKey; label: string; align?: 'right' }>
   { key: 'orgName', label: '组织' },
   { key: 'requirements', label: '需求', align: 'right' },
   { key: 'topicShares', label: '议题分享', align: 'right' },
+  { key: 'edits', label: '编辑', align: 'right' },
 ];
 
 export interface ConfluenceDetailTableProps {
@@ -48,6 +49,7 @@ export function ConfluenceDetailTable({ rows, isLoading, isError, error, onRetry
     () => ({
       requirements: visibleRows.reduce((sum, row) => sum + row.requirements, 0),
       topicShares: visibleRows.reduce((sum, row) => sum + row.topicShares, 0),
+      edits: visibleRows.reduce((sum, row) => sum + row.edits, 0),
     }),
     [visibleRows],
   );
@@ -83,7 +85,7 @@ export function ConfluenceDetailTable({ rows, isLoading, isError, error, onRetry
           skeleton={<SkeletonTable rows={6} />}
         >
           <div className="overflow-x-auto rounded-xl border border-white/[0.07]">
-            <table className="data-table min-w-[560px]">
+            <table className="data-table min-w-[640px]">
               <thead>
                 <tr>
                   {COLUMNS.map((column) => {
@@ -141,6 +143,7 @@ export function ConfluenceDetailTable({ rows, isLoading, isError, error, onRetry
                     </td>
                     <td className="numeric text-right">{formatNumber(row.requirements)}</td>
                     <td className="numeric text-right">{formatNumber(row.topicShares)}</td>
+                    <td className="numeric text-right">{formatNumber(row.edits)}</td>
                     <td className="whitespace-nowrap text-right text-xs text-slate-500">
                       {row.updatedAt ? formatDateTime(row.updatedAt) : '—'}
                     </td>
@@ -159,6 +162,9 @@ export function ConfluenceDetailTable({ rows, isLoading, isError, error, onRetry
                   <td className="numeric px-4 py-3 text-right font-semibold text-slate-100">
                     {formatNumber(totals.topicShares)}
                   </td>
+                  <td className="numeric px-4 py-3 text-right font-semibold text-slate-100">
+                    {formatNumber(totals.edits)}
+                  </td>
                   <td className="px-4 py-3" />
                 </tr>
               </tfoot>
@@ -168,6 +174,7 @@ export function ConfluenceDetailTable({ rows, isLoading, isError, error, onRetry
           <p className="mt-3 flex items-center gap-1.5 text-[0.7rem] text-slate-500">
             <IconFile width={13} height={13} />
             归属为生效归属：人工认领优先于采集口径；未归属账号归入「独立开发者」。
+            「编辑」按页面版本数计（含建页那一次），不剔除多人共编的大页，解读时请结合页数看。
           </p>
         </AsyncState>
       </div>

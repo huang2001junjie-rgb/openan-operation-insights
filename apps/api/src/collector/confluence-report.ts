@@ -106,6 +106,12 @@ export function renderConfluenceReport(
 export interface ConfluenceSnapshotDerived {
   requirementPages: Array<{ pageId: string; title: string; contacts: string[] }>;
   minutesPages: Array<{ pageId: string; title: string; topicSharers: string[] }>;
+  /**
+   * pageId → 该页版本作者（编辑量口径的行级事实，升序去重）。
+   *
+   * 编辑量是**全空间**口径（不止需求页/纪要页），故单独留一份；含创建那一次。
+   */
+  pageEdits: Array<{ pageId: string; title: string; editors: string[] }>;
 }
 
 /**

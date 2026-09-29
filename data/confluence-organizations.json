@@ -1,6 +1,6 @@
 {
-  "schemaVersion": 2,
-  "updatedAt": "2026-09-28T09:30:28.894Z",
+  "schemaVersion": 3,
+  "updatedAt": "2026-09-29T03:44:11.588Z",
   "data": [
     {
       "orgId": "cmcc",
@@ -8,9 +8,10 @@
       "logoUrl": "/logos/china_mobile.png",
       "confluence": {
         "requirements": 0,
-        "topicShares": 0
+        "topicShares": 0,
+        "edits": 0
       },
-      "updatedAt": "2026-09-28T09:30:28.888Z"
+      "updatedAt": "2026-09-29T03:44:11.582Z"
     },
     {
       "orgId": "huawei",
@@ -18,9 +19,10 @@
       "logoUrl": "/logos/huawei.png",
       "confluence": {
         "requirements": 0,
-        "topicShares": 0
+        "topicShares": 0,
+        "edits": 0
       },
-      "updatedAt": "2026-09-28T09:30:28.888Z"
+      "updatedAt": "2026-09-29T03:44:11.582Z"
     },
     {
       "orgId": "orange",
@@ -28,9 +30,10 @@
       "logoUrl": "/logos/orange.png",
       "confluence": {
         "requirements": 0,
-        "topicShares": 0
+        "topicShares": 0,
+        "edits": 0
       },
-      "updatedAt": "2026-09-28T09:30:28.888Z"
+      "updatedAt": "2026-09-29T03:44:11.582Z"
     },
     {
       "orgId": "zte",
@@ -38,9 +41,10 @@
       "logoUrl": "/logos/zte.webp",
       "confluence": {
         "requirements": 0,
-        "topicShares": 0
+        "topicShares": 0,
+        "edits": 0
       },
-      "updatedAt": "2026-09-28T09:30:28.888Z"
+      "updatedAt": "2026-09-29T03:44:11.582Z"
     },
     {
       "orgId": "ais",
@@ -48,9 +52,10 @@
       "logoUrl": "/logos/ais.png",
       "confluence": {
         "requirements": 0,
-        "topicShares": 0
+        "topicShares": 0,
+        "edits": 0
       },
-      "updatedAt": "2026-09-28T09:30:28.888Z"
+      "updatedAt": "2026-09-29T03:44:11.582Z"
     },
     {
       "orgId": "infosys",
@@ -58,9 +63,10 @@
       "logoUrl": "/logos/infosys.webp",
       "confluence": {
         "requirements": 0,
-        "topicShares": 0
+        "topicShares": 0,
+        "edits": 0
       },
-      "updatedAt": "2026-09-28T09:30:28.888Z"
+      "updatedAt": "2026-09-29T03:44:11.582Z"
     },
     {
       "orgId": "asiainfo",
@@ -68,9 +74,10 @@
       "logoUrl": "/logos/asianinfo.png",
       "confluence": {
         "requirements": 0,
-        "topicShares": 0
+        "topicShares": 0,
+        "edits": 0
       },
-      "updatedAt": "2026-09-28T09:30:28.888Z"
+      "updatedAt": "2026-09-29T03:44:11.582Z"
     },
     {
       "orgId": "personal",
@@ -78,9 +85,10 @@
       "logoUrl": "/logos/personal.webp",
       "confluence": {
         "requirements": 0,
-        "topicShares": 0
+        "topicShares": 0,
+        "edits": 0
       },
-      "updatedAt": "2026-09-28T09:30:28.888Z"
+      "updatedAt": "2026-09-29T03:44:11.582Z"
     },
     {
       "orgId": "zain",
@@ -88,9 +96,10 @@
       "logoUrl": "/logos/zain.png",
       "confluence": {
         "requirements": 0,
-        "topicShares": 0
+        "topicShares": 0,
+        "edits": 0
       },
-      "updatedAt": "2026-09-28T09:30:28.888Z"
+      "updatedAt": "2026-09-29T03:44:11.582Z"
     },
     {
       "orgId": "inspur",
@@ -98,9 +107,10 @@
       "logoUrl": "/logos/Inspur.png",
       "confluence": {
         "requirements": 0,
-        "topicShares": 0
+        "topicShares": 0,
+        "edits": 0
       },
-      "updatedAt": "2026-09-28T09:30:28.888Z"
+      "updatedAt": "2026-09-29T03:44:11.582Z"
     },
     {
       "orgId": "unattributed",
@@ -108,9 +118,10 @@
       "logoUrl": "",
       "confluence": {
         "requirements": 38,
-        "topicShares": 21
+        "topicShares": 20,
+        "edits": 672
       },
-      "updatedAt": "2026-09-28T09:30:28.888Z"
+      "updatedAt": "2026-09-29T03:44:11.582Z"
     }
   ]
 }

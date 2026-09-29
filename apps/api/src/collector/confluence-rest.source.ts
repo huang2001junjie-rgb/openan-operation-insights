@@ -2,6 +2,8 @@ import { Logger } from '@nestjs/common';
 import {
   CONFLUENCE_MAX_PAGES,
   CONFLUENCE_PAGE_SIZE,
+  CONFLUENCE_VERSION_MAX_PAGES,
+  CONFLUENCE_VERSION_PAGE_SIZE,
   REQUEST_SPACING_MS,
 } from './collector.constants';
 import { extractRenderedUserNames } from './confluence-content.parser';
@@ -10,6 +12,8 @@ import type {
   ConfluenceFetchOptions,
   ConfluenceFetchResult,
   ConfluencePageRecord,
+  ConfluencePageVersionFetchResult,
+  ConfluencePageVersionRecord,
   ConfluenceSource,
   ConfluenceUserNameFetchResult,
 } from './confluence-source.types';
@@ -76,6 +80,12 @@ interface RawPageBody {
 interface RawUser {
   accountId?: string;
   displayName?: string;
+}
+
+/** v2 版本历史返回体（`/api/v2/pages/{id}/versions`；只声明用到的字段） */
+interface RawVersionList {
+  results?: Array<{ number?: number; authorId?: string; createdAt?: string }>;
+  _links?: { next?: string };
 }
 
 const RETRYABLE_STATUS = new Set([429, 500, 502, 503, 504]);
@@ -199,6 +209,88 @@ export class ConfluenceRestSource implements ConfluenceSource {
     }
 
     return { bodies, renderedUserNames, requestCount: this.requestCount - before };
+  }
+
+  /**
+   * 按页取版本历史：逐页 `GET /wiki/api/v2/pages/{id}/versions`（**编辑量**口径，见 ADR-0011）。
+   *
+   * 用 v2 而不复用 v1：v2 版本接口是官方文档中的稳定端点，字段即 `authorId` —— 归属唯一真相。
+   * 展示名**不在这里取**（v2 版本不返回），由 `fetchPageBodies` 的渲染视图统一补。
+   *
+   * 每页一次请求（实测 53 页），串行 + 固定间隔；单页失败只降级该页（记警告、不放进 Map），
+   * 不因一页异常中断整轮。单页版本数超一页容量时按 `_links.next` 游标翻页。
+   */
+  async fetchPageVersions(pageIds: string[]): Promise<ConfluencePageVersionFetchResult> {
+    const before = this.requestCount;
+    const versions = new Map<string, ConfluencePageVersionRecord[]>();
+
+    for (const pageId of pageIds) {
+      const id = pageId.trim();
+      if (!id) continue;
+
+      try {
+        const list = await this.versionsAll(id);
+        if (list.length > 0) {
+          versions.set(id, list);
+        } else {
+          this.logger.warn(
+            `页面 ${id} 返回 0 个版本（任何存活页面都该有创建版本），该页编辑量按 0 计`,
+          );
+        }
+      } catch (error) {
+        this.logger.warn(`取页面 ${id} 版本历史失败，该页编辑量按 0 计：${(error as Error).message}`);
+      }
+    }
+
+    const list = [...versions.values()];
+    const versionCount = list.reduce((sum, items) => sum + items.length, 0);
+    const authorCount = new Set(
+      list.flat().map((item) => item.authorId).filter((id): id is string => Boolean(id)),
+    ).size;
+    this.logger.log(
+      `版本历史：${versions.size}/${pageIds.length} 页共 ${versionCount} 个版本（${authorCount} 位作者）`,
+    );
+
+    return { versions, requestCount: this.requestCount - before };
+  }
+
+  /** 单页版本历史全量：按 `_links.next` 游标翻页，直到取尽或触及翻页上限 */
+  private async versionsAll(pageId: string): Promise<ConfluencePageVersionRecord[]> {
+    const out: ConfluencePageVersionRecord[] = [];
+    // 不传 sort：v2 版本接口的 sort 只接受 modified-date / -modified-date，传 number 会 400
+    // （Invalid sort order）。编辑量只按版本条数计，与顺序无关，故取默认序、翻页后再自行升序。
+    let path = `/api/v2/pages/${encodeURIComponent(pageId)}/versions?limit=${CONFLUENCE_VERSION_PAGE_SIZE}`;
+
+    let guard = 0;
+    while (path && guard < CONFLUENCE_VERSION_MAX_PAGES) {
+      const body = await this.get<RawVersionList>(path);
+      guard += 1;
+
+      for (const item of body.results ?? []) {
+        const number = typeof item.number === 'number' ? item.number : 0;
+        if (number <= 0) continue;
+        const authorId = item.authorId?.trim();
+        out.push({
+          number,
+          authorId: authorId ? authorId : null,
+          createdAt: item.createdAt ?? null,
+        });
+      }
+
+      // next 形如 /wiki/api/v2/pages/{id}/versions?...；去掉 /wiki 前缀以拼回 baseUrl
+      const next = body._links?.next;
+      path = next ? next.replace(/^\/wiki/, '') : '';
+    }
+
+    if (path) {
+      this.logger.warn(
+        `页面 ${pageId} 已达版本翻页上限 ${CONFLUENCE_VERSION_MAX_PAGES} 页，编辑量可能被截断`,
+      );
+    }
+
+    // 口径要求按版本号升序（与接口返回顺序解耦，保证结果稳定）
+    out.sort((a, b) => a.number - b.number);
+    return out;
   }
 
   /**

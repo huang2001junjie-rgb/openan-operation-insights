@@ -32,7 +32,11 @@ import {
 } from './collector.constants';
 import { CONFLUENCE_SOURCE } from './collector.tokens';
 import { parseAgendaShares, parseRequirementContacts } from './confluence-content.parser';
-import type { ConfluencePageRecord, ConfluenceSource } from './confluence-source.types';
+import type {
+  ConfluencePageRecord,
+  ConfluencePageVersionRecord,
+  ConfluenceSource,
+} from './confluence-source.types';
 import {
   buildConfluenceReport,
   renderConfluenceReport,
@@ -72,6 +76,10 @@ export interface WikiCollectOutcome {
   minutesWithoutAgendaCount: number;
   /** 需求表格的数据行数（不参与计数，仅观测） */
   requirementRowCount: number;
+  /** 版本历史总条数（含创建版本与无法归属的版本，仅观测；口径见 ADR-0011） */
+  editVersionCount: number;
+  /** 有版本历史的页面数（仅观测） */
+  editedPageCount: number;
   totals: ConfluenceMetrics;
   /** 落入伪组织（独立开发者）的量 */
   unattributed: ConfluenceMetrics;
@@ -100,6 +108,8 @@ interface AccountGroup {
   displayName: string;
   requirements: number;
   topicShares: number;
+  /** 该账号作为**页面版本作者**的次数（含创建那一次，见 ADR-0011） */
+  edits: number;
   /** 该账号出现过的空间 key（供空间兜底判定） */
   spaces: Set<string>;
 }
@@ -113,9 +123,17 @@ interface ParsedContent {
   pageContacts: Map<string, string[]>;
   /** pageId → 该期会议解析出的议题分享人（快照留档用，不参与计数） */
   pageSharers: Map<string, string[]>;
+  /** pageId → 该页版本作者（编辑量口径的行级事实，升序去重；快照留档用） */
+  pageEditors: Map<string, string[]>;
   requirementRowCount: number;
   requirementContactCount: number;
   topicShareCount: number;
+  /** 版本历史总条数（含无法归属的版本） */
+  editVersionCount: number;
+  /** 可归属到账号的版本条数（= 账号级 edits 合计，校验基准） */
+  attributableEditCount: number;
+  /** 有版本历史的页面数 */
+  editedPageCount: number;
   /** Agenda 段内 @ 的原始处数（未按期去重；与 topicShareCount 的差值即同期重复提及数） */
   topicShareMentionCount: number;
   minutesWithoutAgenda: string[];
@@ -210,15 +228,41 @@ export class ConfluenceCollectorService {
       );
     }
 
-    // 正文只对目标页按需拉取（量级为十几页），不做全空间展开
-    const targetIds = [...requirementPages, ...minutesPages].map((page) => page.pageId);
-    const bodyResult = await this.source.fetchPageBodies(targetIds);
+    // 编辑量（ADR-0011）：版本历史覆盖**空间内全部页面**，因此先取版本、再据此定正文范围
+    const allPageIds = fetched.pages.map((page) => page.pageId);
+    const versionResult = await this.source.fetchPageVersions(allPageIds);
+    requestCount += versionResult.requestCount;
+
+    const pageSpaceKeys = new Map(fetched.pages.map((page) => [page.pageId, page.spaceKey]));
+    const pageTitleById = new Map(fetched.pages.map((page) => [page.pageId, page.title]));
+    // 补名差集：v2 版本接口只给 authorId，展示名只能从正文渲染视图里换出来；
+    // 故把"尚无名字来源的作者"编辑过的页也并入正文请求，避免为补名多跑一轮全量正文
+    const unnamedAuthorIds = this.selectUnnamedVersionAuthors(
+      versionResult.versions,
+      this.collectCreatorNames(fetched.pages),
+    );
+    const bodyTargets = this.selectBodyTargetPages({
+      requirementPages,
+      minutesPages,
+      versions: versionResult.versions,
+      unnamedAuthorIds,
+    });
+    if (bodyTargets.extraIds.length > 0) {
+      this.logger.log(
+        `补名：${unnamedAuthorIds.size} 位版本作者暂无名字来源，额外拉取 ${bodyTargets.extraIds.length} 页正文以换取展示名`,
+      );
+    }
+
+    // 正文只对目标页按需拉取（需求页 + 纪要页 + 补名差集），不做全空间展开
+    const bodyResult = await this.source.fetchPageBodies(bodyTargets.targetIds);
     requestCount += bodyResult.requestCount;
 
     const parsed = this.parseContent({
       requirementPages,
       minutesPages,
       bodies: bodyResult.bodies,
+      versions: versionResult.versions,
+      pageSpaceKeys,
       criteria,
     });
     this.logParsedContent(parsed);
@@ -271,6 +315,9 @@ export class ConfluenceCollectorService {
       minutesWithoutAgendaCount: parsed.minutesWithoutAgenda.length,
       requirementContactCount: parsed.requirementContactCount,
       topicShareCount: parsed.topicShareCount,
+      editVersionCount: parsed.editVersionCount,
+      attributableEditCount: parsed.attributableEditCount,
+      editedPageCount: parsed.editedPageCount,
       accounts: resolved.accounts,
       counts: resolved.counts,
       previous,
@@ -284,6 +331,8 @@ export class ConfluenceCollectorService {
       minutesPageCount: minutesPages.length,
       minutesWithoutAgendaCount: parsed.minutesWithoutAgenda.length,
       requirementRowCount: parsed.requirementRowCount,
+      editVersionCount: parsed.editVersionCount,
+      editedPageCount: parsed.editedPageCount,
       totals: this.sumTotals(nextWiki),
       unattributed: resolved.unattributed,
       accountCount: resolved.accounts.length,
@@ -319,6 +368,12 @@ export class ConfluenceCollectorService {
               title: page.title,
               topicSharers: [...(parsed.pageSharers.get(page.pageId) ?? [])],
             })),
+            // 编辑量是**全空间**口径（不止需求页/纪要页），故单独留一份行级事实供人工核对
+            pageEdits: [...parsed.pageEditors.entries()].map(([pageId, editors]) => ({
+              pageId,
+              title: pageTitleById.get(pageId) ?? '',
+              editors,
+            })),
           },
         }),
       );
@@ -345,6 +400,7 @@ export class ConfluenceCollectorService {
       spaces,
       requirementPageCount: requirementPages.length,
       minutesPageCount: minutesPages.length,
+      editVersionCount: parsed.editVersionCount,
       minutesWithoutAgenda: parsed.minutesWithoutAgenda.slice(0, CONFLUENCE_UNATTRIBUTED_LIMIT),
       unattributedAccounts: resolved.unattributedAccounts.slice(0, CONFLUENCE_UNATTRIBUTED_LIMIT),
       unresolvedContacts: parsed.unresolvedContacts.slice(0, CONFLUENCE_UNRESOLVED_LIMIT),
@@ -459,26 +515,111 @@ export class ConfluenceCollectorService {
     });
   }
 
+  // ── 编辑量：版本历史（见 ADR-0011）────────────────────────
+
+  /**
+   * 收集"零成本即可得名"的账号：页面事实里的创建者展示名。
+   *
+   * 与 `resolveDisplayNames` 的第 3 优先来源共用同一份判定，避免两处规则漂移。
+   */
+  private collectCreatorNames(pages: ConfluencePageRecord[]): Map<string, string> {
+    const names = new Map<string, string>();
+    for (const page of pages) {
+      const id = page.creatorAccountId?.trim();
+      const name = page.creatorDisplayName?.trim();
+      if (id && name && name !== '(unknown)') names.set(id, name);
+    }
+    return names;
+  }
+
+  /**
+   * 挑出"尚无名字来源"的版本作者。
+   *
+   * 为什么要先算这个：v2 版本接口只回 `authorId`，展示名只能在**正文渲染视图**里换；
+   * 而正文是"按需拉取"的，所以必须先知道"谁还没名字"，才能只对差集页补正文。
+   */
+  private selectUnnamedVersionAuthors(
+    versions: Map<string, ConfluencePageVersionRecord[]>,
+    creatorNames: Map<string, string>,
+  ): Set<string> {
+    const unnamed = new Set<string>();
+    for (const list of versions.values()) {
+      for (const version of list) {
+        const authorId = version.authorId?.trim();
+        if (!authorId || creatorNames.has(authorId)) continue;
+        unnamed.add(authorId);
+      }
+    }
+    return unnamed;
+  }
+
+  /**
+   * 汇总本轮要拉正文的页面：需求页 + 纪要页 + **补名差集页**（去重，保持原顺序）。
+   *
+   * 差集页 = 未命名版本作者编辑过的页，减去已在列表里的页：
+   * 这样补名不会演变成全量拉正文（实测真实空间只多 18 页）。
+   */
+  private selectBodyTargetPages(input: {
+    requirementPages: ConfluencePageRecord[];
+    minutesPages: ConfluencePageRecord[];
+    versions: Map<string, ConfluencePageVersionRecord[]>;
+    unnamedAuthorIds: Set<string>;
+  }): { targetIds: string[]; extraIds: string[] } {
+    const targetIds: string[] = [];
+    const seen = new Set<string>();
+    for (const page of [...input.requirementPages, ...input.minutesPages]) {
+      if (seen.has(page.pageId)) continue;
+      seen.add(page.pageId);
+      targetIds.push(page.pageId);
+    }
+
+    const extraIds: string[] = [];
+    if (input.unnamedAuthorIds.size > 0) {
+      for (const [pageId, list] of input.versions) {
+        if (seen.has(pageId)) continue;
+        const hasUnnamedAuthor = list.some((version) => {
+          const authorId = version.authorId?.trim();
+          return Boolean(authorId) && input.unnamedAuthorIds.has(authorId as string);
+        });
+        if (!hasUnnamedAuthor) continue;
+        seen.add(pageId);
+        extraIds.push(pageId);
+      }
+      targetIds.push(...extraIds);
+    }
+
+    return { targetIds, extraIds };
+  }
+
   // ── 正文解析 ───────────────────────────────────────────────
 
   /**
-   * 逐页解析正文，产出**账号级**中间态（`accountId → { requirements, topicShares }`）。
+   * 逐页解析正文与版本历史，产出**账号级**中间态
+   * （`accountId → { requirements, topicShares, edits }`）。
    *
-   * 两个维度共用同一张账号表：一个账号可以既有需求又有议题分享，
-   * 分两个 Map 存会在合并时产生"同一个账号两条记录"的歧义。
+   * 三个维度共用同一张账号表：一个账号可能既有需求、又有议题分享、还编辑过页面，
+   * 分开存会在合并时产生"同一个账号多条记录"的歧义。
+   *
+   * 编辑量（`edits`）来自**版本历史**而非正文：口径按版本条数计，含页面创建那一次，
+   * 覆盖空间内全部页面（见 ADR-0011）。
    */
   private parseContent(input: {
     requirementPages: ConfluencePageRecord[];
     minutesPages: ConfluencePageRecord[];
     bodies: Map<string, string>;
+    /** pageId → 版本历史（全空间页面；取不到的页面按"该页无编辑量"处理） */
+    versions: Map<string, ConfluencePageVersionRecord[]>;
+    /** pageId → spaceKey：版本历史只回 pageId，而空间兜底判定需要空间身份 */
+    pageSpaceKeys: Map<string, string>;
     criteria: ResolvedCriteria;
   }): ParsedContent {
-    const { requirementPages, minutesPages, bodies, criteria } = input;
+    const { requirementPages, minutesPages, bodies, versions, pageSpaceKeys, criteria } = input;
 
     const groups = new Map<string, AccountGroup>();
     const displayHints = new Map<string, string>();
     const pageContacts = new Map<string, string[]>();
     const pageSharers = new Map<string, string[]>();
+    const pageEditors = new Map<string, string[]>();
     const minutesWithoutAgenda: string[] = [];
     const unresolvedContacts: UnresolvedContact[] = [];
     const missingBodies: string[] = [];
@@ -486,10 +627,12 @@ export class ConfluenceCollectorService {
     let requirementContactCount = 0;
     let topicShareCount = 0;
     let topicShareMentionCount = 0;
+    let editVersionCount = 0;
+    let attributableEditCount = 0;
 
     const bump = (
       accountId: string,
-      dimension: 'requirements' | 'topicShares',
+      dimension: 'requirements' | 'topicShares' | 'edits',
       spaceKey: string,
     ): void => {
       const existing = groups.get(accountId);
@@ -503,6 +646,7 @@ export class ConfluenceCollectorService {
         displayName: accountId,
         requirements: dimension === 'requirements' ? 1 : 0,
         topicShares: dimension === 'topicShares' ? 1 : 0,
+        edits: dimension === 'edits' ? 1 : 0,
         spaces: new Set(spaceKey ? [spaceKey] : []),
       });
     };
@@ -584,15 +728,38 @@ export class ConfluenceCollectorService {
       }
     }
 
+    // 编辑量：逐版本归属到该版本的作者（口径：每个版本计 1 次，含创建那一次）
+    // 官方依据：GET /wiki/api/v2/pages/{id}/versions → item.authorId（见 ADR-0011）
+    for (const [pageId, list] of versions) {
+      const spaceKey = pageSpaceKeys.get(pageId) ?? '';
+      const editors = new Set<string>();
+
+      for (const version of list) {
+        editVersionCount += 1;
+        const authorId = version.authorId?.trim();
+        // 已注销/匿名作者：计入总量观测，但不归属任何人（不猜）
+        if (!authorId) continue;
+        attributableEditCount += 1;
+        editors.add(authorId);
+        bump(authorId, 'edits', spaceKey);
+      }
+
+      if (editors.size > 0) pageEditors.set(pageId, [...editors].sort());
+    }
+
     return {
       groups,
       displayHints,
       pageContacts,
       pageSharers,
+      pageEditors,
       requirementRowCount,
       requirementContactCount,
       topicShareCount,
       topicShareMentionCount,
+      editVersionCount,
+      attributableEditCount,
+      editedPageCount: pageEditors.size,
       minutesWithoutAgenda,
       unresolvedContacts,
       missingBodies,
@@ -619,6 +786,7 @@ export class ConfluenceCollectorService {
   ): Promise<WikiCollectOutcome> {
     const { pages, requestCount, requirementPages, minutesPages, parsed, report } = input;
     const written: string[] = [];
+    const pageTitleById = new Map(pages.map((page) => [page.pageId, page.title]));
 
     if (!options.dryRun) {
       written.push(
@@ -638,6 +806,11 @@ export class ConfluenceCollectorService {
               title: page.title,
               topicSharers: [...(parsed.pageSharers.get(page.pageId) ?? [])],
             })),
+            pageEdits: [...parsed.pageEditors.entries()].map(([pageId, editors]) => ({
+              pageId,
+              title: pageTitleById.get(pageId) ?? '',
+              editors,
+            })),
           },
         }),
       );
@@ -652,12 +825,15 @@ export class ConfluenceCollectorService {
       minutesPageCount: minutesPages.length,
       minutesWithoutAgendaCount: parsed.minutesWithoutAgenda.length,
       requirementRowCount: parsed.requirementRowCount,
-      // report-only 不做归属，totals 给的是"正文解析出的量"，不是组织级合计
+      editVersionCount: parsed.editVersionCount,
+      editedPageCount: parsed.editedPageCount,
+      // report-only 不做归属，totals 给的是"正文/版本解析出的量"，不是组织级合计
       totals: {
         requirements: parsed.requirementContactCount,
         topicShares: parsed.topicShareCount,
+        edits: parsed.attributableEditCount,
       },
-      unattributed: { requirements: 0, topicShares: 0 },
+      unattributed: { requirements: 0, topicShares: 0, edits: 0 },
       accountCount: parsed.groups.size,
       unattributedAccountCount: 0,
       unresolvedContactCount: parsed.unresolvedContacts.length,
@@ -797,12 +973,7 @@ export class ConfluenceCollectorService {
     pages: ConfluencePageRecord[],
     renderedUserNames: Map<string, string>,
   ): Promise<{ names: Map<string, string>; requestCount: number }> {
-    const creatorNames = new Map<string, string>();
-    for (const page of pages) {
-      const id = page.creatorAccountId?.trim();
-      const name = page.creatorDisplayName?.trim();
-      if (id && name && name !== '(unknown)') creatorNames.set(id, name);
-    }
+    const creatorNames = this.collectCreatorNames(pages);
 
     const names = new Map<string, string>();
     const missing: string[] = [];
@@ -878,13 +1049,14 @@ export class ConfluenceCollectorService {
     const accounts: ConfluenceAccount[] = [];
     const counts = new Map<string, ConfluenceMetrics>();
     const unattributedAccounts: UnattributedAccount[] = [];
-    const unattributed: ConfluenceMetrics = { requirements: 0, topicShares: 0 };
+    const unattributed: ConfluenceMetrics = { requirements: 0, topicShares: 0, edits: 0 };
 
     for (const group of parsed.groups.values()) {
       const displayName = resolvedNames.names.get(group.accountId) ?? group.accountId;
       const { orgId, orgSource } = this.resolveAccountOrg({
         accountId: group.accountId,
         displayName,
+        // group.spaces 已含该账号编辑过的页面空间：空间兜底对编辑量同样成立（见 ADR-0011）
         spaces: group.spaces,
         aliasIndex,
         spaceOrgIndex,
@@ -896,7 +1068,11 @@ export class ConfluenceCollectorService {
         orgId,
         orgSource,
         personId: claimIndex.personByKey.get(group.accountId.trim().toLowerCase()) ?? null,
-        confluence: { requirements: group.requirements, topicShares: group.topicShares },
+        confluence: {
+          requirements: group.requirements,
+          topicShares: group.topicShares,
+          edits: group.edits,
+        },
         updatedAt,
       };
       accounts.push(account);
@@ -904,34 +1080,40 @@ export class ConfluenceCollectorService {
       const bucket = counts.get(orgId ?? ORG_UNATTRIBUTED) ?? {
         requirements: 0,
         topicShares: 0,
+        edits: 0,
       };
       bucket.requirements += group.requirements;
       bucket.topicShares += group.topicShares;
+      bucket.edits += group.edits;
       counts.set(orgId ?? ORG_UNATTRIBUTED, bucket);
 
       if (!orgId) {
         unattributed.requirements += group.requirements;
         unattributed.topicShares += group.topicShares;
+        unattributed.edits += group.edits;
         unattributedAccounts.push({
           accountId: group.accountId,
           displayName,
           requirements: group.requirements,
           topicShares: group.topicShares,
+          edits: group.edits,
         });
       }
     }
 
-    // 输出稳定：需求数降序 → 议题分享数降序 → accountId 升序，保证幂等与 diff 可读
+    // 输出稳定：需求降序 → 议题分享降序 → 编辑量降序 → accountId 升序，保证幂等与 diff 可读
     accounts.sort(
       (a, b) =>
         b.confluence.requirements - a.confluence.requirements ||
         b.confluence.topicShares - a.confluence.topicShares ||
+        b.confluence.edits - a.confluence.edits ||
         a.accountId.localeCompare(b.accountId),
     );
     unattributedAccounts.sort(
       (a, b) =>
         b.requirements - a.requirements ||
         b.topicShares - a.topicShares ||
+        b.edits - a.edits ||
         a.accountId.localeCompare(b.accountId),
     );
 
@@ -954,12 +1136,16 @@ export class ConfluenceCollectorService {
     updatedAt: string,
   ): OrganizationWiki[] {
     return organizations.map((org) => {
-      const metrics = counts.get(org.orgId) ?? { requirements: 0, topicShares: 0 };
+      const metrics = counts.get(org.orgId) ?? { requirements: 0, topicShares: 0, edits: 0 };
       return {
         orgId: org.orgId,
         orgName: org.name,
         logoUrl: org.logoUrl,
-        confluence: { requirements: metrics.requirements, topicShares: metrics.topicShares },
+        confluence: {
+          requirements: metrics.requirements,
+          topicShares: metrics.topicShares,
+          edits: metrics.edits,
+        },
         updatedAt,
       };
     });
@@ -970,8 +1156,9 @@ export class ConfluenceCollectorService {
       (acc, item) => ({
         requirements: acc.requirements + item.confluence.requirements,
         topicShares: acc.topicShares + item.confluence.topicShares,
+        edits: acc.edits + item.confluence.edits,
       }),
-      { requirements: 0, topicShares: 0 },
+      { requirements: 0, topicShares: 0, edits: 0 },
     );
   }
 
@@ -980,8 +1167,9 @@ export class ConfluenceCollectorService {
       (acc, item) => ({
         requirements: acc.requirements + item.requirements,
         topicShares: acc.topicShares + item.topicShares,
+        edits: acc.edits + item.edits,
       }),
-      { requirements: 0, topicShares: 0 },
+      { requirements: 0, topicShares: 0, edits: 0 },
     );
   }
 
@@ -991,7 +1179,7 @@ export class ConfluenceCollectorService {
    * 写入前校验：任一不过即中止，**保留旧数据**。
    *
    * - 结构：计数为非负整数（buildWiki 保证，这里做兜底断言）
-   * - 派生一致性：组织级 = 账号级求和 = 正文解析出的提及数（三者只允许一处统计入口）
+   * - 派生一致性：组织级 = 账号级求和 = 正文/版本解析出的原始数（三者只允许一处统计入口）
    * - 选页：一页都没取到、或两个选择器任一命中 0 页 → 疑似配置/口径问题
    * - 口径：需求提及数为 0，或所有会议页都没有 Agenda 段 → 口径与正文结构不符
    * - 回退保护：本轮"真实组织"归属结果全为 0 而既有数据非 0 → 疑似归属规则失效，
@@ -1004,6 +1192,11 @@ export class ConfluenceCollectorService {
     minutesWithoutAgendaCount: number;
     requirementContactCount: number;
     topicShareCount: number;
+    /** 版本历史总条数（含无法归属的版本），仅观测 */
+    editVersionCount: number;
+    /** 可归属到账号的版本条数，= 账号级 edits 合计的校验基准 */
+    attributableEditCount: number;
+    editedPageCount: number;
     accounts: ConfluenceAccount[];
     counts: Map<string, ConfluenceMetrics>;
     previous: OrganizationWiki[];
@@ -1015,6 +1208,9 @@ export class ConfluenceCollectorService {
       minutesWithoutAgendaCount,
       requirementContactCount,
       topicShareCount,
+      editVersionCount,
+      attributableEditCount,
+      editedPageCount,
       accounts,
       counts,
       previous,
@@ -1044,11 +1240,12 @@ export class ConfluenceCollectorService {
 
     if (
       accountTotals.requirements !== orgTotals.requirements ||
-      accountTotals.topicShares !== orgTotals.topicShares
+      accountTotals.topicShares !== orgTotals.topicShares ||
+      accountTotals.edits !== orgTotals.edits
     ) {
       problems.push(
-        `账号级合计（需求 ${accountTotals.requirements} / 议题分享 ${accountTotals.topicShares}）` +
-          `与组织级合计（需求 ${orgTotals.requirements} / 议题分享 ${orgTotals.topicShares}）不一致：组织级必须由账号级派生`,
+        `账号级合计（需求 ${accountTotals.requirements} / 议题分享 ${accountTotals.topicShares} / 编辑 ${accountTotals.edits}）` +
+          `与组织级合计（需求 ${orgTotals.requirements} / 议题分享 ${orgTotals.topicShares} / 编辑 ${orgTotals.edits}）不一致：组织级必须由账号级派生`,
       );
     }
     if (accountTotals.requirements !== requirementContactCount) {
@@ -1059,6 +1256,11 @@ export class ConfluenceCollectorService {
     if (accountTotals.topicShares !== topicShareCount) {
       problems.push(
         `账号级议题分享合计 ${accountTotals.topicShares} 与正文解析出的议题分享人数 ${topicShareCount} 不一致`,
+      );
+    }
+    if (accountTotals.edits !== attributableEditCount) {
+      problems.push(
+        `账号级编辑量合计 ${accountTotals.edits} 与版本历史中可归属的版本数 ${attributableEditCount} 不一致（版本总数 ${editVersionCount}，覆盖 ${editedPageCount} 页）`,
       );
     }
 
@@ -1113,6 +1315,20 @@ export class ConfluenceCollectorService {
       }
     }
 
+    // 编辑量**故意不进入**上面的"拒绝覆盖"保护：版本接口或翻页失败只应降级为"该页无编辑量"，
+    // 不该连带阻断开需求与议题分享两个既有维度的落盘（见 ADR-0011）。因此这里只告警、不抛错。
+    if (realTotal.edits === 0 && previousRealTotal.edits > 0) {
+      this.logger.warn(
+        `本轮真实组织编辑量全为 0，而既有 confluence-organizations.json 为 ${previousRealTotal.edits}：` +
+          '疑似版本接口不可用或翻页失败，将按 0 写入，请核对上方"版本历史"日志',
+      );
+    }
+    if (editVersionCount > attributableEditCount) {
+      this.logger.warn(
+        `${editVersionCount - attributableEditCount} 个版本取不到作者（已注销/匿名账号），已计入总量观测但不归属任何人`,
+      );
+    }
+
     if (problems.length > 0) {
       throw new Error(`采集结果未通过校验，保留既有数据：\n  - ${problems.join('\n  - ')}`);
     }
@@ -1135,6 +1351,13 @@ export class ConfluenceCollectorService {
     );
     this.logger.log(
       `会议议题：${parsed.topicShareCount} 次分享（Agenda 段内 @，按期去重；段内原始 ${parsed.topicShareMentionCount} 处）`,
+    );
+    this.logger.log(
+      `页面编辑：${parsed.editVersionCount} 个版本 / ${parsed.editedPageCount} 页（含创建版本，不减 1）`,
+    );
+    this.logger.log(
+      '口径提示：编辑量按版本条数计，**不修正**多人共编的大页（个别聚合页可能占全空间两成以上），' +
+        '排行解读时请结合页数看（见 ADR-0011）',
     );
     this.logger.log(`涉及账号：${parsed.groups.size} 个`);
 
@@ -1172,15 +1395,16 @@ export class ConfluenceCollectorService {
       unattributed.map((item) => ({
         requirements: item.requirements,
         topicShares: item.topicShares,
+        edits: item.edits,
       })),
     );
     this.logger.warn(
-      `未归属账号 ${unattributed.length} 个（需求 ${total.requirements} 条 / 议题分享 ${total.topicShares} 次）；` +
+      `未归属账号 ${unattributed.length} 个（需求 ${total.requirements} 条 / 议题分享 ${total.topicShares} 次 / 编辑 ${total.edits} 次）；` +
         '可在 data/identity-claims.json 补 source=confluence 的认领边后重跑：',
     );
     for (const item of unattributed.slice(0, 10)) {
       this.logger.warn(
-        `  ${item.displayName}｜accountId=${item.accountId}｜需求 ${item.requirements} / 议题分享 ${item.topicShares}`,
+        `  ${item.displayName}｜accountId=${item.accountId}｜需求 ${item.requirements} / 议题分享 ${item.topicShares} / 编辑 ${item.edits}`,
       );
     }
   }
@@ -1192,13 +1416,18 @@ export class ConfluenceCollectorService {
     this.logger.log(
       `会议页      : ${outcome.minutesPageCount} 页${outcome.minutesWithoutAgendaCount > 0 ? `（其中 ${outcome.minutesWithoutAgendaCount} 页无 Agenda 段）` : ''}`,
     );
-    this.logger.log(`独立开发者  : 需求 ${outcome.unattributed.requirements} / 议题分享 ${outcome.unattributed.topicShares}`);
+    this.logger.log(
+      `页面编辑    : ${outcome.editVersionCount} 个版本 / ${outcome.editedPageCount} 页（含创建版本）`,
+    );
+    this.logger.log(
+      `独立开发者  : 需求 ${outcome.unattributed.requirements} / 议题分享 ${outcome.unattributed.topicShares} / 编辑 ${outcome.unattributed.edits}`,
+    );
     this.logger.log(
       `账号数      : ${outcome.accountCount}（其中未归属 ${outcome.unattributedAccountCount}）`,
     );
     this.logger.log(`组织数      : ${outcome.orgCount}`);
     this.logger.log(
-      `合计        : 需求 ${outcome.totals.requirements} / 议题分享 ${outcome.totals.topicShares}`,
+      `合计        : 需求 ${outcome.totals.requirements} / 议题分享 ${outcome.totals.topicShares} / 编辑 ${outcome.totals.edits}`,
     );
     this.logger.log('─────────────────────────────────────────');
   }

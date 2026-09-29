@@ -45,6 +45,13 @@ export interface ConfluenceMetrics {
   requirements: number;
   /** 议题分享次数：会议纪要 Agenda 段内 @ 的期数（段落与表格行都算，按期去重） */
   topicShares: number;
+  /**
+   * 编辑量：该账号作为**页面版本作者**的版本条数（`GET /api/v2/pages/{id}/versions` 的 `authorId`）。
+   *
+   * 含页面创建那一次（版本号从 1 开始，不做扣减）；覆盖空间内全部页面，
+   * 不做单页封顶、不剔除多人共编的大页（见 ADR-0011）。
+   */
+  edits: number;
 }
 
 export interface OrganizationWiki {
@@ -176,6 +183,8 @@ export interface ContributionTotals {
   linesChanged: number;
   requirements: number;
   topicShares: number;
+  /** 编辑量合计（Confluence 页面版本作者条数，见 `ConfluenceMetrics.edits` / ADR-0011） */
+  edits: number;
 }
 
 export interface ContributionSummaryData {

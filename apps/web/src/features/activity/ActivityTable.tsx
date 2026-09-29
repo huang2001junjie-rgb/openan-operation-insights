@@ -17,6 +17,7 @@ const COLUMNS: Array<{ key: SortKey; label: string; align?: 'right' }> = [
   { key: 'linesChanged', label: '代码行数', align: 'right' },
   { key: 'requirements', label: '需求文档', align: 'right' },
   { key: 'topicShares', label: '议题分享', align: 'right' },
+  { key: 'edits', label: '编辑', align: 'right' },
 ];
 
 export interface ActivityTableProps {
@@ -57,6 +58,7 @@ export function ActivityTable({ rows, isLoading, isError, error, onRetry }: Acti
       linesChanged: visibleRows.reduce((sum, row) => sum + row.linesChanged, 0),
       requirements: visibleRows.reduce((sum, row) => sum + row.requirements, 0),
       topicShares: visibleRows.reduce((sum, row) => sum + row.topicShares, 0),
+      edits: visibleRows.reduce((sum, row) => sum + row.edits, 0),
     }),
     [visibleRows],
   );
@@ -92,7 +94,7 @@ export function ActivityTable({ rows, isLoading, isError, error, onRetry }: Acti
           skeleton={<SkeletonTable rows={6} />}
         >
           <div className="overflow-x-auto rounded-xl border border-white/[0.07]">
-            <table className="data-table min-w-[960px]">
+            <table className="data-table min-w-[1040px]">
               <thead>
                 <tr>
                   {COLUMNS.map((column) => {
@@ -163,6 +165,7 @@ export function ActivityTable({ rows, isLoading, isError, error, onRetry }: Acti
                     <td className="numeric text-right">{formatNumber(row.linesChanged)}</td>
                     <td className="numeric text-right">{formatNumber(row.requirements)}</td>
                     <td className="numeric text-right">{formatNumber(row.topicShares)}</td>
+                    <td className="numeric text-right">{formatNumber(row.edits)}</td>
                     <td className="whitespace-nowrap text-right text-xs text-slate-500">
                       {formatDateTime(row.updatedAt)}
                     </td>
@@ -192,6 +195,9 @@ export function ActivityTable({ rows, isLoading, isError, error, onRetry }: Acti
                   </td>
                   <td className="numeric px-4 py-3 text-right font-semibold text-slate-100">
                     {formatNumber(totals.topicShares)}
+                  </td>
+                  <td className="numeric px-4 py-3 text-right font-semibold text-slate-100">
+                    {formatNumber(totals.edits)}
                   </td>
                   <td className="px-4 py-3" />
                 </tr>

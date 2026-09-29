@@ -31,6 +31,33 @@ export interface ConfluencePageRecord {
   ancestorTitles: string[];
 }
 
+/**
+ * 单页版本的原始事实（**编辑量**口径的原料，见 ADR-0011）。
+ *
+ * 只保留计数与归属所需字段：`authorId` 是归属唯一真相（v2 版本接口**不返回展示名**，
+ * 展示名由 `fetchPageBodies` 的渲染视图统一补）；`number` 仅用于观测 ——
+ * 口径要求**含页面创建那一次**（`number === 1`），不做扣减。
+ */
+export interface ConfluencePageVersionRecord {
+  /** 版本号（1 = 页面创建；口径要求原样计入） */
+  number: number;
+  /** 版本作者的账号标识；为空表示该版本不归属任何人（仍计入总数观测） */
+  authorId: string | null;
+  /** 该版本的生成时间（ISO 8601）；取不到为 null */
+  createdAt: string | null;
+}
+
+/** 按页取版本历史的结果（编辑量口径的原料） */
+export interface ConfluencePageVersionFetchResult {
+  /**
+   * pageId → 该页全部版本（按 `number` 升序）。
+   * 取不到版本的页面**不出现**在 Map 里（调用方按"该页编辑量 0"降级，不中断整轮）。
+   */
+  versions: Map<string, ConfluencePageVersionRecord[]>;
+  /** 本次发出的请求数（增量，不含此前 fetch / fetchPageBodies / fetchUserNames 的请求） */
+  requestCount: number;
+}
+
 export interface ConfluenceFetchOptions {
   /** 增量游标（ISO 8601）；null 表示全量 */
   since: string | null;
@@ -78,6 +105,13 @@ export interface ConfluenceSource {
    * 空间里绝大多数页面与口径无关，全量展开是纯浪费且放大被限流的风险。
    */
   fetchPageBodies(pageIds: string[]): Promise<ConfluenceBodyFetchResult>;
+  /**
+   * 按页取**版本历史**（编辑量口径的原料，见 ADR-0011）。
+   *
+   * 为何按页而不走空间级端点：版本数与页面数同阶（实测 53 页共 672 个版本），
+   * 逐页一次请求即可覆盖，且与 `fetchPageBodies` 同样的"按需取、失败降级"风格一致。
+   */
+  fetchPageVersions(pageIds: string[]): Promise<ConfluencePageVersionFetchResult>;
   /**
    * 按 accountId 取展示名（`/rest/api/user`）。
    *

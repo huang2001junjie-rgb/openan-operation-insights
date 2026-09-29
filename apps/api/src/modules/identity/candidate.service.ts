@@ -130,6 +130,7 @@ export class CandidateService {
         metrics: {
           requirements: account.confluence.requirements,
           topicShares: account.confluence.topicShares,
+          edits: account.confluence.edits,
         },
         claimedBy: [],
       }));

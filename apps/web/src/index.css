@@ -148,6 +148,12 @@
     @apply sticky top-0 z-10 whitespace-nowrap border-b border-white/[0.08] bg-ink-900/85 px-4 py-3
       text-left text-xs font-semibold uppercase tracking-wider text-slate-400 backdrop-blur-md;
   }
+  /* 数值列表头需右对齐，与数据单元格一致。
+     上面 `.data-table thead th` 的权重（1 类 + 2 元素）高于工具类 `.text-right`（1 类），
+     直接加 `text-right` 会被其 text-left 覆盖，故在此显式提升优先级。 */
+  .data-table thead th.text-right {
+    text-align: right;
+  }
   .data-table tbody td {
     @apply border-b border-white/[0.05] px-4 py-3.5 align-middle text-slate-200;
   }

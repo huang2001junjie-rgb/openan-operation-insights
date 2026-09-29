@@ -13,6 +13,8 @@ export interface ActivityRow {
   repos: number;
   requirements: number;
   topicShares: number;
+  /** 编辑量：Confluence 页面版本作者条数（含创建版本，见 ADR-0011） */
+  edits: number;
   updatedAt: string;
 }
 
@@ -43,6 +45,7 @@ export function mergeActivityRows(
       repos: 0,
       requirements: 0,
       topicShares: 0,
+      edits: 0,
       updatedAt: '',
     });
   }
@@ -69,6 +72,7 @@ export function mergeActivityRows(
         repos: item.github.repos,
         requirements: 0,
         topicShares: 0,
+        edits: 0,
         updatedAt: item.updatedAt,
       });
     }
@@ -79,6 +83,7 @@ export function mergeActivityRows(
     if (existing) {
       existing.requirements = item.confluence.requirements;
       existing.topicShares = item.confluence.topicShares;
+      existing.edits = item.confluence.edits;
       if (!existing.updatedAt || Date.parse(item.updatedAt) > Date.parse(existing.updatedAt)) {
         existing.updatedAt = item.updatedAt;
       }
@@ -96,6 +101,7 @@ export function mergeActivityRows(
         repos: 0,
         requirements: item.confluence.requirements,
         topicShares: item.confluence.topicShares,
+        edits: item.confluence.edits,
         updatedAt: item.updatedAt,
       });
     }
@@ -111,7 +117,8 @@ export type SortKey =
   | 'issues'
   | 'linesChanged'
   | 'requirements'
-  | 'topicShares';
+  | 'topicShares'
+  | 'edits';
 
 export function sortRows(rows: ActivityRow[], key: SortKey, direction: 'asc' | 'desc'): ActivityRow[] {
   const factor = direction === 'asc' ? 1 : -1;
@@ -132,6 +139,8 @@ export interface ConfluenceRow {
   homepageUrl: string;
   requirements: number;
   topicShares: number;
+  /** 编辑量：Confluence 页面版本作者条数（含创建版本，见 ADR-0011） */
+  edits: number;
   updatedAt: string;
 }
 
@@ -155,6 +164,7 @@ export function mergeConfluenceRows(
       homepageUrl: org.homepageUrl,
       requirements: 0,
       topicShares: 0,
+      edits: 0,
       updatedAt: '',
     });
   }
@@ -168,6 +178,7 @@ export function mergeConfluenceRows(
       homepageUrl: org?.homepageUrl ?? '',
       requirements: item.confluence.requirements,
       topicShares: item.confluence.topicShares,
+      edits: item.confluence.edits,
       updatedAt: item.updatedAt,
     });
   }
@@ -175,7 +186,7 @@ export function mergeConfluenceRows(
   return [...rows.values()];
 }
 
-export type ConfluenceSortKey = 'orgName' | 'requirements' | 'topicShares';
+export type ConfluenceSortKey = 'orgName' | 'requirements' | 'topicShares' | 'edits';
 
 export function sortConfluenceRows(
   rows: ConfluenceRow[],

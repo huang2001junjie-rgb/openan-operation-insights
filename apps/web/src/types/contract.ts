@@ -66,6 +66,8 @@ export interface OrganizationContribution {
 export interface ConfluenceMetrics {
   requirements: number;
   topicShares: number;
+  /** 编辑量：作为页面版本作者的版本条数（含创建那一次，ADR-0011） */
+  edits: number;
 }
 
 export interface OrganizationWiki {
@@ -150,6 +152,8 @@ export interface ContributionTotals {
   linesChanged: number;
   requirements: number;
   topicShares: number;
+  /** 编辑量合计（ADR-0011） */
+  edits: number;
 }
 
 export interface ContributionSummaryData {

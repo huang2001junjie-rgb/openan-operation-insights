@@ -82,20 +82,22 @@ const repositoryProviders = [
   {
     provide: WIKI_REPOSITORY,
     // v2：ConfluenceMetrics 的 bestPractices 更名为 topicShares（口径重定，见 ADR-0009）
+    // v3：新增 edits（页面版本作者计数，见 ADR-0011）
     useFactory: makeRepository<OrganizationWiki[]>(
       'confluence-organizations.json',
       isWikiArray,
-      2,
+      3,
     ),
     inject: [ConfigService],
   },
   {
     provide: CONFLUENCE_ACCOUNTS_REPOSITORY,
     // v3：新增 orgSource（采集口径归属来源，ADR-0010）
+    // v4：confluence 新增 edits（页面版本作者计数，见 ADR-0011）
     useFactory: makeRepository<ConfluenceAccount[]>(
       'confluence-accounts.json',
       isConfluenceAccountArray,
-      3,
+      4,
     ),
     inject: [ConfigService],
   },

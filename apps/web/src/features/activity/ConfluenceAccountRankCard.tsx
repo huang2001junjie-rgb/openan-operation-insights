@@ -9,16 +9,18 @@ import { cn } from '@/lib/cn';
 import { formatDateTime, formatNumber, initialsOf } from '@/lib/format';
 import type { ConfluenceAccountView, Organization } from '@/types/contract';
 
-type MetricKey = 'requirements' | 'topicShares';
+type MetricKey = 'requirements' | 'topicShares' | 'edits';
 
 const METRIC_OPTIONS: Array<{ value: MetricKey; label: string }> = [
   { value: 'requirements', label: '需求' },
   { value: 'topicShares', label: '议题分享' },
+  { value: 'edits', label: '编辑' },
 ];
 
 const METRIC_UNIT: Record<MetricKey, string> = {
   requirements: '项需求',
   topicShares: '次分享',
+  edits: '次编辑',
 };
 
 /** 独立开发者伪组织（与后端 effective-org / organizations.json 一致） */

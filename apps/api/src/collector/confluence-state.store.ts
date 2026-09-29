@@ -9,13 +9,15 @@ import { CONFLUENCE_STATE_FILE } from './collector.constants';
  *
  * 这是**运营补数据的输入**：据 accountId 在 identity-claims.json 补一条
  * `{ source: "confluence", accountKey: <accountId>, personId: <已归属的自然人> }`，
- * 重跑采集即可归属。带 displayName 与两个维度的量是为了让人能直接判断优先级。
+ * 重跑采集即可归属。带 displayName 与各维度的量是为了让人能直接判断优先级。
  */
 export interface UnattributedAccount {
   accountId: string;
   displayName: string;
   requirements: number;
   topicShares: number;
+  /** 页面版本作者条数（含创建版本，见 ADR-0011） */
+  edits: number;
 }
 
 /**
@@ -62,6 +64,8 @@ export interface ConfluenceSyncState {
   requirementPageCount: number;
   /** 命中的会议纪要页数（为 0 说明标题/父页模式与实际不符） */
   minutesPageCount: number;
+  /** 版本历史总条数（编辑量口径自检：为 0 说明版本接口不可用，见 ADR-0011） */
+  editVersionCount: number;
   /** 会议纪要里找不到 Agenda 段的页标题（口径自检：应该是空数组） */
   minutesWithoutAgenda: string[];
   /** 未命中任何组织的账号，供运营补身份认领边 */
@@ -83,6 +87,7 @@ const EMPTY_STATE: ConfluenceSyncState = {
   spaces: [],
   requirementPageCount: 0,
   minutesPageCount: 0,
+  editVersionCount: 0,
   minutesWithoutAgenda: [],
   unattributedAccounts: [],
   unresolvedContacts: [],
@@ -121,8 +126,9 @@ export class ConfluenceStateStore {
         minutesWithoutAgenda: Array.isArray(parsed.minutesWithoutAgenda)
           ? parsed.minutesWithoutAgenda
           : [],
+        // edits 为后加维度：旧状态文件里没有该字段，按 0 补齐以免日志出现 undefined
         unattributedAccounts: Array.isArray(parsed.unattributedAccounts)
-          ? parsed.unattributedAccounts
+          ? parsed.unattributedAccounts.map((item) => ({ ...item, edits: item.edits ?? 0 }))
           : [],
         unresolvedContacts: Array.isArray(parsed.unresolvedContacts)
           ? parsed.unresolvedContacts

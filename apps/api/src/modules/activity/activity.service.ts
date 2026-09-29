@@ -153,6 +153,7 @@ export class ActivityService {
         linesChanged: contributions.reduce((sum, item) => sum + item.github.linesChanged, 0),
         requirements: wiki.reduce((sum, item) => sum + item.confluence.requirements, 0),
         topicShares: wiki.reduce((sum, item) => sum + item.confluence.topicShares, 0),
+        edits: wiki.reduce((sum, item) => sum + item.confluence.edits, 0),
       },
       orgCount: orgIds.size,
       updatedAt: updatedDates.length > 0 ? latestDate(updatedDates) : new Date().toISOString(),

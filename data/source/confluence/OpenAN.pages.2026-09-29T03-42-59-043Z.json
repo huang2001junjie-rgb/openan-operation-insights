@@ -1,0 +1,1809 @@
+{
+  "capturedAt": "2026-09-29T03:42:59.043Z",
+  "spaces": [
+    "OpenAN"
+  ],
+  "criteria": "需求 标题=\"Requirement Proposal\" ∧ 祖先含=\"Release Planning\"，取列 \"Contacts\" 的 @（每个各 1 条）；议题分享 父页匹配 ^\\d{4} - TSC Minutes$ ∧ 标题匹配 ^\\d{4}-\\d{2}-\\d{2} TSC Minutes$，取 \"Agenda\" 段内的 @（段落与表格行都算，按期去重）",
+  "pageCount": 53,
+  "report": {
+    "pageCount": 53,
+    "spaceTally": [
+      {
+        "name": "OpenAN",
+        "count": 53
+      }
+    ],
+    "labelTally": [
+      {
+        "name": "tsc-minutes",
+        "count": 14
+      },
+      {
+        "name": "pac-minutes",
+        "count": 3
+      },
+      {
+        "name": "marketing-minutes",
+        "count": 1
+      }
+    ],
+    "creatorTally": [
+      {
+        "name": "Casey Cain",
+        "count": 18
+      },
+      {
+        "name": "Chuanyu Chen",
+        "count": 18
+      },
+      {
+        "name": "Yijun Yu",
+        "count": 14
+      },
+      {
+        "name": "Xunli Yang",
+        "count": 2
+      },
+      {
+        "name": "Wenjun Zhang",
+        "count": 1
+      }
+    ],
+    "topLevelTally": [
+      {
+        "name": "OpenAN Project Home",
+        "count": 52
+      },
+      {
+        "name": "(无父页)",
+        "count": 1
+      }
+    ],
+    "editorTally": [
+      {
+        "name": "Chuanyu Chen",
+        "count": 29
+      },
+      {
+        "name": "Yijun Yu",
+        "count": 10
+      },
+      {
+        "name": "Casey Cain",
+        "count": 8
+      },
+      {
+        "name": "Mohammed El Barhichi",
+        "count": 4
+      },
+      {
+        "name": "Wenjun Zhang",
+        "count": 1
+      },
+      {
+        "name": "Xiaobin Shi",
+        "count": 1
+      }
+    ],
+    "unlabeledCount": 35,
+    "createdRange": {
+      "from": "2026-05-29T16:14:12.792Z",
+      "to": "2026-09-22T14:40:30.257Z"
+    }
+  },
+  "derived": {
+    "requirementPages": [
+      {
+        "pageId": "1163362317",
+        "title": "Requirement Proposal",
+        "contacts": [
+          "5da82cb11a43fe0ddbb47e83",
+          "5da82cb11a43fe0ddbb47e83",
+          "5da82cb11a43fe0ddbb47e83",
+          "5da82cb11a43fe0ddbb47e83",
+          "5da82cb11a43fe0ddbb47e83",
+          "712020:a0730888-323b-4928-80e4-fd39f1999b8d",
+          "5da82cb11a43fe0ddbb47e83",
+          "5da82cb11a43fe0ddbb47e83",
+          "5da82cb11a43fe0ddbb47e83",
+          "5da82cb11a43fe0ddbb47e83",
+          "5da82cb11a43fe0ddbb47e83",
+          "712020:eb69db15-9d15-4a5f-bcd0-2b95a967bf3b",
+          "557058:822eb146-7cd1-4d0a-8772-22d2773be7c5",
+          "712020:eb69db15-9d15-4a5f-bcd0-2b95a967bf3b",
+          "712020:c719c77b-af77-4430-9760-4cd1ef4278c3",
+          "712020:c8f0d540-db5e-42ed-a79a-611184462341",
+          "712020:fd6a8616-70b4-4ce8-b65a-01ca4856875e",
+          "5e58b7c15a495e0c91a94b44",
+          "712020:fd6a8616-70b4-4ce8-b65a-01ca4856875e",
+          "5e58b7c15a495e0c91a94b44",
+          "712020:fd6a8616-70b4-4ce8-b65a-01ca4856875e",
+          "5e58b7c15a495e0c91a94b44",
+          "712020:f2d4beb5-2f11-47ca-8063-348bc8ab896f",
+          "5e58b7c15a495e0c91a94b44",
+          "712020:f2d4beb5-2f11-47ca-8063-348bc8ab896f",
+          "5e58b7c15a495e0c91a94b44",
+          "712020:eb69db15-9d15-4a5f-bcd0-2b95a967bf3b",
+          "557058:822eb146-7cd1-4d0a-8772-22d2773be7c5",
+          "712020:eb69db15-9d15-4a5f-bcd0-2b95a967bf3b",
+          "712020:eb69db15-9d15-4a5f-bcd0-2b95a967bf3b",
+          "712020:eb69db15-9d15-4a5f-bcd0-2b95a967bf3b",
+          "712020:c8f0d540-db5e-42ed-a79a-611184462341",
+          "5da82cb11a43fe0ddbb47e83",
+          "557058:822eb146-7cd1-4d0a-8772-22d2773be7c5",
+          "5da82cb11a43fe0ddbb47e83",
+          "5da82cb11a43fe0ddbb47e83",
+          "557058:822eb146-7cd1-4d0a-8772-22d2773be7c5",
+          "712020:c8c42c7b-07b4-4fcc-9b31-d9e2c7210713"
+        ]
+      }
+    ],
+    "minutesPages": [
+      {
+        "pageId": "1161887745",
+        "title": "2026-06-09 TSC Minutes",
+        "topicSharers": []
+      },
+      {
+        "pageId": "1165852673",
+        "title": "2026-06-16 TSC Minutes",
+        "topicSharers": []
+      },
+      {
+        "pageId": "1206943745",
+        "title": "2026-06-30 TSC Minutes",
+        "topicSharers": [
+          "5d00c37ddf6c8f0bbd781cd5",
+          "5e58b7c15a495e0c91a94b44"
+        ]
+      },
+      {
+        "pageId": "1220739073",
+        "title": "2026-07-07 TSC Minutes",
+        "topicSharers": []
+      },
+      {
+        "pageId": "1229946892",
+        "title": "2026-07-14 TSC Minutes",
+        "topicSharers": []
+      },
+      {
+        "pageId": "1256030209",
+        "title": "2026-07-21 TSC Minutes",
+        "topicSharers": [
+          "5e58b7c15a495e0c91a94b44"
+        ]
+      },
+      {
+        "pageId": "1271758849",
+        "title": "2026-07-28 TSC Minutes",
+        "topicSharers": [
+          "712020:51549cbc-8272-4fc7-8720-c20b3a409769"
+        ]
+      },
+      {
+        "pageId": "1289814017",
+        "title": "2026-08-04 TSC Minutes",
+        "topicSharers": [
+          "712020:20284c60-7d6e-4949-9d8f-3c6ef28c4eb3"
+        ]
+      },
+      {
+        "pageId": "1298235395",
+        "title": "2026-08-11 TSC Minutes",
+        "topicSharers": [
+          "5e58b7c15a495e0c91a94b44"
+        ]
+      },
+      {
+        "pageId": "1319108623",
+        "title": "2026-08-18 TSC Minutes",
+        "topicSharers": [
+          "712020:f2d4beb5-2f11-47ca-8063-348bc8ab896f",
+          "712020:60c80aad-c5b2-49e6-b103-749303dce5de"
+        ]
+      },
+      {
+        "pageId": "1343684610",
+        "title": "2026-08-25 TSC Minutes",
+        "topicSharers": [
+          "712020:fd6a8616-70b4-4ce8-b65a-01ca4856875e",
+          "712020:e2ae8a82-d8c6-4bda-9ee1-082c56635505"
+        ]
+      },
+      {
+        "pageId": "1349976065",
+        "title": "2026-09-01 TSC Minutes",
+        "topicSharers": [
+          "5e58b7c15a495e0c91a94b44",
+          "712020:eb69db15-9d15-4a5f-bcd0-2b95a967bf3b",
+          "712020:20284c60-7d6e-4949-9d8f-3c6ef28c4eb3",
+          "5da82cb11a43fe0ddbb47e83"
+        ]
+      },
+      {
+        "pageId": "1373306881",
+        "title": "2026-09-08 TSC Minutes",
+        "topicSharers": [
+          "5da82cb11a43fe0ddbb47e83"
+        ]
+      },
+      {
+        "pageId": "1387003906",
+        "title": "2026-09-15 TSC Minutes",
+        "topicSharers": [
+          "557058:822eb146-7cd1-4d0a-8772-22d2773be7c5",
+          "5e58b7c15a495e0c91a94b44",
+          "712020:a0730888-323b-4928-80e4-fd39f1999b8d"
+        ]
+      },
+      {
+        "pageId": "1406074883",
+        "title": "2026-09-22 TSC Minutes",
+        "topicSharers": [
+          "712020:eb69db15-9d15-4a5f-bcd0-2b95a967bf3b"
+        ]
+      },
+      {
+        "pageId": "1423507458",
+        "title": "2026-09-29 TSC Minutes",
+        "topicSharers": [
+          "5e58b7c15a495e0c91a94b44"
+        ]
+      }
+    ],
+    "pageEdits": [
+      {
+        "pageId": "1139278995",
+        "title": "OpenAN Project Home",
+        "editors": [
+          "5d00c37ddf6c8f0bbd781cd5"
+        ]
+      },
+      {
+        "pageId": "1139408898",
+        "title": "Technical Steering Committee (TSC)",
+        "editors": [
+          "5d00c37ddf6c8f0bbd781cd5",
+          "5e58b7c15a495e0c91a94b44"
+        ]
+      },
+      {
+        "pageId": "1139867650",
+        "title": "TSC Members",
+        "editors": [
+          "5d00c37ddf6c8f0bbd781cd5",
+          "5e58b7c15a495e0c91a94b44"
+        ]
+      },
+      {
+        "pageId": "1139933187",
+        "title": "TSC Minutes",
+        "editors": [
+          "5d00c37ddf6c8f0bbd781cd5",
+          "5e58b7c15a495e0c91a94b44"
+        ]
+      },
+      {
+        "pageId": "1139310597",
+        "title": "2026 - TSC Minutes",
+        "editors": [
+          "5d00c37ddf6c8f0bbd781cd5"
+        ]
+      },
+      {
+        "pageId": "1139802120",
+        "title": "Adopter Advisory Committee (AAC)",
+        "editors": [
+          "5d00c37ddf6c8f0bbd781cd5",
+          "5e58b7c15a495e0c91a94b44"
+        ]
+      },
+      {
+        "pageId": "1139802154",
+        "title": "AAC Members",
+        "editors": [
+          "5d00c37ddf6c8f0bbd781cd5",
+          "5e58b7c15a495e0c91a94b44"
+        ]
+      },
+      {
+        "pageId": "1140064258",
+        "title": "AAC Minutes",
+        "editors": [
+          "5d00c37ddf6c8f0bbd781cd5",
+          "5e58b7c15a495e0c91a94b44"
+        ]
+      },
+      {
+        "pageId": "1139408933",
+        "title": "2026 - AAC Minutes",
+        "editors": [
+          "5d00c37ddf6c8f0bbd781cd5",
+          "5e58b7c15a495e0c91a94b44"
+        ]
+      },
+      {
+        "pageId": "1140064282",
+        "title": "Marketing Committee",
+        "editors": [
+          "5d00c37ddf6c8f0bbd781cd5"
+        ]
+      },
+      {
+        "pageId": "1139703817",
+        "title": "Marketing Committee Members",
+        "editors": [
+          "5d00c37ddf6c8f0bbd781cd5"
+        ]
+      },
+      {
+        "pageId": "1139769360",
+        "title": "Marketing Committee Minutes",
+        "editors": [
+          "5d00c37ddf6c8f0bbd781cd5"
+        ]
+      },
+      {
+        "pageId": "1139900420",
+        "title": "2026 - Marketing Committee Minutes",
+        "editors": [
+          "5d00c37ddf6c8f0bbd781cd5"
+        ]
+      },
+      {
+        "pageId": "1139441692",
+        "title": "2026-MM-DD AAC Minutes",
+        "editors": [
+          "5d00c37ddf6c8f0bbd781cd5",
+          "5e58b7c15a495e0c91a94b44"
+        ]
+      },
+      {
+        "pageId": "1139212296",
+        "title": "2026-MM-DD Marketing Minutes",
+        "editors": [
+          "5d00c37ddf6c8f0bbd781cd5"
+        ]
+      },
+      {
+        "pageId": "1161887745",
+        "title": "2026-06-09 TSC Minutes",
+        "editors": [
+          "5d00c37ddf6c8f0bbd781cd5",
+          "5da66d619810cf0c3ce3a7ff",
+          "5e58b7c15a495e0c91a94b44",
+          "712020:a0730888-323b-4928-80e4-fd39f1999b8d",
+          "712020:c8f0d540-db5e-42ed-a79a-611184462341",
+          "712020:f2d4beb5-2f11-47ca-8063-348bc8ab896f"
+        ]
+      },
+      {
+        "pageId": "1164050433",
+        "title": "Getting Started With OpenAN",
+        "editors": [
+          "5d00c37ddf6c8f0bbd781cd5",
+          "5e58b7c15a495e0c91a94b44"
+        ]
+      },
+      {
+        "pageId": "1163362317",
+        "title": "Requirement Proposal",
+        "editors": [
+          "5da66d619810cf0c3ce3a7ff",
+          "5da82cb11a43fe0ddbb47e83",
+          "5e58b7c15a495e0c91a94b44",
+          "712020:050a0876-45eb-4d51-ab4a-52f010b286f2",
+          "712020:20284c60-7d6e-4949-9d8f-3c6ef28c4eb3",
+          "712020:60c80aad-c5b2-49e6-b103-749303dce5de",
+          "712020:abc95452-d9f7-4db4-af48-4eaa86795f0f",
+          "712020:c8f0d540-db5e-42ed-a79a-611184462341",
+          "712020:eb69db15-9d15-4a5f-bcd0-2b95a967bf3b",
+          "712020:f2d4beb5-2f11-47ca-8063-348bc8ab896f"
+        ]
+      },
+      {
+        "pageId": "1165852673",
+        "title": "2026-06-16 TSC Minutes",
+        "editors": [
+          "5da66d619810cf0c3ce3a7ff",
+          "5e58b7c15a495e0c91a94b44"
+        ]
+      },
+      {
+        "pageId": "1183219724",
+        "title": "Releases",
+        "editors": [
+          "5e58b7c15a495e0c91a94b44"
+        ]
+      },
+      {
+        "pageId": "1182859291",
+        "title": "Long Term Release Roadmap",
+        "editors": [
+          "5e58b7c15a495e0c91a94b44"
+        ]
+      },
+      {
+        "pageId": "1182433291",
+        "title": "Release Process",
+        "editors": [
+          "5e58b7c15a495e0c91a94b44"
+        ]
+      },
+      {
+        "pageId": "1187971084",
+        "title": "Release Planning",
+        "editors": [
+          "5e58b7c15a495e0c91a94b44"
+        ]
+      },
+      {
+        "pageId": "1187446926",
+        "title": "OpenAN 26.06",
+        "editors": [
+          "5e58b7c15a495e0c91a94b44"
+        ]
+      },
+      {
+        "pageId": "1187905545",
+        "title": "OpenAN 26.12",
+        "editors": [
+          "5e58b7c15a495e0c91a94b44"
+        ]
+      },
+      {
+        "pageId": "1192361988",
+        "title": "Events",
+        "editors": [
+          "5da66d619810cf0c3ce3a7ff",
+          "5e58b7c15a495e0c91a94b44"
+        ]
+      },
+      {
+        "pageId": "1191346183",
+        "title": "2026-06-24 Founding Member Meeting",
+        "editors": [
+          "5da66d619810cf0c3ce3a7ff",
+          "5e58b7c15a495e0c91a94b44",
+          "712020:a0730888-323b-4928-80e4-fd39f1999b8d",
+          "712020:c8f0d540-db5e-42ed-a79a-611184462341"
+        ]
+      },
+      {
+        "pageId": "1202454562",
+        "title": "Requirement Proposal Template",
+        "editors": [
+          "5e58b7c15a495e0c91a94b44"
+        ]
+      },
+      {
+        "pageId": "1206943745",
+        "title": "2026-06-30 TSC Minutes",
+        "editors": [
+          "5da66d619810cf0c3ce3a7ff",
+          "5e58b7c15a495e0c91a94b44",
+          "712020:c8f0d540-db5e-42ed-a79a-611184462341"
+        ]
+      },
+      {
+        "pageId": "1220739073",
+        "title": "2026-07-07 TSC Minutes",
+        "editors": [
+          "5d00c37ddf6c8f0bbd781cd5",
+          "5da66d619810cf0c3ce3a7ff",
+          "5db90dd78704ba0dab24100d",
+          "712020:c8f0d540-db5e-42ed-a79a-611184462341"
+        ]
+      },
+      {
+        "pageId": "1229488140",
+        "title": "OpenAN Slides Template",
+        "editors": [
+          "5e58b7c15a495e0c91a94b44"
+        ]
+      },
+      {
+        "pageId": "1229422598",
+        "title": "Repository Maintainer Files: Templates and Guidance",
+        "editors": [
+          "5d00c37ddf6c8f0bbd781cd5",
+          "5da66d619810cf0c3ce3a7ff"
+        ]
+      },
+      {
+        "pageId": "1229946892",
+        "title": "2026-07-14 TSC Minutes",
+        "editors": [
+          "557058:822eb146-7cd1-4d0a-8772-22d2773be7c5",
+          "5d00c37ddf6c8f0bbd781cd5",
+          "5da66d619810cf0c3ce3a7ff",
+          "5db90dd78704ba0dab24100d",
+          "5e58b7c15a495e0c91a94b44",
+          "712020:c8f0d540-db5e-42ed-a79a-611184462341",
+          "712020:f2d4beb5-2f11-47ca-8063-348bc8ab896f"
+        ]
+      },
+      {
+        "pageId": "1256030209",
+        "title": "2026-07-21 TSC Minutes",
+        "editors": [
+          "557058:822eb146-7cd1-4d0a-8772-22d2773be7c5",
+          "557058:8e0bff92-94e9-43b6-a6e3-3d7f3873c147",
+          "5e58b7c15a495e0c91a94b44",
+          "712020:050a0876-45eb-4d51-ab4a-52f010b286f2",
+          "712020:c719c77b-af77-4430-9760-4cd1ef4278c3",
+          "712020:c8f0d540-db5e-42ed-a79a-611184462341",
+          "712020:f2d4beb5-2f11-47ca-8063-348bc8ab896f"
+        ]
+      },
+      {
+        "pageId": "1255636997",
+        "title": "OpenAN 26.12 Architecture",
+        "editors": [
+          "5e58b7c15a495e0c91a94b44",
+          "712020:51549cbc-8272-4fc7-8720-c20b3a409769"
+        ]
+      },
+      {
+        "pageId": "1271758849",
+        "title": "2026-07-28 TSC Minutes",
+        "editors": [
+          "557058:822eb146-7cd1-4d0a-8772-22d2773be7c5",
+          "557058:8e0bff92-94e9-43b6-a6e3-3d7f3873c147",
+          "557058:a7043aca-8c5b-47de-b047-625af73796b5",
+          "5db90dd78704ba0dab24100d",
+          "5e58b7c15a495e0c91a94b44",
+          "712020:050a0876-45eb-4d51-ab4a-52f010b286f2",
+          "712020:c719c77b-af77-4430-9760-4cd1ef4278c3",
+          "712020:c8f0d540-db5e-42ed-a79a-611184462341"
+        ]
+      },
+      {
+        "pageId": "1289814017",
+        "title": "2026-08-04 TSC Minutes",
+        "editors": [
+          "557058:822eb146-7cd1-4d0a-8772-22d2773be7c5",
+          "5da66d619810cf0c3ce3a7ff",
+          "5db90dd78704ba0dab24100d",
+          "5e58b7c15a495e0c91a94b44",
+          "712020:20284c60-7d6e-4949-9d8f-3c6ef28c4eb3",
+          "712020:abc95452-d9f7-4db4-af48-4eaa86795f0f",
+          "712020:c719c77b-af77-4430-9760-4cd1ef4278c3",
+          "712020:c8f0d540-db5e-42ed-a79a-611184462341"
+        ]
+      },
+      {
+        "pageId": "1298169875",
+        "title": "2026-TSC-Meeting Information",
+        "editors": [
+          "5e58b7c15a495e0c91a94b44"
+        ]
+      },
+      {
+        "pageId": "1298235395",
+        "title": "2026-08-11 TSC Minutes",
+        "editors": [
+          "557058:8e0bff92-94e9-43b6-a6e3-3d7f3873c147",
+          "5da66d619810cf0c3ce3a7ff",
+          "5e58b7c15a495e0c91a94b44"
+        ]
+      },
+      {
+        "pageId": "1299316742",
+        "title": "2026-12-11 ONES",
+        "editors": [
+          "5da66d619810cf0c3ce3a7ff",
+          "5e58b7c15a495e0c91a94b44",
+          "712020:c719c77b-af77-4430-9760-4cd1ef4278c3"
+        ]
+      },
+      {
+        "pageId": "1306361865",
+        "title": "OpenAN Participants Guide",
+        "editors": [
+          "5e58b7c15a495e0c91a94b44",
+          "712020:f2d4beb5-2f11-47ca-8063-348bc8ab896f"
+        ]
+      },
+      {
+        "pageId": "1313013775",
+        "title": "How to Join OpenAN TSC & AAC",
+        "editors": [
+          "5e58b7c15a495e0c91a94b44",
+          "712020:f2d4beb5-2f11-47ca-8063-348bc8ab896f"
+        ]
+      },
+      {
+        "pageId": "1318748166",
+        "title": "TSC Discussion",
+        "editors": [
+          "5da66d619810cf0c3ce3a7ff"
+        ]
+      },
+      {
+        "pageId": "1319108623",
+        "title": "2026-08-18 TSC Minutes",
+        "editors": [
+          "5da66d619810cf0c3ce3a7ff",
+          "5e58b7c15a495e0c91a94b44",
+          "712020:60c80aad-c5b2-49e6-b103-749303dce5de",
+          "712020:a0730888-323b-4928-80e4-fd39f1999b8d",
+          "712020:c8f0d540-db5e-42ed-a79a-611184462341",
+          "712020:f2d4beb5-2f11-47ca-8063-348bc8ab896f"
+        ]
+      },
+      {
+        "pageId": "1324974084",
+        "title": "OpenAN Project Branch Management — Adding a dev Branch",
+        "editors": [
+          "712020:60c80aad-c5b2-49e6-b103-749303dce5de"
+        ]
+      },
+      {
+        "pageId": "1343684610",
+        "title": "2026-08-25 TSC Minutes",
+        "editors": [
+          "557058:822eb146-7cd1-4d0a-8772-22d2773be7c5",
+          "5da66d619810cf0c3ce3a7ff",
+          "5db90dd78704ba0dab24100d",
+          "5e58b7c15a495e0c91a94b44",
+          "712020:c719c77b-af77-4430-9760-4cd1ef4278c3",
+          "712020:e2ae8a82-d8c6-4bda-9ee1-082c56635505",
+          "712020:eb69db15-9d15-4a5f-bcd0-2b95a967bf3b"
+        ]
+      },
+      {
+        "pageId": "1349976065",
+        "title": "2026-09-01 TSC Minutes",
+        "editors": [
+          "557058:822eb146-7cd1-4d0a-8772-22d2773be7c5",
+          "5da66d619810cf0c3ce3a7ff",
+          "5e58b7c15a495e0c91a94b44",
+          "712020:20284c60-7d6e-4949-9d8f-3c6ef28c4eb3",
+          "712020:eb69db15-9d15-4a5f-bcd0-2b95a967bf3b"
+        ]
+      },
+      {
+        "pageId": "1365737473",
+        "title": "2026-06-24 AAC Minutes",
+        "editors": [
+          "5e58b7c15a495e0c91a94b44"
+        ]
+      },
+      {
+        "pageId": "1370062849",
+        "title": "2026-10-14 AAC Minutes",
+        "editors": [
+          "5e58b7c15a495e0c91a94b44"
+        ]
+      },
+      {
+        "pageId": "1373306881",
+        "title": "2026-09-08 TSC Minutes",
+        "editors": [
+          "557058:822eb146-7cd1-4d0a-8772-22d2773be7c5",
+          "5da66d619810cf0c3ce3a7ff"
+        ]
+      },
+      {
+        "pageId": "1387003906",
+        "title": "2026-09-15 TSC Minutes",
+        "editors": [
+          "5da66d619810cf0c3ce3a7ff",
+          "5e58b7c15a495e0c91a94b44",
+          "712020:51549cbc-8272-4fc7-8720-c20b3a409769",
+          "712020:c719c77b-af77-4430-9760-4cd1ef4278c3"
+        ]
+      },
+      {
+        "pageId": "1406074883",
+        "title": "2026-09-22 TSC Minutes",
+        "editors": [
+          "5da66d619810cf0c3ce3a7ff",
+          "5da82cb11a43fe0ddbb47e83",
+          "5e58b7c15a495e0c91a94b44",
+          "712020:a0730888-323b-4928-80e4-fd39f1999b8d",
+          "712020:c8f0d540-db5e-42ed-a79a-611184462341",
+          "712020:eb69db15-9d15-4a5f-bcd0-2b95a967bf3b"
+        ]
+      },
+      {
+        "pageId": "1423507458",
+        "title": "2026-09-29 TSC Minutes",
+        "editors": [
+          "5da66d619810cf0c3ce3a7ff",
+          "5e58b7c15a495e0c91a94b44",
+          "712020:a0730888-323b-4928-80e4-fd39f1999b8d"
+        ]
+      }
+    ]
+  },
+  "pages": [
+    {
+      "pageId": "1139278995",
+      "title": "OpenAN Project Home",
+      "spaceKey": "OpenAN",
+      "status": "current",
+      "labels": [],
+      "creatorAccountId": "5d00c37ddf6c8f0bbd781cd5",
+      "creatorDisplayName": "Casey Cain",
+      "creatorAccountType": "atlassian",
+      "createdDate": "2026-05-29T16:14:12.792Z",
+      "lastModified": "2026-07-07T14:56:23.045Z",
+      "lastModifiedByAccountId": "5d00c37ddf6c8f0bbd781cd5",
+      "lastModifiedByDisplayName": "Casey Cain",
+      "versionNumber": 10,
+      "ancestorTitles": []
+    },
+    {
+      "pageId": "1139408898",
+      "title": "Technical Steering Committee (TSC)",
+      "spaceKey": "OpenAN",
+      "status": "current",
+      "labels": [],
+      "creatorAccountId": "5d00c37ddf6c8f0bbd781cd5",
+      "creatorDisplayName": "Casey Cain",
+      "creatorAccountType": "atlassian",
+      "createdDate": "2026-05-29T16:21:29.723Z",
+      "lastModified": "2026-08-17T07:40:34.384Z",
+      "lastModifiedByAccountId": "5e58b7c15a495e0c91a94b44",
+      "lastModifiedByDisplayName": "Chuanyu Chen",
+      "versionNumber": 13,
+      "ancestorTitles": [
+        "OpenAN Project Home"
+      ]
+    },
+    {
+      "pageId": "1139867650",
+      "title": "TSC Members",
+      "spaceKey": "OpenAN",
+      "status": "current",
+      "labels": [],
+      "creatorAccountId": "5d00c37ddf6c8f0bbd781cd5",
+      "creatorDisplayName": "Casey Cain",
+      "creatorAccountType": "atlassian",
+      "createdDate": "2026-05-29T16:21:41.679Z",
+      "lastModified": "2026-08-17T07:40:48.555Z",
+      "lastModifiedByAccountId": "5e58b7c15a495e0c91a94b44",
+      "lastModifiedByDisplayName": "Chuanyu Chen",
+      "versionNumber": 13,
+      "ancestorTitles": [
+        "OpenAN Project Home",
+        "Technical Steering Committee (TSC)"
+      ]
+    },
+    {
+      "pageId": "1139933187",
+      "title": "TSC Minutes",
+      "spaceKey": "OpenAN",
+      "status": "current",
+      "labels": [],
+      "creatorAccountId": "5d00c37ddf6c8f0bbd781cd5",
+      "creatorDisplayName": "Casey Cain",
+      "creatorAccountType": "atlassian",
+      "createdDate": "2026-05-29T16:21:48.835Z",
+      "lastModified": "2026-09-01T02:28:49.637Z",
+      "lastModifiedByAccountId": "5e58b7c15a495e0c91a94b44",
+      "lastModifiedByDisplayName": "Chuanyu Chen",
+      "versionNumber": 2,
+      "ancestorTitles": [
+        "OpenAN Project Home",
+        "Technical Steering Committee (TSC)"
+      ]
+    },
+    {
+      "pageId": "1139310597",
+      "title": "2026 - TSC Minutes",
+      "spaceKey": "OpenAN",
+      "status": "current",
+      "labels": [
+        "tsc-minutes"
+      ],
+      "creatorAccountId": "5d00c37ddf6c8f0bbd781cd5",
+      "creatorDisplayName": "Casey Cain",
+      "creatorAccountType": "atlassian",
+      "createdDate": "2026-05-29T16:21:55.790Z",
+      "lastModified": "2026-05-29T16:21:55.790Z",
+      "lastModifiedByAccountId": "5d00c37ddf6c8f0bbd781cd5",
+      "lastModifiedByDisplayName": "Casey Cain",
+      "versionNumber": 1,
+      "ancestorTitles": [
+        "OpenAN Project Home",
+        "Technical Steering Committee (TSC)",
+        "TSC Minutes"
+      ]
+    },
+    {
+      "pageId": "1139802120",
+      "title": "Adopter Advisory Committee (AAC)",
+      "spaceKey": "OpenAN",
+      "status": "current",
+      "labels": [],
+      "creatorAccountId": "5d00c37ddf6c8f0bbd781cd5",
+      "creatorDisplayName": "Casey Cain",
+      "creatorAccountType": "atlassian",
+      "createdDate": "2026-05-29T16:29:37.200Z",
+      "lastModified": "2026-07-07T09:05:16.495Z",
+      "lastModifiedByAccountId": "5e58b7c15a495e0c91a94b44",
+      "lastModifiedByDisplayName": "Chuanyu Chen",
+      "versionNumber": 10,
+      "ancestorTitles": [
+        "OpenAN Project Home"
+      ]
+    },
+    {
+      "pageId": "1139802154",
+      "title": "AAC Members",
+      "spaceKey": "OpenAN",
+      "status": "current",
+      "labels": [],
+      "creatorAccountId": "5d00c37ddf6c8f0bbd781cd5",
+      "creatorDisplayName": "Casey Cain",
+      "creatorAccountType": "atlassian",
+      "createdDate": "2026-05-29T16:29:45.198Z",
+      "lastModified": "2026-07-07T09:03:43.269Z",
+      "lastModifiedByAccountId": "5e58b7c15a495e0c91a94b44",
+      "lastModifiedByDisplayName": "Chuanyu Chen",
+      "versionNumber": 8,
+      "ancestorTitles": [
+        "OpenAN Project Home",
+        "Adopter Advisory Committee (AAC)"
+      ]
+    },
+    {
+      "pageId": "1140064258",
+      "title": "AAC Minutes",
+      "spaceKey": "OpenAN",
+      "status": "current",
+      "labels": [],
+      "creatorAccountId": "5d00c37ddf6c8f0bbd781cd5",
+      "creatorDisplayName": "Casey Cain",
+      "creatorAccountType": "atlassian",
+      "createdDate": "2026-05-29T16:29:52.080Z",
+      "lastModified": "2026-09-01T09:29:25.509Z",
+      "lastModifiedByAccountId": "5e58b7c15a495e0c91a94b44",
+      "lastModifiedByDisplayName": "Chuanyu Chen",
+      "versionNumber": 4,
+      "ancestorTitles": [
+        "OpenAN Project Home",
+        "Adopter Advisory Committee (AAC)"
+      ]
+    },
+    {
+      "pageId": "1139408933",
+      "title": "2026 - AAC Minutes",
+      "spaceKey": "OpenAN",
+      "status": "current",
+      "labels": [],
+      "creatorAccountId": "5d00c37ddf6c8f0bbd781cd5",
+      "creatorDisplayName": "Casey Cain",
+      "creatorAccountType": "atlassian",
+      "createdDate": "2026-05-29T16:29:58.403Z",
+      "lastModified": "2026-07-07T09:04:27.279Z",
+      "lastModifiedByAccountId": "5e58b7c15a495e0c91a94b44",
+      "lastModifiedByDisplayName": "Chuanyu Chen",
+      "versionNumber": 2,
+      "ancestorTitles": [
+        "OpenAN Project Home",
+        "Adopter Advisory Committee (AAC)",
+        "AAC Minutes"
+      ]
+    },
+    {
+      "pageId": "1140064282",
+      "title": "Marketing Committee",
+      "spaceKey": "OpenAN",
+      "status": "current",
+      "labels": [],
+      "creatorAccountId": "5d00c37ddf6c8f0bbd781cd5",
+      "creatorDisplayName": "Casey Cain",
+      "creatorAccountType": "atlassian",
+      "createdDate": "2026-05-29T16:30:12.702Z",
+      "lastModified": "2026-05-29T16:46:35.142Z",
+      "lastModifiedByAccountId": "5d00c37ddf6c8f0bbd781cd5",
+      "lastModifiedByDisplayName": "Casey Cain",
+      "versionNumber": 4,
+      "ancestorTitles": [
+        "OpenAN Project Home"
+      ]
+    },
+    {
+      "pageId": "1139703817",
+      "title": "Marketing Committee Members",
+      "spaceKey": "OpenAN",
+      "status": "current",
+      "labels": [],
+      "creatorAccountId": "5d00c37ddf6c8f0bbd781cd5",
+      "creatorDisplayName": "Casey Cain",
+      "creatorAccountType": "atlassian",
+      "createdDate": "2026-05-29T16:30:19.958Z",
+      "lastModified": "2026-05-29T16:33:37.164Z",
+      "lastModifiedByAccountId": "5d00c37ddf6c8f0bbd781cd5",
+      "lastModifiedByDisplayName": "Casey Cain",
+      "versionNumber": 2,
+      "ancestorTitles": [
+        "OpenAN Project Home",
+        "Marketing Committee"
+      ]
+    },
+    {
+      "pageId": "1139769360",
+      "title": "Marketing Committee Minutes",
+      "spaceKey": "OpenAN",
+      "status": "current",
+      "labels": [],
+      "creatorAccountId": "5d00c37ddf6c8f0bbd781cd5",
+      "creatorDisplayName": "Casey Cain",
+      "creatorAccountType": "atlassian",
+      "createdDate": "2026-05-29T16:30:26.394Z",
+      "lastModified": "2026-05-29T16:30:26.394Z",
+      "lastModifiedByAccountId": "5d00c37ddf6c8f0bbd781cd5",
+      "lastModifiedByDisplayName": "Casey Cain",
+      "versionNumber": 1,
+      "ancestorTitles": [
+        "OpenAN Project Home",
+        "Marketing Committee"
+      ]
+    },
+    {
+      "pageId": "1139900420",
+      "title": "2026 - Marketing Committee Minutes",
+      "spaceKey": "OpenAN",
+      "status": "current",
+      "labels": [],
+      "creatorAccountId": "5d00c37ddf6c8f0bbd781cd5",
+      "creatorDisplayName": "Casey Cain",
+      "creatorAccountType": "atlassian",
+      "createdDate": "2026-05-29T16:30:32.749Z",
+      "lastModified": "2026-05-29T16:30:32.749Z",
+      "lastModifiedByAccountId": "5d00c37ddf6c8f0bbd781cd5",
+      "lastModifiedByDisplayName": "Casey Cain",
+      "versionNumber": 1,
+      "ancestorTitles": [
+        "OpenAN Project Home",
+        "Marketing Committee",
+        "Marketing Committee Minutes"
+      ]
+    },
+    {
+      "pageId": "1139441692",
+      "title": "2026-MM-DD AAC Minutes",
+      "spaceKey": "OpenAN",
+      "status": "current",
+      "labels": [
+        "pac-minutes"
+      ],
+      "creatorAccountId": "5d00c37ddf6c8f0bbd781cd5",
+      "creatorDisplayName": "Casey Cain",
+      "creatorAccountType": "atlassian",
+      "createdDate": "2026-05-29T16:40:18.820Z",
+      "lastModified": "2026-07-07T09:04:52.366Z",
+      "lastModifiedByAccountId": "5e58b7c15a495e0c91a94b44",
+      "lastModifiedByDisplayName": "Chuanyu Chen",
+      "versionNumber": 2,
+      "ancestorTitles": [
+        "OpenAN Project Home",
+        "Adopter Advisory Committee (AAC)",
+        "AAC Minutes",
+        "2026 - AAC Minutes"
+      ]
+    },
+    {
+      "pageId": "1139212296",
+      "title": "2026-MM-DD Marketing Minutes",
+      "spaceKey": "OpenAN",
+      "status": "current",
+      "labels": [
+        "marketing-minutes"
+      ],
+      "creatorAccountId": "5d00c37ddf6c8f0bbd781cd5",
+      "creatorDisplayName": "Casey Cain",
+      "creatorAccountType": "atlassian",
+      "createdDate": "2026-05-29T16:43:31.381Z",
+      "lastModified": "2026-05-29T16:43:31.381Z",
+      "lastModifiedByAccountId": "5d00c37ddf6c8f0bbd781cd5",
+      "lastModifiedByDisplayName": "Casey Cain",
+      "versionNumber": 1,
+      "ancestorTitles": [
+        "OpenAN Project Home",
+        "Marketing Committee",
+        "Marketing Committee Minutes",
+        "2026 - Marketing Committee Minutes"
+      ]
+    },
+    {
+      "pageId": "1161887745",
+      "title": "2026-06-09 TSC Minutes",
+      "spaceKey": "OpenAN",
+      "status": "current",
+      "labels": [
+        "tsc-minutes"
+      ],
+      "creatorAccountId": "5da66d619810cf0c3ce3a7ff",
+      "creatorDisplayName": "Yijun Yu",
+      "creatorAccountType": "atlassian",
+      "createdDate": "2026-06-09T01:32:27.705Z",
+      "lastModified": "2026-06-27T09:55:34.044Z",
+      "lastModifiedByAccountId": "5e58b7c15a495e0c91a94b44",
+      "lastModifiedByDisplayName": "Chuanyu Chen",
+      "versionNumber": 23,
+      "ancestorTitles": [
+        "OpenAN Project Home",
+        "Technical Steering Committee (TSC)",
+        "TSC Minutes",
+        "2026 - TSC Minutes"
+      ]
+    },
+    {
+      "pageId": "1164050433",
+      "title": "Getting Started With OpenAN",
+      "spaceKey": "OpenAN",
+      "status": "current",
+      "labels": [],
+      "creatorAccountId": "5d00c37ddf6c8f0bbd781cd5",
+      "creatorDisplayName": "Casey Cain",
+      "creatorAccountType": "atlassian",
+      "createdDate": "2026-06-09T14:42:07.768Z",
+      "lastModified": "2026-07-08T08:00:24.511Z",
+      "lastModifiedByAccountId": "5e58b7c15a495e0c91a94b44",
+      "lastModifiedByDisplayName": "Chuanyu Chen",
+      "versionNumber": 5,
+      "ancestorTitles": [
+        "OpenAN Project Home"
+      ]
+    },
+    {
+      "pageId": "1163362317",
+      "title": "Requirement Proposal",
+      "spaceKey": "OpenAN",
+      "status": "current",
+      "labels": [],
+      "creatorAccountId": "5da66d619810cf0c3ce3a7ff",
+      "creatorDisplayName": "Yijun Yu",
+      "creatorAccountType": "atlassian",
+      "createdDate": "2026-06-09T15:24:29.421Z",
+      "lastModified": "2026-09-28T06:37:05.990Z",
+      "lastModifiedByAccountId": "5e58b7c15a495e0c91a94b44",
+      "lastModifiedByDisplayName": "Chuanyu Chen",
+      "versionNumber": 146,
+      "ancestorTitles": [
+        "OpenAN Project Home",
+        "Releases",
+        "Release Planning",
+        "OpenAN 26.12"
+      ]
+    },
+    {
+      "pageId": "1165852673",
+      "title": "2026-06-16 TSC Minutes",
+      "spaceKey": "OpenAN",
+      "status": "current",
+      "labels": [],
+      "creatorAccountId": "5da66d619810cf0c3ce3a7ff",
+      "creatorDisplayName": "Yijun Yu",
+      "creatorAccountType": "atlassian",
+      "createdDate": "2026-06-10T12:07:59.729Z",
+      "lastModified": "2026-07-09T08:22:17.200Z",
+      "lastModifiedByAccountId": "5e58b7c15a495e0c91a94b44",
+      "lastModifiedByDisplayName": "Chuanyu Chen",
+      "versionNumber": 6,
+      "ancestorTitles": [
+        "OpenAN Project Home",
+        "Technical Steering Committee (TSC)",
+        "TSC Minutes",
+        "2026 - TSC Minutes"
+      ]
+    },
+    {
+      "pageId": "1183219724",
+      "title": "Releases",
+      "spaceKey": "OpenAN",
+      "status": "current",
+      "labels": [],
+      "creatorAccountId": "5e58b7c15a495e0c91a94b44",
+      "creatorDisplayName": "Chuanyu Chen",
+      "creatorAccountType": "atlassian",
+      "createdDate": "2026-06-18T06:26:08.842Z",
+      "lastModified": "2026-06-29T07:26:48.516Z",
+      "lastModifiedByAccountId": "5e58b7c15a495e0c91a94b44",
+      "lastModifiedByDisplayName": "Chuanyu Chen",
+      "versionNumber": 3,
+      "ancestorTitles": [
+        "OpenAN Project Home"
+      ]
+    },
+    {
+      "pageId": "1182859291",
+      "title": "Long Term Release Roadmap",
+      "spaceKey": "OpenAN",
+      "status": "current",
+      "labels": [],
+      "creatorAccountId": "5e58b7c15a495e0c91a94b44",
+      "creatorDisplayName": "Chuanyu Chen",
+      "creatorAccountType": "atlassian",
+      "createdDate": "2026-06-18T06:27:09.692Z",
+      "lastModified": "2026-06-29T03:11:26.677Z",
+      "lastModifiedByAccountId": "5e58b7c15a495e0c91a94b44",
+      "lastModifiedByDisplayName": "Chuanyu Chen",
+      "versionNumber": 2,
+      "ancestorTitles": [
+        "OpenAN Project Home",
+        "Releases"
+      ]
+    },
+    {
+      "pageId": "1182433291",
+      "title": "Release Process",
+      "spaceKey": "OpenAN",
+      "status": "current",
+      "labels": [],
+      "creatorAccountId": "5e58b7c15a495e0c91a94b44",
+      "creatorDisplayName": "Chuanyu Chen",
+      "creatorAccountType": "atlassian",
+      "createdDate": "2026-06-18T06:43:09.279Z",
+      "lastModified": "2026-08-24T03:06:24.809Z",
+      "lastModifiedByAccountId": "5e58b7c15a495e0c91a94b44",
+      "lastModifiedByDisplayName": "Chuanyu Chen",
+      "versionNumber": 11,
+      "ancestorTitles": [
+        "OpenAN Project Home",
+        "Releases"
+      ]
+    },
+    {
+      "pageId": "1187971084",
+      "title": "Release Planning",
+      "spaceKey": "OpenAN",
+      "status": "current",
+      "labels": [],
+      "creatorAccountId": "5e58b7c15a495e0c91a94b44",
+      "creatorDisplayName": "Chuanyu Chen",
+      "creatorAccountType": "atlassian",
+      "createdDate": "2026-06-22T02:49:50.021Z",
+      "lastModified": "2026-06-22T02:50:04.726Z",
+      "lastModifiedByAccountId": "5e58b7c15a495e0c91a94b44",
+      "lastModifiedByDisplayName": "Chuanyu Chen",
+      "versionNumber": 1,
+      "ancestorTitles": [
+        "OpenAN Project Home",
+        "Releases"
+      ]
+    },
+    {
+      "pageId": "1187446926",
+      "title": "OpenAN 26.06",
+      "spaceKey": "OpenAN",
+      "status": "current",
+      "labels": [],
+      "creatorAccountId": "5e58b7c15a495e0c91a94b44",
+      "creatorDisplayName": "Chuanyu Chen",
+      "creatorAccountType": "atlassian",
+      "createdDate": "2026-06-22T02:50:09.731Z",
+      "lastModified": "2026-07-15T02:37:45.001Z",
+      "lastModifiedByAccountId": "5e58b7c15a495e0c91a94b44",
+      "lastModifiedByDisplayName": "Chuanyu Chen",
+      "versionNumber": 2,
+      "ancestorTitles": [
+        "OpenAN Project Home",
+        "Releases",
+        "Release Planning"
+      ]
+    },
+    {
+      "pageId": "1187905545",
+      "title": "OpenAN 26.12",
+      "spaceKey": "OpenAN",
+      "status": "current",
+      "labels": [],
+      "creatorAccountId": "5e58b7c15a495e0c91a94b44",
+      "creatorDisplayName": "Chuanyu Chen",
+      "creatorAccountType": "atlassian",
+      "createdDate": "2026-06-22T02:50:41.849Z",
+      "lastModified": "2026-09-15T14:17:54.147Z",
+      "lastModifiedByAccountId": "5e58b7c15a495e0c91a94b44",
+      "lastModifiedByDisplayName": "Chuanyu Chen",
+      "versionNumber": 17,
+      "ancestorTitles": [
+        "OpenAN Project Home",
+        "Releases",
+        "Release Planning"
+      ]
+    },
+    {
+      "pageId": "1192361988",
+      "title": "Events",
+      "spaceKey": "OpenAN",
+      "status": "current",
+      "labels": [],
+      "creatorAccountId": "5da66d619810cf0c3ce3a7ff",
+      "creatorDisplayName": "Yijun Yu",
+      "creatorAccountType": "atlassian",
+      "createdDate": "2026-06-23T20:33:29.133Z",
+      "lastModified": "2026-06-27T09:55:57.364Z",
+      "lastModifiedByAccountId": "5e58b7c15a495e0c91a94b44",
+      "lastModifiedByDisplayName": "Chuanyu Chen",
+      "versionNumber": 2,
+      "ancestorTitles": [
+        "OpenAN Project Home"
+      ]
+    },
+    {
+      "pageId": "1191346183",
+      "title": "2026-06-24 Founding Member Meeting",
+      "spaceKey": "OpenAN",
+      "status": "current",
+      "labels": [],
+      "creatorAccountId": "5da66d619810cf0c3ce3a7ff",
+      "creatorDisplayName": "Yijun Yu",
+      "creatorAccountType": "atlassian",
+      "createdDate": "2026-06-23T20:34:06.957Z",
+      "lastModified": "2026-08-06T09:42:12.008Z",
+      "lastModifiedByAccountId": "5e58b7c15a495e0c91a94b44",
+      "lastModifiedByDisplayName": "Chuanyu Chen",
+      "versionNumber": 7,
+      "ancestorTitles": [
+        "OpenAN Project Home",
+        "Events"
+      ]
+    },
+    {
+      "pageId": "1202454562",
+      "title": "Requirement Proposal Template",
+      "spaceKey": "OpenAN",
+      "status": "current",
+      "labels": [],
+      "creatorAccountId": "5e58b7c15a495e0c91a94b44",
+      "creatorDisplayName": "Chuanyu Chen",
+      "creatorAccountType": "atlassian",
+      "createdDate": "2026-06-27T09:07:54.887Z",
+      "lastModified": "2026-06-29T01:55:31.123Z",
+      "lastModifiedByAccountId": "5e58b7c15a495e0c91a94b44",
+      "lastModifiedByDisplayName": "Chuanyu Chen",
+      "versionNumber": 3,
+      "ancestorTitles": [
+        "OpenAN Project Home",
+        "Releases"
+      ]
+    },
+    {
+      "pageId": "1206943745",
+      "title": "2026-06-30 TSC Minutes",
+      "spaceKey": "OpenAN",
+      "status": "current",
+      "labels": [],
+      "creatorAccountId": "5e58b7c15a495e0c91a94b44",
+      "creatorDisplayName": "Chuanyu Chen",
+      "creatorAccountType": "atlassian",
+      "createdDate": "2026-06-30T01:22:57.867Z",
+      "lastModified": "2026-07-09T08:21:49.073Z",
+      "lastModifiedByAccountId": "5e58b7c15a495e0c91a94b44",
+      "lastModifiedByDisplayName": "Chuanyu Chen",
+      "versionNumber": 20,
+      "ancestorTitles": [
+        "OpenAN Project Home",
+        "Technical Steering Committee (TSC)",
+        "TSC Minutes",
+        "2026 - TSC Minutes"
+      ]
+    },
+    {
+      "pageId": "1220739073",
+      "title": "2026-07-07 TSC Minutes",
+      "spaceKey": "OpenAN",
+      "status": "current",
+      "labels": [],
+      "creatorAccountId": "5da66d619810cf0c3ce3a7ff",
+      "creatorDisplayName": "Yijun Yu",
+      "creatorAccountType": "atlassian",
+      "createdDate": "2026-07-06T00:55:08.390Z",
+      "lastModified": "2026-07-08T06:28:05.837Z",
+      "lastModifiedByAccountId": "5da66d619810cf0c3ce3a7ff",
+      "lastModifiedByDisplayName": "Yijun Yu",
+      "versionNumber": 38,
+      "ancestorTitles": [
+        "OpenAN Project Home",
+        "Technical Steering Committee (TSC)",
+        "TSC Minutes",
+        "2026 - TSC Minutes"
+      ]
+    },
+    {
+      "pageId": "1229488140",
+      "title": "OpenAN Slides Template",
+      "spaceKey": "OpenAN",
+      "status": "current",
+      "labels": [],
+      "creatorAccountId": "5e58b7c15a495e0c91a94b44",
+      "creatorDisplayName": "Chuanyu Chen",
+      "creatorAccountType": "atlassian",
+      "createdDate": "2026-07-09T03:18:48.500Z",
+      "lastModified": "2026-07-09T03:22:18.863Z",
+      "lastModifiedByAccountId": "5e58b7c15a495e0c91a94b44",
+      "lastModifiedByDisplayName": "Chuanyu Chen",
+      "versionNumber": 1,
+      "ancestorTitles": [
+        "OpenAN Project Home"
+      ]
+    },
+    {
+      "pageId": "1229422598",
+      "title": "Repository Maintainer Files: Templates and Guidance",
+      "spaceKey": "OpenAN",
+      "status": "current",
+      "labels": [],
+      "creatorAccountId": "5d00c37ddf6c8f0bbd781cd5",
+      "creatorDisplayName": "Casey Cain",
+      "creatorAccountType": "atlassian",
+      "createdDate": "2026-07-09T04:04:34.613Z",
+      "lastModified": "2026-07-14T14:07:38.140Z",
+      "lastModifiedByAccountId": "5d00c37ddf6c8f0bbd781cd5",
+      "lastModifiedByDisplayName": "Casey Cain",
+      "versionNumber": 8,
+      "ancestorTitles": [
+        "OpenAN Project Home",
+        "Getting Started With OpenAN"
+      ]
+    },
+    {
+      "pageId": "1229946892",
+      "title": "2026-07-14 TSC Minutes",
+      "spaceKey": "OpenAN",
+      "status": "current",
+      "labels": [
+        "tsc-minutes"
+      ],
+      "creatorAccountId": "5d00c37ddf6c8f0bbd781cd5",
+      "creatorDisplayName": "Casey Cain",
+      "creatorAccountType": "atlassian",
+      "createdDate": "2026-07-09T04:10:12.272Z",
+      "lastModified": "2026-07-14T14:51:37.307Z",
+      "lastModifiedByAccountId": "5da66d619810cf0c3ce3a7ff",
+      "lastModifiedByDisplayName": "Yijun Yu",
+      "versionNumber": 26,
+      "ancestorTitles": [
+        "OpenAN Project Home",
+        "Technical Steering Committee (TSC)",
+        "TSC Minutes",
+        "2026 - TSC Minutes"
+      ]
+    },
+    {
+      "pageId": "1256030209",
+      "title": "2026-07-21 TSC Minutes",
+      "spaceKey": "OpenAN",
+      "status": "current",
+      "labels": [
+        "tsc-minutes"
+      ],
+      "creatorAccountId": "5e58b7c15a495e0c91a94b44",
+      "creatorDisplayName": "Chuanyu Chen",
+      "creatorAccountType": "atlassian",
+      "createdDate": "2026-07-21T02:15:53.652Z",
+      "lastModified": "2026-08-11T14:03:41.058Z",
+      "lastModifiedByAccountId": "712020:c719c77b-af77-4430-9760-4cd1ef4278c3",
+      "lastModifiedByDisplayName": "Mohammed El Barhichi",
+      "versionNumber": 10,
+      "ancestorTitles": [
+        "OpenAN Project Home",
+        "Technical Steering Committee (TSC)",
+        "TSC Minutes",
+        "2026 - TSC Minutes"
+      ]
+    },
+    {
+      "pageId": "1255636997",
+      "title": "OpenAN 26.12 Architecture",
+      "spaceKey": "OpenAN",
+      "status": "current",
+      "labels": [],
+      "creatorAccountId": "5e58b7c15a495e0c91a94b44",
+      "creatorDisplayName": "Chuanyu Chen",
+      "creatorAccountType": "atlassian",
+      "createdDate": "2026-07-21T02:38:12.338Z",
+      "lastModified": "2026-07-30T02:49:37.261Z",
+      "lastModifiedByAccountId": "5e58b7c15a495e0c91a94b44",
+      "lastModifiedByDisplayName": "Chuanyu Chen",
+      "versionNumber": 11,
+      "ancestorTitles": [
+        "OpenAN Project Home",
+        "Releases",
+        "Release Planning",
+        "OpenAN 26.12"
+      ]
+    },
+    {
+      "pageId": "1271758849",
+      "title": "2026-07-28 TSC Minutes",
+      "spaceKey": "OpenAN",
+      "status": "current",
+      "labels": [
+        "tsc-minutes"
+      ],
+      "creatorAccountId": "5e58b7c15a495e0c91a94b44",
+      "creatorDisplayName": "Chuanyu Chen",
+      "creatorAccountType": "atlassian",
+      "createdDate": "2026-07-27T02:53:10.565Z",
+      "lastModified": "2026-08-11T14:04:25.198Z",
+      "lastModifiedByAccountId": "712020:c719c77b-af77-4430-9760-4cd1ef4278c3",
+      "lastModifiedByDisplayName": "Mohammed El Barhichi",
+      "versionNumber": 12,
+      "ancestorTitles": [
+        "OpenAN Project Home",
+        "Technical Steering Committee (TSC)",
+        "TSC Minutes",
+        "2026 - TSC Minutes"
+      ]
+    },
+    {
+      "pageId": "1289814017",
+      "title": "2026-08-04 TSC Minutes",
+      "spaceKey": "OpenAN",
+      "status": "current",
+      "labels": [
+        "tsc-minutes"
+      ],
+      "creatorAccountId": "5e58b7c15a495e0c91a94b44",
+      "creatorDisplayName": "Chuanyu Chen",
+      "creatorAccountType": "atlassian",
+      "createdDate": "2026-08-03T07:11:39.032Z",
+      "lastModified": "2026-08-11T14:04:51.312Z",
+      "lastModifiedByAccountId": "712020:c719c77b-af77-4430-9760-4cd1ef4278c3",
+      "lastModifiedByDisplayName": "Mohammed El Barhichi",
+      "versionNumber": 12,
+      "ancestorTitles": [
+        "OpenAN Project Home",
+        "Technical Steering Committee (TSC)",
+        "TSC Minutes",
+        "2026 - TSC Minutes"
+      ]
+    },
+    {
+      "pageId": "1298169875",
+      "title": "2026-TSC-Meeting Information",
+      "spaceKey": "OpenAN",
+      "status": "current",
+      "labels": [],
+      "creatorAccountId": "5e58b7c15a495e0c91a94b44",
+      "creatorDisplayName": "Chuanyu Chen",
+      "creatorAccountType": "atlassian",
+      "createdDate": "2026-08-06T03:26:41.069Z",
+      "lastModified": "2026-08-06T03:29:55.651Z",
+      "lastModifiedByAccountId": "5e58b7c15a495e0c91a94b44",
+      "lastModifiedByDisplayName": "Chuanyu Chen",
+      "versionNumber": 1,
+      "ancestorTitles": [
+        "OpenAN Project Home",
+        "Technical Steering Committee (TSC)",
+        "TSC Minutes",
+        "2026 - TSC Minutes"
+      ]
+    },
+    {
+      "pageId": "1298235395",
+      "title": "2026-08-11 TSC Minutes",
+      "spaceKey": "OpenAN",
+      "status": "current",
+      "labels": [
+        "tsc-minutes"
+      ],
+      "creatorAccountId": "5e58b7c15a495e0c91a94b44",
+      "creatorDisplayName": "Chuanyu Chen",
+      "creatorAccountType": "atlassian",
+      "createdDate": "2026-08-06T03:31:23.221Z",
+      "lastModified": "2026-08-12T00:58:47.801Z",
+      "lastModifiedByAccountId": "5da66d619810cf0c3ce3a7ff",
+      "lastModifiedByDisplayName": "Yijun Yu",
+      "versionNumber": 22,
+      "ancestorTitles": [
+        "OpenAN Project Home",
+        "Technical Steering Committee (TSC)",
+        "TSC Minutes",
+        "2026 - TSC Minutes"
+      ]
+    },
+    {
+      "pageId": "1299316742",
+      "title": "2026-12-11 ONES",
+      "spaceKey": "OpenAN",
+      "status": "current",
+      "labels": [],
+      "creatorAccountId": "5e58b7c15a495e0c91a94b44",
+      "creatorDisplayName": "Chuanyu Chen",
+      "creatorAccountType": "atlassian",
+      "createdDate": "2026-08-06T09:44:12.698Z",
+      "lastModified": "2026-09-04T09:19:53.412Z",
+      "lastModifiedByAccountId": "712020:c719c77b-af77-4430-9760-4cd1ef4278c3",
+      "lastModifiedByDisplayName": "Mohammed El Barhichi",
+      "versionNumber": 33,
+      "ancestorTitles": [
+        "OpenAN Project Home",
+        "Events"
+      ]
+    },
+    {
+      "pageId": "1306361865",
+      "title": "OpenAN Participants Guide",
+      "spaceKey": "OpenAN",
+      "status": "current",
+      "labels": [],
+      "creatorAccountId": "712020:f2d4beb5-2f11-47ca-8063-348bc8ab896f",
+      "creatorDisplayName": "Xunli Yang",
+      "creatorAccountType": "atlassian",
+      "createdDate": "2026-08-10T03:40:19.373Z",
+      "lastModified": "2026-08-25T01:41:15.547Z",
+      "lastModifiedByAccountId": "5e58b7c15a495e0c91a94b44",
+      "lastModifiedByDisplayName": "Chuanyu Chen",
+      "versionNumber": 6,
+      "ancestorTitles": [
+        "OpenAN Project Home",
+        "Getting Started With OpenAN"
+      ]
+    },
+    {
+      "pageId": "1313013775",
+      "title": "How to Join OpenAN TSC & AAC",
+      "spaceKey": "OpenAN",
+      "status": "current",
+      "labels": [],
+      "creatorAccountId": "712020:f2d4beb5-2f11-47ca-8063-348bc8ab896f",
+      "creatorDisplayName": "Xunli Yang",
+      "creatorAccountType": "atlassian",
+      "createdDate": "2026-08-12T06:41:15.052Z",
+      "lastModified": "2026-08-31T01:29:11.151Z",
+      "lastModifiedByAccountId": "5e58b7c15a495e0c91a94b44",
+      "lastModifiedByDisplayName": "Chuanyu Chen",
+      "versionNumber": 17,
+      "ancestorTitles": [
+        "OpenAN Project Home",
+        "Getting Started With OpenAN"
+      ]
+    },
+    {
+      "pageId": "1318748166",
+      "title": "TSC Discussion",
+      "spaceKey": "OpenAN",
+      "status": "current",
+      "labels": [],
+      "creatorAccountId": "5da66d619810cf0c3ce3a7ff",
+      "creatorDisplayName": "Yijun Yu",
+      "creatorAccountType": "atlassian",
+      "createdDate": "2026-08-14T04:00:21.130Z",
+      "lastModified": "2026-08-14T04:01:12.460Z",
+      "lastModifiedByAccountId": "5da66d619810cf0c3ce3a7ff",
+      "lastModifiedByDisplayName": "Yijun Yu",
+      "versionNumber": 1,
+      "ancestorTitles": [
+        "OpenAN Project Home",
+        "Technical Steering Committee (TSC)"
+      ]
+    },
+    {
+      "pageId": "1319108623",
+      "title": "2026-08-18 TSC Minutes",
+      "spaceKey": "OpenAN",
+      "status": "current",
+      "labels": [
+        "tsc-minutes"
+      ],
+      "creatorAccountId": "5da66d619810cf0c3ce3a7ff",
+      "creatorDisplayName": "Yijun Yu",
+      "creatorAccountType": "atlassian",
+      "createdDate": "2026-08-14T04:10:12.200Z",
+      "lastModified": "2026-08-19T00:56:55.027Z",
+      "lastModifiedByAccountId": "5da66d619810cf0c3ce3a7ff",
+      "lastModifiedByDisplayName": "Yijun Yu",
+      "versionNumber": 27,
+      "ancestorTitles": [
+        "OpenAN Project Home",
+        "Technical Steering Committee (TSC)",
+        "TSC Minutes",
+        "2026 - TSC Minutes"
+      ]
+    },
+    {
+      "pageId": "1324974084",
+      "title": "OpenAN Project Branch Management — Adding a dev Branch",
+      "spaceKey": "OpenAN",
+      "status": "current",
+      "labels": [],
+      "creatorAccountId": "712020:60c80aad-c5b2-49e6-b103-749303dce5de",
+      "creatorDisplayName": "Wenjun Zhang",
+      "creatorAccountType": "atlassian",
+      "createdDate": "2026-08-17T14:08:22.673Z",
+      "lastModified": "2026-08-17T14:18:22.424Z",
+      "lastModifiedByAccountId": "712020:60c80aad-c5b2-49e6-b103-749303dce5de",
+      "lastModifiedByDisplayName": "Wenjun Zhang",
+      "versionNumber": 3,
+      "ancestorTitles": [
+        "OpenAN Project Home",
+        "Technical Steering Committee (TSC)",
+        "TSC Discussion"
+      ]
+    },
+    {
+      "pageId": "1343684610",
+      "title": "2026-08-25 TSC Minutes",
+      "spaceKey": "OpenAN",
+      "status": "current",
+      "labels": [
+        "tsc-minutes"
+      ],
+      "creatorAccountId": "5da66d619810cf0c3ce3a7ff",
+      "creatorDisplayName": "Yijun Yu",
+      "creatorAccountType": "atlassian",
+      "createdDate": "2026-08-24T08:18:18.275Z",
+      "lastModified": "2026-08-27T01:24:47.711Z",
+      "lastModifiedByAccountId": "5da66d619810cf0c3ce3a7ff",
+      "lastModifiedByDisplayName": "Yijun Yu",
+      "versionNumber": 13,
+      "ancestorTitles": [
+        "OpenAN Project Home",
+        "Technical Steering Committee (TSC)",
+        "TSC Minutes",
+        "2026 - TSC Minutes"
+      ]
+    },
+    {
+      "pageId": "1349976065",
+      "title": "2026-09-01 TSC Minutes",
+      "spaceKey": "OpenAN",
+      "status": "current",
+      "labels": [
+        "tsc-minutes"
+      ],
+      "creatorAccountId": "5da66d619810cf0c3ce3a7ff",
+      "creatorDisplayName": "Yijun Yu",
+      "creatorAccountType": "atlassian",
+      "createdDate": "2026-08-26T11:55:28.874Z",
+      "lastModified": "2026-09-14T02:03:44.759Z",
+      "lastModifiedByAccountId": "5da66d619810cf0c3ce3a7ff",
+      "lastModifiedByDisplayName": "Yijun Yu",
+      "versionNumber": 31,
+      "ancestorTitles": [
+        "OpenAN Project Home",
+        "Technical Steering Committee (TSC)",
+        "TSC Minutes",
+        "2026 - TSC Minutes"
+      ]
+    },
+    {
+      "pageId": "1365737473",
+      "title": "2026-06-24 AAC Minutes",
+      "spaceKey": "OpenAN",
+      "status": "current",
+      "labels": [
+        "pac-minutes"
+      ],
+      "creatorAccountId": "5e58b7c15a495e0c91a94b44",
+      "creatorDisplayName": "Chuanyu Chen",
+      "creatorAccountType": "atlassian",
+      "createdDate": "2026-09-01T09:25:12.420Z",
+      "lastModified": "2026-09-01T09:29:00.112Z",
+      "lastModifiedByAccountId": "5e58b7c15a495e0c91a94b44",
+      "lastModifiedByDisplayName": "Chuanyu Chen",
+      "versionNumber": 1,
+      "ancestorTitles": [
+        "OpenAN Project Home",
+        "Adopter Advisory Committee (AAC)",
+        "AAC Minutes",
+        "2026 - AAC Minutes"
+      ]
+    },
+    {
+      "pageId": "1370062849",
+      "title": "2026-10-14 AAC Minutes",
+      "spaceKey": "OpenAN",
+      "status": "current",
+      "labels": [
+        "pac-minutes"
+      ],
+      "creatorAccountId": "5e58b7c15a495e0c91a94b44",
+      "creatorDisplayName": "Chuanyu Chen",
+      "creatorAccountType": "atlassian",
+      "createdDate": "2026-09-02T06:17:53.898Z",
+      "lastModified": "2026-09-14T07:09:58.566Z",
+      "lastModifiedByAccountId": "5e58b7c15a495e0c91a94b44",
+      "lastModifiedByDisplayName": "Chuanyu Chen",
+      "versionNumber": 20,
+      "ancestorTitles": [
+        "OpenAN Project Home",
+        "Adopter Advisory Committee (AAC)",
+        "AAC Minutes",
+        "2026 - AAC Minutes"
+      ]
+    },
+    {
+      "pageId": "1373306881",
+      "title": "2026-09-08 TSC Minutes",
+      "spaceKey": "OpenAN",
+      "status": "current",
+      "labels": [
+        "tsc-minutes"
+      ],
+      "creatorAccountId": "5da66d619810cf0c3ce3a7ff",
+      "creatorDisplayName": "Yijun Yu",
+      "creatorAccountType": "atlassian",
+      "createdDate": "2026-09-03T00:59:12.815Z",
+      "lastModified": "2026-09-09T09:59:04.856Z",
+      "lastModifiedByAccountId": "5da66d619810cf0c3ce3a7ff",
+      "lastModifiedByDisplayName": "Yijun Yu",
+      "versionNumber": 14,
+      "ancestorTitles": [
+        "OpenAN Project Home",
+        "Technical Steering Committee (TSC)",
+        "TSC Minutes",
+        "2026 - TSC Minutes"
+      ]
+    },
+    {
+      "pageId": "1387003906",
+      "title": "2026-09-15 TSC Minutes",
+      "spaceKey": "OpenAN",
+      "status": "current",
+      "labels": [
+        "tsc-minutes"
+      ],
+      "creatorAccountId": "5da66d619810cf0c3ce3a7ff",
+      "creatorDisplayName": "Yijun Yu",
+      "creatorAccountType": "atlassian",
+      "createdDate": "2026-09-09T09:49:48.529Z",
+      "lastModified": "2026-09-16T09:09:24.650Z",
+      "lastModifiedByAccountId": "5da66d619810cf0c3ce3a7ff",
+      "lastModifiedByDisplayName": "Yijun Yu",
+      "versionNumber": 28,
+      "ancestorTitles": [
+        "OpenAN Project Home",
+        "Technical Steering Committee (TSC)",
+        "TSC Minutes",
+        "2026 - TSC Minutes"
+      ]
+    },
+    {
+      "pageId": "1406074883",
+      "title": "2026-09-22 TSC Minutes",
+      "spaceKey": "OpenAN",
+      "status": "current",
+      "labels": [
+        "tsc-minutes"
+      ],
+      "creatorAccountId": "5da66d619810cf0c3ce3a7ff",
+      "creatorDisplayName": "Yijun Yu",
+      "creatorAccountType": "atlassian",
+      "createdDate": "2026-09-16T09:09:39.146Z",
+      "lastModified": "2026-09-28T08:46:33.199Z",
+      "lastModifiedByAccountId": "5da66d619810cf0c3ce3a7ff",
+      "lastModifiedByDisplayName": "Yijun Yu",
+      "versionNumber": 10,
+      "ancestorTitles": [
+        "OpenAN Project Home",
+        "Technical Steering Committee (TSC)",
+        "TSC Minutes",
+        "2026 - TSC Minutes"
+      ]
+    },
+    {
+      "pageId": "1423507458",
+      "title": "2026-09-29 TSC Minutes",
+      "spaceKey": "OpenAN",
+      "status": "current",
+      "labels": [
+        "tsc-minutes"
+      ],
+      "creatorAccountId": "5da66d619810cf0c3ce3a7ff",
+      "creatorDisplayName": "Yijun Yu",
+      "creatorAccountType": "atlassian",
+      "createdDate": "2026-09-22T14:40:30.257Z",
+      "lastModified": "2026-09-28T10:54:03.482Z",
+      "lastModifiedByAccountId": "712020:a0730888-323b-4928-80e4-fd39f1999b8d",
+      "lastModifiedByDisplayName": "Xiaobin Shi",
+      "versionNumber": 5,
+      "ancestorTitles": [
+        "OpenAN Project Home",
+        "Technical Steering Committee (TSC)",
+        "TSC Minutes",
+        "2026 - TSC Minutes"
+      ]
+    }
+  ]
+}

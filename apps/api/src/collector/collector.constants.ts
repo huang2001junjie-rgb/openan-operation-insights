@@ -34,6 +34,17 @@ export const CONFLUENCE_PAGE_SIZE = 100;
 /** CQL 最大翻页数，防止异常情况下的无限循环 */
 export const CONFLUENCE_MAX_PAGES = MAX_PAGES;
 
+/**
+ * 版本历史（v2 版本接口）单页条数，上限为 200。
+ *
+ * 实测真实空间最大单页 146 个版本（`Requirement Proposal`），200 已够；
+ * 仍须实现游标翻页：将来单页版本数超过该值时会**静默少算编辑量**（见 ADR-0011）。
+ */
+export const CONFLUENCE_VERSION_PAGE_SIZE = 200;
+
+/** 单页版本历史的翻页上限，防止异常情况下的无限循环 */
+export const CONFLUENCE_VERSION_MAX_PAGES = 20;
+
 // ── 口径选择器（2026-09-28 对真实空间只读实测确认）────────────────
 
 /**

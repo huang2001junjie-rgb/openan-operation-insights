@@ -5,12 +5,19 @@ import type {
   ConfluenceFetchOptions,
   ConfluenceFetchResult,
   ConfluencePageRecord,
+  ConfluencePageVersionFetchResult,
+  ConfluencePageVersionRecord,
   ConfluenceSource,
   ConfluenceUserNameFetchResult,
 } from './confluence-source.types';
 
 interface FixtureFile {
   records: ConfluencePageRecord[];
+  /**
+   * pageId → 版本历史（可选；缺省时该页编辑量按 0 计）。
+   * 用于离线验证编辑量口径：每条含 `number` / `authorId` / `createdAt`。
+   */
+  versions?: Record<string, ConfluencePageVersionRecord[]>;
   /** pageId → storage 正文（可选；缺省时按"无正文"处理） */
   bodies?: Record<string, string>;
   /**
@@ -76,6 +83,27 @@ export class FixtureConfluenceSource implements ConfluenceSource {
     return { bodies, renderedUserNames, requestCount: 0 };
   }
 
+  async fetchPageVersions(pageIds: string[]): Promise<ConfluencePageVersionFetchResult> {
+    const fixture = await this.load();
+    const versions = new Map<string, ConfluencePageVersionRecord[]>();
+
+    for (const pageId of pageIds) {
+      const id = pageId.trim();
+      const list = fixture.versions[id];
+      if (!Array.isArray(list) || list.length === 0) continue;
+      versions.set(
+        id,
+        list.map((item) => ({
+          number: item.number,
+          authorId: item.authorId ?? null,
+          createdAt: item.createdAt ?? null,
+        })),
+      );
+    }
+
+    return { versions, requestCount: 0 };
+  }
+
   async fetchUserNames(accountIds: string[]): Promise<ConfluenceUserNameFetchResult> {
     const fixture = await this.load();
     const names = new Map<string, string>();
@@ -91,6 +119,7 @@ export class FixtureConfluenceSource implements ConfluenceSource {
 
   private async load(): Promise<{
     records: ConfluencePageRecord[];
+    versions: Record<string, ConfluencePageVersionRecord[]>;
     bodies: Record<string, string>;
     views: Record<string, string>;
     users: Record<string, string>;
@@ -104,6 +133,7 @@ export class FixtureConfluenceSource implements ConfluenceSource {
 
     return {
       records: parsed.records,
+      versions: parsed.versions ?? {},
       bodies: parsed.bodies ?? {},
       views: parsed.views ?? {},
       users: parsed.users ?? {},

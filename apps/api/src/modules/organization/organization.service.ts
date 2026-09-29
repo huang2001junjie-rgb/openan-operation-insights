@@ -10,16 +10,34 @@ import { ContributionPort } from '../../providers/ports/contribution.port';
 import { WikiPort } from '../../providers/ports/wiki.port';
 import { OrganizationPort } from '../../providers/ports/organization.port';
 
-const HIGH_THRESHOLD = 300;
+/**
+ * 贡献度分档阈值（见 ADR-0011 的重校依据）。
+ *
+ * 加入编辑量后，行为项量级被整体抬高：实测组织分分布（含编辑量）
+ * 非零值为 `[1, 45, 527, 802]`（p75≈527、p50≈45）。旧阈值 300/100 会把
+ * 聚合了大量个人编辑的「独立开发者」桶一起推入最高档，分档失真。
+ *
+ * 现取 **HIGH=600 / MEDIUM=100**：只有体量明显领先的华为（802）为高贡献，
+ * 「独立开发者」（527）落中档，移动（45）及以下仍为低档——与引入编辑量前
+ * （ADR-0001：300/100）的分档成员**完全一致**，仅按新量级整体上调，避免
+ * 编辑密集页把「高产个人汇聚的桶」误读为组织级最高贡献。
+ */
+const HIGH_THRESHOLD = 600;
 const MEDIUM_THRESHOLD = 100;
 
-/** 综合贡献度得分：协作行为数量为主，代码行数按万行折算，避免体量压倒频次 */
+/**
+ * 综合贡献度得分：协作行为数量为主，代码行数按万行折算，避免体量压倒频次。
+ *
+ * 编辑量（`confluence.edits`）与 PR / Issue / 需求 / 议题分享同属"行为频次"，直接计入；
+ * 但其量级明显更大（实测单空间合计 672），因此高低分档阈值另行标定（见 ADR-0011）。
+ */
 function computeScore(contribution?: OrganizationContribution, wiki?: OrganizationWiki): number {
   const behaviors =
     (contribution?.github.pullRequests ?? 0) +
     (contribution?.github.issues ?? 0) +
     (wiki?.confluence.requirements ?? 0) +
-    (wiki?.confluence.topicShares ?? 0);
+    (wiki?.confluence.topicShares ?? 0) +
+    (wiki?.confluence.edits ?? 0);
   const volume = (contribution?.github.linesChanged ?? 0) / 10_000;
   return Math.round(behaviors + volume);
 }

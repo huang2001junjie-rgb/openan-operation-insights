@@ -94,6 +94,8 @@ export function isWiki(value: unknown): value is OrganizationWiki {
     isObject(confluence) &&
     isNumber(confluence.requirements) &&
     isNumber(confluence.topicShares) &&
+    // edits 为新增指标（ADR-0011）：不兼容变更已随 schemaVersion 提升，故要求必须存在
+    isNumber(confluence.edits) &&
     isString(value.updatedAt)
   );
 }
@@ -126,6 +128,7 @@ export function isConfluenceAccount(value: unknown): value is ConfluenceAccount 
     isObject(confluence) &&
     isNumber(confluence.requirements) &&
     isNumber(confluence.topicShares) &&
+    isNumber(confluence.edits) &&
     isString(value.updatedAt)
   );
 }
