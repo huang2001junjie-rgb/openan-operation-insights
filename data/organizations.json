@@ -3,6 +3,17 @@
   "updatedAt": "2026-09-21T00:00:00Z",
   "data": [
     {
+      "orgId": "lfn",
+      "name": "Linux Foundation Networking",
+      "logoUrl": "/logos/lfn.webp",
+      "homepageUrl": "https://lfnetworking.org/",
+      "type": "partner",
+      "tags": [],
+      "aliases": { "github": "", "confluence": "" },
+      "emailDomains": ["lfnetworking.org", "linuxfoundation.org"],
+      "description": ""
+    },
+    {
       "orgId": "cmcc",
       "name": "China Mobile",
       "logoUrl": "/logos/china_mobile.png",

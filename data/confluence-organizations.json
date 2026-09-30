@@ -1,7 +1,18 @@
 {
   "schemaVersion": 3,
-  "updatedAt": "2026-09-29T03:44:11.588Z",
+  "updatedAt": "2026-09-30T02:17:14.391Z",
   "data": [
+    {
+      "orgId": "lfn",
+      "orgName": "Linux Foundation Networking",
+      "logoUrl": "/logos/lfn.webp",
+      "confluence": {
+        "requirements": 0,
+        "topicShares": 0,
+        "edits": 0
+      },
+      "updatedAt": "2026-09-30T02:17:14.383Z"
+    },
     {
       "orgId": "cmcc",
       "orgName": "China Mobile",
@@ -11,7 +22,7 @@
         "topicShares": 0,
         "edits": 0
       },
-      "updatedAt": "2026-09-29T03:44:11.582Z"
+      "updatedAt": "2026-09-30T02:17:14.383Z"
     },
     {
       "orgId": "huawei",
@@ -22,7 +33,7 @@
         "topicShares": 0,
         "edits": 0
       },
-      "updatedAt": "2026-09-29T03:44:11.582Z"
+      "updatedAt": "2026-09-30T02:17:14.383Z"
     },
     {
       "orgId": "orange",
@@ -33,7 +44,7 @@
         "topicShares": 0,
         "edits": 0
       },
-      "updatedAt": "2026-09-29T03:44:11.582Z"
+      "updatedAt": "2026-09-30T02:17:14.383Z"
     },
     {
       "orgId": "zte",
@@ -44,7 +55,7 @@
         "topicShares": 0,
         "edits": 0
       },
-      "updatedAt": "2026-09-29T03:44:11.582Z"
+      "updatedAt": "2026-09-30T02:17:14.383Z"
     },
     {
       "orgId": "ais",
@@ -55,7 +66,7 @@
         "topicShares": 0,
         "edits": 0
       },
-      "updatedAt": "2026-09-29T03:44:11.582Z"
+      "updatedAt": "2026-09-30T02:17:14.383Z"
     },
     {
       "orgId": "infosys",
@@ -66,7 +77,7 @@
         "topicShares": 0,
         "edits": 0
       },
-      "updatedAt": "2026-09-29T03:44:11.582Z"
+      "updatedAt": "2026-09-30T02:17:14.383Z"
     },
     {
       "orgId": "asiainfo",
@@ -77,7 +88,7 @@
         "topicShares": 0,
         "edits": 0
       },
-      "updatedAt": "2026-09-29T03:44:11.582Z"
+      "updatedAt": "2026-09-30T02:17:14.383Z"
     },
     {
       "orgId": "personal",
@@ -88,7 +99,7 @@
         "topicShares": 0,
         "edits": 0
       },
-      "updatedAt": "2026-09-29T03:44:11.582Z"
+      "updatedAt": "2026-09-30T02:17:14.383Z"
     },
     {
       "orgId": "zain",
@@ -99,7 +110,7 @@
         "topicShares": 0,
         "edits": 0
       },
-      "updatedAt": "2026-09-29T03:44:11.582Z"
+      "updatedAt": "2026-09-30T02:17:14.383Z"
     },
     {
       "orgId": "inspur",
@@ -110,7 +121,7 @@
         "topicShares": 0,
         "edits": 0
       },
-      "updatedAt": "2026-09-29T03:44:11.582Z"
+      "updatedAt": "2026-09-30T02:17:14.383Z"
     },
     {
       "orgId": "unattributed",
@@ -118,10 +129,10 @@
       "logoUrl": "",
       "confluence": {
         "requirements": 38,
-        "topicShares": 20,
-        "edits": 672
+        "topicShares": 24,
+        "edits": 680
       },
-      "updatedAt": "2026-09-29T03:44:11.582Z"
+      "updatedAt": "2026-09-30T02:17:14.383Z"
     }
   ]
 }

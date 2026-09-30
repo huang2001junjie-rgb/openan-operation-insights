@@ -1,39 +1,39 @@
 {
   "schemaVersion": 2,
-  "lastSyncAt": "2026-09-29T03:43:23.529Z",
-  "lastRunAt": "2026-09-29T03:43:23.529Z",
+  "lastSyncAt": "2026-09-30T02:16:19.954Z",
+  "lastRunAt": "2026-09-30T02:16:19.954Z",
   "lastMode": "full",
   "status": "success",
-  "pageCount": 53,
-  "requestCount": 74,
-  "accountCount": 21,
+  "pageCount": 54,
+  "requestCount": 76,
+  "accountCount": 23,
   "spaces": [
     "OpenAN"
   ],
   "requirementPageCount": 1,
-  "minutesPageCount": 16,
-  "editVersionCount": 672,
+  "minutesPageCount": 17,
+  "editVersionCount": 680,
   "minutesWithoutAgenda": [],
   "unattributedAccounts": [
     {
       "accountId": "5da82cb11a43fe0ddbb47e83",
       "displayName": "FeiGuo",
       "requirements": 13,
-      "topicShares": 2,
-      "edits": 8
+      "topicShares": 3,
+      "edits": 9
     },
     {
       "accountId": "712020:eb69db15-9d15-4a5f-bcd0-2b95a967bf3b",
       "displayName": "wangyonglong",
       "requirements": 6,
       "topicShares": 2,
-      "edits": 16
+      "edits": 17
     },
     {
       "accountId": "5e58b7c15a495e0c91a94b44",
       "displayName": "Chuanyu Chen",
       "requirements": 5,
-      "topicShares": 6,
+      "topicShares": 7,
       "edits": 242
     },
     {
@@ -41,7 +41,7 @@
       "displayName": "Lorenzo Cipriani",
       "requirements": 4,
       "topicShares": 1,
-      "edits": 8
+      "edits": 9
     },
     {
       "accountId": "712020:fd6a8616-70b4-4ce8-b65a-01ca4856875e",
@@ -62,14 +62,14 @@
       "displayName": "Ullas Krishnan",
       "requirements": 2,
       "topicShares": 0,
-      "edits": 13
+      "edits": 14
     },
     {
       "accountId": "712020:a0730888-323b-4928-80e4-fd39f1999b8d",
       "displayName": "Xiaobin Shi",
       "requirements": 1,
       "topicShares": 1,
-      "edits": 6
+      "edits": 7
     },
     {
       "accountId": "712020:c719c77b-af77-4430-9760-4cd1ef4278c3",
@@ -121,11 +121,25 @@
       "edits": 3
     },
     {
+      "accountId": "712020:57dd0c5f-f4e8-4952-8716-a261b1f74ac3",
+      "displayName": "Yanlin Wang",
+      "requirements": 0,
+      "topicShares": 1,
+      "edits": 0
+    },
+    {
+      "accountId": "712020:fac5b94b-fdf5-41f0-bbc3-ce758b24715b",
+      "displayName": "Li Mengdi（ZTE）",
+      "requirements": 0,
+      "topicShares": 1,
+      "edits": 0
+    },
+    {
       "accountId": "5da66d619810cf0c3ce3a7ff",
       "displayName": "Yijun Yu",
       "requirements": 0,
       "topicShares": 0,
-      "edits": 218
+      "edits": 220
     },
     {
       "accountId": "712020:abc95452-d9f7-4db4-af48-4eaa86795f0f",
@@ -135,18 +149,18 @@
       "edits": 13
     },
     {
-      "accountId": "712020:050a0876-45eb-4d51-ab4a-52f010b286f2",
-      "displayName": "Fernando Camacho",
+      "accountId": "5db90dd78704ba0dab24100d",
+      "displayName": "Boonchoung Tansuthepverawongse",
       "requirements": 0,
       "topicShares": 0,
       "edits": 7
     },
     {
-      "accountId": "5db90dd78704ba0dab24100d",
-      "displayName": "Boonchoung Tansuthepverawongse",
+      "accountId": "712020:050a0876-45eb-4d51-ab4a-52f010b286f2",
+      "displayName": "Fernando Camacho",
       "requirements": 0,
       "topicShares": 0,
-      "edits": 6
+      "edits": 7
     },
     {
       "accountId": "557058:8e0bff92-94e9-43b6-a6e3-3d7f3873c147",
@@ -202,8 +216,7 @@
       "rowIndex": null,
       "requirementTitle": "",
       "handles": [
-        "Kailai",
-        "mengdi"
+        "Kailai"
       ]
     }
   ],

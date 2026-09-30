@@ -1,6 +1,6 @@
 {
   "schemaVersion": 4,
-  "updatedAt": "2026-09-29T03:44:11.583Z",
+  "updatedAt": "2026-09-30T02:17:14.385Z",
   "data": [
     {
       "accountId": "5da82cb11a43fe0ddbb47e83",
@@ -10,10 +10,10 @@
       "personId": "fei-guo",
       "confluence": {
         "requirements": 13,
-        "topicShares": 2,
-        "edits": 8
+        "topicShares": 3,
+        "edits": 9
       },
-      "updatedAt": "2026-09-29T03:44:11.580Z"
+      "updatedAt": "2026-09-30T02:17:14.380Z"
     },
     {
       "accountId": "712020:eb69db15-9d15-4a5f-bcd0-2b95a967bf3b",
@@ -24,9 +24,9 @@
       "confluence": {
         "requirements": 6,
         "topicShares": 2,
-        "edits": 16
+        "edits": 17
       },
-      "updatedAt": "2026-09-29T03:44:11.580Z"
+      "updatedAt": "2026-09-30T02:17:14.380Z"
     },
     {
       "accountId": "5e58b7c15a495e0c91a94b44",
@@ -36,36 +36,36 @@
       "personId": "chuanyu-chen",
       "confluence": {
         "requirements": 5,
-        "topicShares": 6,
+        "topicShares": 7,
         "edits": 242
       },
-      "updatedAt": "2026-09-29T03:44:11.580Z"
+      "updatedAt": "2026-09-30T02:17:14.380Z"
     },
     {
       "accountId": "557058:822eb146-7cd1-4d0a-8772-22d2773be7c5",
       "displayName": "Lorenzo Cipriani",
       "orgId": null,
       "orgSource": "unattributed",
-      "personId": null,
+      "personId": "lorenzo-cipriani",
       "confluence": {
         "requirements": 4,
         "topicShares": 1,
-        "edits": 8
+        "edits": 9
       },
-      "updatedAt": "2026-09-29T03:44:11.580Z"
+      "updatedAt": "2026-09-30T02:17:14.380Z"
     },
     {
       "accountId": "712020:fd6a8616-70b4-4ce8-b65a-01ca4856875e",
       "displayName": "Junjie Huang",
       "orgId": null,
       "orgSource": "unattributed",
-      "personId": null,
+      "personId": "junjie-huang",
       "confluence": {
         "requirements": 3,
         "topicShares": 1,
         "edits": 0
       },
-      "updatedAt": "2026-09-29T03:44:11.580Z"
+      "updatedAt": "2026-09-30T02:17:14.380Z"
     },
     {
       "accountId": "712020:f2d4beb5-2f11-47ca-8063-348bc8ab896f",
@@ -78,202 +78,228 @@
         "topicShares": 1,
         "edits": 23
       },
-      "updatedAt": "2026-09-29T03:44:11.580Z"
+      "updatedAt": "2026-09-30T02:17:14.380Z"
     },
     {
       "accountId": "712020:c8f0d540-db5e-42ed-a79a-611184462341",
       "displayName": "Ullas Krishnan",
       "orgId": null,
       "orgSource": "unattributed",
-      "personId": null,
+      "personId": "ullas-krishnan",
       "confluence": {
         "requirements": 2,
         "topicShares": 0,
-        "edits": 13
+        "edits": 14
       },
-      "updatedAt": "2026-09-29T03:44:11.580Z"
+      "updatedAt": "2026-09-30T02:17:14.380Z"
     },
     {
       "accountId": "712020:a0730888-323b-4928-80e4-fd39f1999b8d",
       "displayName": "Xiaobin Shi",
       "orgId": null,
       "orgSource": "unattributed",
-      "personId": null,
+      "personId": "xiaobin-shi",
       "confluence": {
         "requirements": 1,
         "topicShares": 1,
-        "edits": 6
+        "edits": 7
       },
-      "updatedAt": "2026-09-29T03:44:11.580Z"
+      "updatedAt": "2026-09-30T02:17:14.380Z"
     },
     {
       "accountId": "712020:c719c77b-af77-4430-9760-4cd1ef4278c3",
       "displayName": "Mohammed El Barhichi",
       "orgId": null,
       "orgSource": "unattributed",
-      "personId": null,
+      "personId": "mohammed-el-barhichi",
       "confluence": {
         "requirements": 1,
         "topicShares": 0,
         "edits": 6
       },
-      "updatedAt": "2026-09-29T03:44:11.580Z"
+      "updatedAt": "2026-09-30T02:17:14.380Z"
     },
     {
       "accountId": "712020:c8c42c7b-07b4-4fcc-9b31-d9e2c7210713",
       "displayName": "TianShu Zhang",
       "orgId": null,
       "orgSource": "unattributed",
-      "personId": null,
+      "personId": "tianshu-zhang",
       "confluence": {
         "requirements": 1,
         "topicShares": 0,
         "edits": 0
       },
-      "updatedAt": "2026-09-29T03:44:11.580Z"
+      "updatedAt": "2026-09-30T02:17:14.380Z"
     },
     {
       "accountId": "712020:20284c60-7d6e-4949-9d8f-3c6ef28c4eb3",
       "displayName": "Jie Zhou",
       "orgId": null,
       "orgSource": "unattributed",
-      "personId": null,
+      "personId": "jie-zhou-2",
       "confluence": {
         "requirements": 0,
         "topicShares": 2,
         "edits": 31
       },
-      "updatedAt": "2026-09-29T03:44:11.580Z"
+      "updatedAt": "2026-09-30T02:17:14.380Z"
     },
     {
       "accountId": "5d00c37ddf6c8f0bbd781cd5",
       "displayName": "Casey Cain",
       "orgId": null,
       "orgSource": "unattributed",
-      "personId": null,
+      "personId": "casey-cain",
       "confluence": {
         "requirements": 0,
         "topicShares": 1,
         "edits": 51
       },
-      "updatedAt": "2026-09-29T03:44:11.580Z"
+      "updatedAt": "2026-09-30T02:17:14.380Z"
     },
     {
       "accountId": "712020:60c80aad-c5b2-49e6-b103-749303dce5de",
       "displayName": "Wenjun Zhang",
       "orgId": null,
       "orgSource": "unattributed",
-      "personId": null,
+      "personId": "wenjun-zhang",
       "confluence": {
         "requirements": 0,
         "topicShares": 1,
         "edits": 8
       },
-      "updatedAt": "2026-09-29T03:44:11.580Z"
+      "updatedAt": "2026-09-30T02:17:14.380Z"
     },
     {
       "accountId": "712020:51549cbc-8272-4fc7-8720-c20b3a409769",
       "displayName": "lionel Shi",
       "orgId": null,
       "orgSource": "unattributed",
-      "personId": null,
+      "personId": "lionel-shi",
       "confluence": {
         "requirements": 0,
         "topicShares": 1,
         "edits": 7
       },
-      "updatedAt": "2026-09-29T03:44:11.580Z"
+      "updatedAt": "2026-09-30T02:17:14.380Z"
     },
     {
       "accountId": "712020:e2ae8a82-d8c6-4bda-9ee1-082c56635505",
       "displayName": "Tingyu Ding",
       "orgId": null,
       "orgSource": "unattributed",
-      "personId": null,
+      "personId": "tingyu-ding",
       "confluence": {
         "requirements": 0,
         "topicShares": 1,
         "edits": 3
       },
-      "updatedAt": "2026-09-29T03:44:11.580Z"
+      "updatedAt": "2026-09-30T02:17:14.380Z"
+    },
+    {
+      "accountId": "712020:57dd0c5f-f4e8-4952-8716-a261b1f74ac3",
+      "displayName": "Yanlin Wang",
+      "orgId": null,
+      "orgSource": "unattributed",
+      "personId": null,
+      "confluence": {
+        "requirements": 0,
+        "topicShares": 1,
+        "edits": 0
+      },
+      "updatedAt": "2026-09-30T02:17:14.380Z"
+    },
+    {
+      "accountId": "712020:fac5b94b-fdf5-41f0-bbc3-ce758b24715b",
+      "displayName": "Li Mengdi（ZTE）",
+      "orgId": null,
+      "orgSource": "unattributed",
+      "personId": null,
+      "confluence": {
+        "requirements": 0,
+        "topicShares": 1,
+        "edits": 0
+      },
+      "updatedAt": "2026-09-30T02:17:14.380Z"
     },
     {
       "accountId": "5da66d619810cf0c3ce3a7ff",
       "displayName": "Yijun Yu",
       "orgId": null,
       "orgSource": "unattributed",
-      "personId": null,
+      "personId": "yijun-yu",
       "confluence": {
         "requirements": 0,
         "topicShares": 0,
-        "edits": 218
+        "edits": 220
       },
-      "updatedAt": "2026-09-29T03:44:11.580Z"
+      "updatedAt": "2026-09-30T02:17:14.380Z"
     },
     {
       "accountId": "712020:abc95452-d9f7-4db4-af48-4eaa86795f0f",
       "displayName": "zhangpenghe",
       "orgId": null,
       "orgSource": "unattributed",
-      "personId": null,
+      "personId": "penghe-zhang",
       "confluence": {
         "requirements": 0,
         "topicShares": 0,
         "edits": 13
       },
-      "updatedAt": "2026-09-29T03:44:11.580Z"
-    },
-    {
-      "accountId": "712020:050a0876-45eb-4d51-ab4a-52f010b286f2",
-      "displayName": "Fernando Camacho",
-      "orgId": null,
-      "orgSource": "unattributed",
-      "personId": null,
-      "confluence": {
-        "requirements": 0,
-        "topicShares": 0,
-        "edits": 7
-      },
-      "updatedAt": "2026-09-29T03:44:11.580Z"
+      "updatedAt": "2026-09-30T02:17:14.380Z"
     },
     {
       "accountId": "5db90dd78704ba0dab24100d",
       "displayName": "Boonchoung Tansuthepverawongse",
       "orgId": null,
       "orgSource": "unattributed",
-      "personId": null,
+      "personId": "boonchoung-tansuthepverawongse",
       "confluence": {
         "requirements": 0,
         "topicShares": 0,
-        "edits": 6
+        "edits": 7
       },
-      "updatedAt": "2026-09-29T03:44:11.580Z"
+      "updatedAt": "2026-09-30T02:17:14.380Z"
+    },
+    {
+      "accountId": "712020:050a0876-45eb-4d51-ab4a-52f010b286f2",
+      "displayName": "Fernando Camacho",
+      "orgId": null,
+      "orgSource": "unattributed",
+      "personId": "fernando-camacho",
+      "confluence": {
+        "requirements": 0,
+        "topicShares": 0,
+        "edits": 7
+      },
+      "updatedAt": "2026-09-30T02:17:14.380Z"
     },
     {
       "accountId": "557058:8e0bff92-94e9-43b6-a6e3-3d7f3873c147",
       "displayName": "Kevin McDonnell",
       "orgId": null,
       "orgSource": "unattributed",
-      "personId": null,
+      "personId": "kevin-mcdonnell",
       "confluence": {
         "requirements": 0,
         "topicShares": 0,
         "edits": 5
       },
-      "updatedAt": "2026-09-29T03:44:11.580Z"
+      "updatedAt": "2026-09-30T02:17:14.380Z"
     },
     {
       "accountId": "557058:a7043aca-8c5b-47de-b047-625af73796b5",
       "displayName": "Eduardo Panciera Molanes",
       "orgId": null,
       "orgSource": "unattributed",
-      "personId": null,
+      "personId": "eduardo-panciera-molanes",
       "confluence": {
         "requirements": 0,
         "topicShares": 0,
         "edits": 1
       },
-      "updatedAt": "2026-09-29T03:44:11.580Z"
+      "updatedAt": "2026-09-30T02:17:14.380Z"
     }
   ]
 }

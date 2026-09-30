@@ -43,19 +43,11 @@ export function DonutChart({
           return `${p.marker} ${p.name}<br/><b style="font-size:13px">${formatNumber(p.value)}</b> · ${p.percent}%`;
         },
       },
-      legend: {
-        bottom: 0,
-        icon: 'roundRect',
-        itemWidth: 9,
-        itemHeight: 9,
-        itemGap: 14,
-        textStyle: { color: '#94a3b8', fontSize: 11 },
-      },
       graphic: [
         {
           type: 'text',
           left: 'center',
-          top: '40%',
+          top: '44%',
           style: {
             text: centerValue ?? formatNumber(total),
             fill: '#e8eefc',
@@ -67,7 +59,7 @@ export function DonutChart({
         {
           type: 'text',
           left: 'center',
-          top: '53%',
+          top: '57%',
           style: {
             text: centerLabel,
             fill: '#8794ad',
@@ -80,7 +72,7 @@ export function DonutChart({
         {
           type: 'pie',
           radius: ['62%', '86%'],
-          center: ['50%', '46%'],
+          center: ['50%', '50%'],
           avoidLabelOverlap: true,
           padAngle: 2,
           itemStyle: {

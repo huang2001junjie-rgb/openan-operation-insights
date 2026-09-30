@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-09-29T12:05:59.626Z",
+  "updatedAt": "2026-09-30T02:31:48.993Z",
   "data": [
     {
       "claimId": "clm_8f9e7a2d-a75c-496c-af24-cd7057d87834",
@@ -209,6 +209,118 @@
       "accountKey": "23572557",
       "displayName": "唐志强",
       "createdAt": "2026-09-29T12:05:59.626Z"
+    },
+    {
+      "claimId": "clm_c36ff9c7-121f-4ffa-b914-b2f981a6666f",
+      "personId": "mamu-sen",
+      "source": "github",
+      "accountKey": "326845781",
+      "displayName": "mamusen-huawei",
+      "createdAt": "2026-09-30T01:49:46.885Z"
+    },
+    {
+      "claimId": "clm_1b8afda2-2ce4-4d37-b059-d721f2c9de65",
+      "personId": "ullas-krishnan",
+      "source": "confluence",
+      "accountKey": "712020:c8f0d540-db5e-42ed-a79a-611184462341",
+      "displayName": "Ullas Krishnan",
+      "createdAt": "2026-09-30T01:50:21.178Z"
+    },
+    {
+      "claimId": "clm_95060fdf-5de6-4bec-a5d1-932f3d4f0cdb",
+      "personId": "mohammed-el-barhichi",
+      "source": "confluence",
+      "accountKey": "712020:c719c77b-af77-4430-9760-4cd1ef4278c3",
+      "displayName": "Mohammed El Barhichi",
+      "createdAt": "2026-09-30T01:50:27.226Z"
+    },
+    {
+      "claimId": "clm_a46fe666-ab3e-4d9c-81c6-1eb908399912",
+      "personId": "tianshu-zhang",
+      "source": "confluence",
+      "accountKey": "712020:c8c42c7b-07b4-4fcc-9b31-d9e2c7210713",
+      "displayName": "TianShu Zhang",
+      "createdAt": "2026-09-30T01:50:32.323Z"
+    },
+    {
+      "claimId": "clm_1fe5533d-6c95-47fd-9fdd-0359947f1bfa",
+      "personId": "fernando-camacho",
+      "source": "confluence",
+      "accountKey": "712020:050a0876-45eb-4d51-ab4a-52f010b286f2",
+      "displayName": "Fernando Camacho",
+      "createdAt": "2026-09-30T01:51:30.634Z"
+    },
+    {
+      "claimId": "clm_bf27ab48-358d-4121-afef-61680d7d0898",
+      "personId": "boonchoung-tansuthepverawongse",
+      "source": "confluence",
+      "accountKey": "5db90dd78704ba0dab24100d",
+      "displayName": "Boonchoung Tansuthepverawongse",
+      "createdAt": "2026-09-30T01:51:35.635Z"
+    },
+    {
+      "claimId": "clm_5c9b0a0c-f2af-4286-a59b-d7a4eef1b700",
+      "personId": "kevin-mcdonnell",
+      "source": "confluence",
+      "accountKey": "557058:8e0bff92-94e9-43b6-a6e3-3d7f3873c147",
+      "displayName": "Kevin McDonnell",
+      "createdAt": "2026-09-30T01:51:41.614Z"
+    },
+    {
+      "claimId": "clm_95389a93-f679-4e90-aa96-5c08416856ce",
+      "personId": "eduardo-panciera-molanes",
+      "source": "confluence",
+      "accountKey": "557058:a7043aca-8c5b-47de-b047-625af73796b5",
+      "displayName": "Eduardo Panciera Molanes",
+      "createdAt": "2026-09-30T01:51:49.996Z"
+    },
+    {
+      "claimId": "clm_abc0be70-508c-4b43-a0a6-d137969ddef9",
+      "personId": "lionel-shi",
+      "source": "confluence",
+      "accountKey": "712020:51549cbc-8272-4fc7-8720-c20b3a409769",
+      "displayName": "lionel Shi",
+      "createdAt": "2026-09-30T01:56:11.065Z"
+    },
+    {
+      "claimId": "clm_cb2b7efe-0191-4534-9552-94a074ba1214",
+      "personId": "penghe-zhang-2",
+      "source": "github",
+      "accountKey": "59184963",
+      "displayName": "Zhang Penghe",
+      "createdAt": "2026-09-30T02:18:53.709Z"
+    },
+    {
+      "claimId": "clm_2c45137f-a4bd-4fa8-9514-6431b8228f1c",
+      "personId": "kevin-mcdonnell",
+      "source": "github",
+      "accountKey": "12085202",
+      "displayName": "Kevin McDonnell",
+      "createdAt": "2026-09-30T02:19:23.068Z"
+    },
+    {
+      "claimId": "clm_0dc5a088-238d-4fd7-b22e-ad618cca3aec",
+      "personId": "yanlin-wang",
+      "source": "confluence",
+      "accountKey": "712020:57dd0c5f-f4e8-4952-8716-a261b1f74ac3",
+      "displayName": "Yanlin Wang",
+      "createdAt": "2026-09-30T02:23:15.850Z"
+    },
+    {
+      "claimId": "clm_e1424ca3-1c44-4702-9af5-7978e8382db4",
+      "personId": "mengdi-li",
+      "source": "confluence",
+      "accountKey": "712020:fac5b94b-fdf5-41f0-bbc3-ce758b24715b",
+      "displayName": "Li Mengdi（ZTE）",
+      "createdAt": "2026-09-30T02:23:28.113Z"
+    },
+    {
+      "claimId": "clm_17dcd7e6-e771-4151-86a1-e9cfd02a5124",
+      "personId": "penghe-zhang-2",
+      "source": "confluence",
+      "accountKey": "712020:abc95452-d9f7-4db4-af48-4eaa86795f0f",
+      "displayName": "zhangpenghe",
+      "createdAt": "2026-09-30T02:31:48.993Z"
     }
   ]
 }
