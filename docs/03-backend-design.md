@@ -91,15 +91,28 @@ apps/api/src/
 │   ├── json/                        # 当前唯一实现（读 data/*.json）
 │   └── providers.module.ts          # 端口 → 适配器绑定（换存储 / 直连上游时才动）
 ├── collector/                       # ★ 采集器：独立 Nest 上下文，不启动 HTTP 服务
-│   ├── main.ts                      # CLI 入口（--mode=auto|incremental|full、--dry-run）
 │   ├── collector.module.ts          # 采集上下文装配，与 AppModule 解耦
-│   ├── collector.tokens.ts          # GITHUB_SOURCE 注入 Token（真实 / 离线可切换）
-│   ├── collector.constants.ts       # 分页、限流阈值、请求间隔等常量
-│   ├── contribution-collector.service.ts   # 记录按 orgId 归并后写入 github-organizations.json
-│   ├── github-source.types.ts       # GithubSource 抽象与记录类型
-│   ├── graphql-github.source.ts     # 真实实现（原生 fetch 调 GitHub GraphQL）
-│   ├── fixture-github.source.ts     # 离线实现（GITHUB_FIXTURE，无 token 自检用）
-│   └── sync-state.store.ts          # data/.sync-state.json 游标读写
+│   ├── collector.tokens.ts          # GITHUB_SOURCE / CONFLUENCE_SOURCE 注入 Token（真实 / 离线可切换）
+│   ├── collector.constants.ts       # 跨来源共享常量（伪组织、翻页上限、请求间隔）
+│   ├── github/                      # GitHub 管线
+│   │   ├── github-main.ts           # CLI 入口（--mode=auto|incremental|full、--dry-run）
+│   │   ├── github-collector.service.ts   # 记录按 orgId 归并后写入 github-organizations.json
+│   │   ├── github-source.port.ts         # GithubSource 抽象与记录类型
+│   │   ├── github-graphql.source.ts      # 真实实现（原生 fetch 调 GitHub GraphQL）
+│   │   ├── github-fixture.source.ts      # 离线实现（GITHUB_FIXTURE，无 token 自检用）
+│   │   ├── github-sync-state.store.ts    # data/.sync-state.json 游标读写
+│   │   └── github.constants.ts           # GitHub 专属常量（搜索上限、页大小、配额下限）
+│   └── confluence/                  # Confluence 管线
+│       ├── confluence-main.ts            # CLI 入口（--mode=full、--report-only、--snapshot）
+│       ├── confluence-collector.service.ts   # 聚合后写入 confluence-organizations.json
+│       ├── confluence-source.port.ts     # ConfluenceSource 抽象与页面事实类型
+│       ├── confluence-rest.source.ts     # 真实实现（原生 fetch 调 Confluence REST）
+│       ├── confluence-fixture.source.ts  # 离线实现（CONFLUENCE_FIXTURE，无 token 自检用）
+│       ├── confluence-content.parser.ts  # storage XHTML → 账号/计数的纯函数解析
+│       ├── confluence-state.store.ts     # data/.sync-state.confluence.json 读写
+│       ├── confluence-report.ts          # 取数观察报告（标签 / 创建者 / 页面树分布）
+│       ├── confluence-snapshot.ts        # 原始页面快照落盘（复核用原料）
+│       └── confluence.constants.ts       # Confluence 专属常量与口径默认值
 ├── scripts/                         # 辅助脚本（import-meetings.ts：xlsx → meetings.json）
 └── modules/
     ├── home/

@@ -2,7 +2,7 @@ import { Logger } from '@nestjs/common';
 import { existsSync } from 'node:fs';
 import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { dirname, join, isAbsolute } from 'node:path';
-import { CONFLUENCE_STATE_FILE } from './collector.constants';
+import { CONFLUENCE_STATE_FILE } from './confluence.constants';
 
 /**
  * 未归属账号：在正文里被 @ 到（因此产生了计数），但账号没落到任何组织。
@@ -43,7 +43,7 @@ export interface UnresolvedContact {
 /**
  * Confluence 采集元信息。
  *
- * **独立文件**：GitHub 的 SyncStateStore.write() 会整体覆盖 .sync-state.json，
+ * **独立文件**：GitHub 的 GithubSyncStateStore.write() 会整体覆盖 .sync-state.json，
  * 直接复用会清掉 GitHub 游标，故 Confluence 另立一份（删除即触发全量）。
  *
  * 字段取舍：这里只放**口径自检与运营待办**，不放原始正文（正文快照另存，见 ADR）。

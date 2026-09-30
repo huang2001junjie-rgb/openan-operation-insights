@@ -2,7 +2,7 @@
 
 - **状态**：✅ 已接受（2026-09-29）
 - **日期**：2026-09-29
-- **关联文档**：04 §3.11 / §4.10 / §5.3.4 / §5.3.16；08 §1.2（A3 / A7）/ §3.2.1；02 §4.1；ADR-0001（贡献分公式与阈值）/ ADR-0008 / ADR-0009 / ADR-0010
+- **关联文档**：04 §1.1 / §1.2 / §3.3 / §3.11 / §4.4 / §4.10 / §5.2 / §5.3.2 / §5.3.4 / §5.3.7 / §5.3.11 / §5.3.16 / §6.2；08 §1.2（A3 / A4 / A5 / A7）/ §3.2.1 / §3.3；02 §4.1 / §4.2 / §14.1 / §14.3；ADR-0001 / ADR-0008 / ADR-0009 / ADR-0010（加注）
 - **决策者**：项目负责人（编辑量口径三问 + 接入方式两问逐条拍板）
 
 ## 背景
@@ -120,5 +120,5 @@ Confluence 维度原有**两个**成果数量指标：`requirements`（需求）
 
 ## 备注
 
-- 关键证据：`apps/api/src/collector/confluence-rest.source.ts`（`fetchPageVersions` / `versionsAll`）、`confluence-collector.service.ts`（`selectUnnamedVersionAuthors` / `selectBodyTargetPages` / `parseContent`）、`confluence-content.parser.ts`（`extractRenderedUserNames`）、`apps/api/src/common/effective-org.ts`（`deriveOrganizationWiki`）、`apps/api/src/modules/organization/organization.service.ts`（`computeScore` / 阈值）。
+- 关键证据：`apps/api/src/collector/confluence/confluence-rest.source.ts`（`fetchPageVersions` / `versionsAll`）、`apps/api/src/collector/confluence/confluence-collector.service.ts`（`selectUnnamedVersionAuthors` / `selectBodyTargetPages` / `parseContent`）、`apps/api/src/collector/confluence/confluence-content.parser.ts`（`extractRenderedUserNames`）、`apps/api/src/common/effective-org.ts`（`deriveOrganizationWiki`）、`apps/api/src/modules/organization/organization.service.ts`（`computeScore` / 阈值）。
 - Confluence 官方依据：Cloud REST **v2** `GET /wiki/api/v2/pages/{id}/versions`（返回 `number` / `authorId` / `createdAt`）。

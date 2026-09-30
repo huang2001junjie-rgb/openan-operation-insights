@@ -95,4 +95,4 @@ Confluence   confluence-organizations.json ←→ confluence-accounts.json
 ## 备注
 
 - 本 ADR 由一轮「拷问式评审」（grill-with-docs）产生：先给必要性判定，再由决策者逐条拍板。
-- 关键证据：`apps/api/src/repositories/repositories.module.ts`（文件路径绑定）、`apps/api/src/collector/contribution-collector.service.ts`（自动归属）、`apps/api/src/collector/confluence-collector.service.ts`（`resolveOrg` / `buildPersonOrgIndex`）、`apps/api/src/modules/identity/candidate.service.ts`、`apps/api/src/contract/entities.ts`。
+- 关键证据：`apps/api/src/repositories/repositories.module.ts`（文件路径绑定）、`apps/api/src/collector/github/github-collector.service.ts`（自动归属）、`apps/api/src/collector/confluence/confluence-collector.service.ts`（`resolveOrg` / `buildPersonOrgIndex`）、`apps/api/src/modules/identity/candidate.service.ts`、`apps/api/src/contract/entities.ts`。

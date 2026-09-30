@@ -17,6 +17,12 @@ import { ContributionCompositionCard } from '@/features/activity/ContributionCom
 import { ContributorRankCard } from '@/features/activity/ContributorRankCard';
 import { mergeActivityRows, mergeConfluenceRows } from '@/features/activity/merge';
 import {
+  ORG_UNATTRIBUTED,
+  UNATTRIBUTED_LABEL,
+  toDisplayOrgNamedList,
+  toDisplayOrganizations,
+} from '@/features/activity/org-display';
+import {
   useConfluenceAccounts,
   useContributions,
   useContributionSummary,
@@ -32,9 +38,6 @@ const DEFAULT_FILTERS: ActivityFilterState = {
   to: '2026-12-31',
 };
 
-/** 独立开发者伪组织（与后端 effective-org / organizations.json 一致） */
-const ORG_UNATTRIBUTED = 'unattributed';
-
 const RANGE_HINT =
   '阶段一的本地种子数据不含时间维度明细，时间区间参数会被后端接收但不做过滤；接入 GitHub / Confluence 后（阶段三）区间筛选自动生效。';
 
@@ -44,7 +47,7 @@ function ConfluenceClaimNotice({ count }: { count: number }) {
     <Card className="reveal flex flex-wrap items-center justify-between gap-3 border-amber-400/20 bg-amber-500/[0.05]">
       <p className="text-xs leading-relaxed text-amber-100/85">
         有 <span className="numeric font-semibold text-amber-200">{count}</span> 个 Confluence
-        账号尚未归属组织，默认归入「独立开发者」；认领后归属即时生效。
+        账号尚未归属组织，默认归入「{UNATTRIBUTED_LABEL}」；认领后归属即时生效。
       </p>
       <Link
         to="/admin/identity?source=confluence"
@@ -91,30 +94,43 @@ export function ActivityPage() {
   const wiki = useWiki(params);
   const organizationOptions = useOrganizationOptions();
 
+  /**
+   * 伪组织展示名替换（本页统一）：用 individual 代替「独立开发者」（见 org-display）。
+   * 组织档案、GitHub 贡献、Confluence 成果三处数据源的名称都换成展示视图，
+   * 下游（筛选下拉 / 环形图 / 明细表 / 排行卡）拿到的即最终展示名。
+   */
+  const organizations = useMemo(
+    () => toDisplayOrganizations(organizationOptions.data ?? []),
+    [organizationOptions.data],
+  );
+  const contributionsData = useMemo(
+    () => toDisplayOrgNamedList(contributions.data ?? []),
+    [contributions.data],
+  );
+  const wikiData = useMemo(() => toDisplayOrgNamedList(wiki.data ?? []), [wiki.data]);
+
   /** 明细表底表：全量组织档案，随 orgIds 筛选收窄（ADR-0002） */
   const organizationRows = useMemo(() => {
-    const orgs = organizationOptions.data ?? [];
     const selected = params.orgIds;
-    return selected ? orgs.filter((org) => selected.includes(org.orgId)) : orgs;
-  }, [organizationOptions.data, params.orgIds]);
+    return selected ? organizations.filter((org) => selected.includes(org.orgId)) : organizations;
+  }, [organizations, params.orgIds]);
 
   const githubRows = useMemo(
-    () => mergeActivityRows(contributions.data ?? [], wiki.data ?? [], organizationRows),
-    [contributions.data, wiki.data, organizationRows],
+    () => mergeActivityRows(contributionsData, wikiData, organizationRows),
+    [contributionsData, wikiData, organizationRows],
   );
 
   const confluenceRows = useMemo(
-    () => mergeConfluenceRows(wiki.data ?? [], organizationOptions.data ?? []),
-    [wiki.data, organizationOptions.data],
+    () => mergeConfluenceRows(wikiData, organizations),
+    [wikiData, organizations],
   );
 
   const confluenceUpdatedAt = useMemo(() => {
-    const list = wiki.data ?? [];
-    return list.reduce<string | undefined>(
+    return wikiData.reduce<string | undefined>(
       (latest, item) => (!latest || Date.parse(item.updatedAt) > Date.parse(latest) ? item.updatedAt : latest),
       undefined,
     );
-  }, [wiki.data]);
+  }, [wikiData]);
 
   /** 未认领账号数：生效归属仍为伪组织 `unattributed` 的账号（三态提示依据 02 §4.2） */
   const unattributedCount = useMemo(
@@ -166,7 +182,7 @@ export function ActivityPage() {
       <ActivitySourceSwitcher value={source} onChange={handleSourceChange} />
 
       <ActivityFilters
-        organizations={organizationOptions.data ?? []}
+        organizations={organizations}
         value={filters}
         onChange={handleChange}
         onReset={handleReset}
@@ -179,7 +195,7 @@ export function ActivityPage() {
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-5">
             <div className="xl:col-span-2">
               <ContributionCompositionCard
-                contributions={contributions.data}
+                contributions={contributionsData}
                 isLoading={contributions.isLoading}
                 isError={contributions.isError}
                 error={contributions.error}
@@ -189,7 +205,7 @@ export function ActivityPage() {
             <div className="xl:col-span-3">
               <ContributorRankCard
                 contributors={contributorContributions.data}
-                organizations={organizationOptions.data ?? []}
+                organizations={organizations}
                 isLoading={contributorContributions.isLoading}
                 isError={contributorContributions.isError}
                 error={contributorContributions.error}
@@ -228,7 +244,7 @@ export function ActivityPage() {
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-5">
             <div className="xl:col-span-2">
               <ConfluenceCompositionCard
-                wiki={wiki.data}
+                wiki={wikiData}
                 isLoading={wiki.isLoading}
                 isError={wiki.isError}
                 error={wiki.error}
@@ -238,7 +254,7 @@ export function ActivityPage() {
             <div className="xl:col-span-3">
               <ConfluenceAccountRankCard
                 accounts={confluenceAccounts.data}
-                organizations={organizationOptions.data ?? []}
+                organizations={organizations}
                 isLoading={confluenceAccounts.isLoading}
                 isError={confluenceAccounts.isError}
                 error={confluenceAccounts.error}

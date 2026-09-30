@@ -1,11 +1,11 @@
 import { readFile } from 'node:fs/promises';
-import { SEARCH_RESULT_LIMIT } from './collector.constants';
+import { SEARCH_RESULT_LIMIT } from './github.constants';
 import {
   GithubContributionRecord,
   GithubFetchOptions,
   GithubFetchResult,
   GithubSource,
-} from './github-source.types';
+} from './github-source.port';
 
 interface FixtureFile {
   records: GithubContributionRecord[];
@@ -17,7 +17,7 @@ interface FixtureFile {
  * 用途：在没有 GITHUB_TOKEN 的环境下验证「聚合 → 归属映射 → 落盘 → 原子写」全链路，
  * 以及回归测试；不发起任何网络请求。
  */
-export class FixtureGithubSource implements GithubSource {
+export class GithubFixtureSource implements GithubSource {
   readonly label = 'github-fixture';
 
   constructor(private readonly filePath: string) {}

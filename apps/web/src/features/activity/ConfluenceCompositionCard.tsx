@@ -42,7 +42,7 @@ export interface ConfluenceCompositionCardProps {
 
 /**
  * Confluence 成果分布：按所选口径（需求 / 议题分享 / **编辑量**）统计各组织（**生效归属**）占比，
- * 未归属账号聚合为伪组织「独立开发者」，与 GitHub 视图构成卡共用 `buildComposition` 口径。
+ * 未归属账号聚合为伪组织（展示名 individual，见 org-display），与 GitHub 视图构成卡共用 `buildComposition` 口径。
  *
  * 编辑量口径见 ADR-0011（按版本条数计、含建页那次、不剔除多人共编大页）。
  */

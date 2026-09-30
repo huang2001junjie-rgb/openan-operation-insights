@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-09-28T12:16:43.067Z",
+  "updatedAt": "2026-09-29T12:06:07.678Z",
   "data": [
     {
       "personId": "casey-cain",
@@ -15,13 +15,6 @@
       "orgId": "huawei",
       "createdAt": "2026-09-27T03:41:37.875Z",
       "updatedAt": "2026-09-28T01:31:49.777Z"
-    },
-    {
-      "personId": "jie-zhou",
-      "displayName": "Jie Zhou",
-      "orgId": "huawei",
-      "createdAt": "2026-09-27T03:43:07.787Z",
-      "updatedAt": "2026-09-28T01:31:49.158Z"
     },
     {
       "personId": "zhiqiang-tang",
@@ -47,16 +40,79 @@
     {
       "personId": "xunli-yang",
       "displayName": "Xunli Yang",
-      "orgId": null,
+      "orgId": "huawei",
       "createdAt": "2026-09-28T12:15:30.629Z",
-      "updatedAt": "2026-09-28T12:15:30.629Z"
+      "updatedAt": "2026-09-29T11:48:03.228Z"
     },
     {
       "personId": "yonglong-wang",
       "displayName": "Yonglong Wang",
-      "orgId": null,
+      "orgId": "huawei",
       "createdAt": "2026-09-28T12:16:43.067Z",
-      "updatedAt": "2026-09-28T12:16:43.067Z"
+      "updatedAt": "2026-09-29T11:48:03.228Z"
+    },
+    {
+      "personId": "jie-zhou-2",
+      "displayName": "Jie Zhou",
+      "orgId": "huawei",
+      "createdAt": "2026-09-29T11:45:57.427Z",
+      "updatedAt": "2026-09-29T11:47:16.343Z"
+    },
+    {
+      "personId": "junjie-huang",
+      "displayName": "Junjie Huang",
+      "orgId": "huawei",
+      "createdAt": "2026-09-29T11:46:17.349Z",
+      "updatedAt": "2026-09-29T11:48:03.227Z"
+    },
+    {
+      "personId": "xiaobin-shi",
+      "displayName": "Xiaobin Shi",
+      "orgId": "zte",
+      "createdAt": "2026-09-29T11:48:31.350Z",
+      "updatedAt": "2026-09-29T11:49:04.563Z"
+    },
+    {
+      "personId": "yanlin-wang",
+      "displayName": "Yanlin Wang",
+      "orgId": "huawei",
+      "createdAt": "2026-09-29T11:58:57.029Z",
+      "updatedAt": "2026-09-29T11:59:10.170Z"
+    },
+    {
+      "personId": "wenjun-zhang",
+      "displayName": "Wenjun Zhang",
+      "orgId": "huawei",
+      "createdAt": "2026-09-29T11:59:24.880Z",
+      "updatedAt": "2026-09-29T11:59:32.695Z"
+    },
+    {
+      "personId": "lv-bo",
+      "displayName": "Lv Bo",
+      "orgId": "zte",
+      "createdAt": "2026-09-29T12:00:10.095Z",
+      "updatedAt": "2026-09-29T12:00:21.900Z"
+    },
+    {
+      "personId": "lorenzo-cipriani",
+      "displayName": "Lorenzo Cipriani",
+      "orgId": "huawei",
+      "createdAt": "2026-09-29T12:00:44.503Z",
+      "updatedAt": "2026-09-29T12:00:50.714Z"
+    },
+    {
+      "personId": "yijun-yu",
+      "displayName": "Yijun Yu",
+      "orgId": "huawei",
+      "createdAt": "2026-09-29T12:04:37.941Z",
+      "updatedAt": "2026-09-29T12:06:07.678Z"
+    },
+    {
+      "personId": "jinjin-chen",
+      "displayName": "Jinjin Chen",
+      "orgId": "huawei",
+      "createdAt": "2026-09-29T12:05:22.826Z",
+      "updatedAt": "2026-09-29T12:05:45.582Z"
     }
   ]
 }

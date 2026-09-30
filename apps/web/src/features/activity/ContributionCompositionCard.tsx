@@ -16,7 +16,7 @@ export interface ContributionCompositionCardProps {
   onRetry?: () => void;
 }
 
-/** 组织贡献分布（ADR-0003）：按 github.commits 统计各组织占比，口径见 `buildComposition`。 */
+/** 组织贡献分布（ADR-0013，修订 ADR-0003）：按 github.commits 统计各组织占比并**列出全部组织**，口径见 `buildComposition`。 */
 export function ContributionCompositionCard({
   contributions,
   isLoading,

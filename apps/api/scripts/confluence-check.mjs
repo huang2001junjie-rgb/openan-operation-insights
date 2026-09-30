@@ -40,13 +40,13 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const APPS_API = resolve(HERE, '..');
 const REPO_ROOT = resolve(APPS_API, '../..');
-const DIST_ENTRY = join(APPS_API, 'dist', 'collector', 'confluence-main.js');
+const DIST_ENTRY = join(APPS_API, 'dist', 'collector', 'confluence', 'confluence-main.js');
 const SEED_DIR = join(HERE, 'fixtures', 'seed-data');
 const SAMPLE_FIXTURE = join(HERE, 'fixtures', 'confluence-records.sample.json');
 const NONE_FIXTURE = join(HERE, 'fixtures', 'confluence-records.none.json');
@@ -54,10 +54,30 @@ const REAL_DATA_DIR = join(REPO_ROOT, 'data');
 
 const SPACES = 'OPENAN,ORBIT';
 
+/** 相对仓库根的展示路径（日志里避免绝对路径噪音） */
+function relFromRepo(path) {
+  return relative(REPO_ROOT, path).replace(/\\/g, '/');
+}
+
+/** 打印本次校验的数据来源：上游记录 / 落盘输入 / 真实数据隔离 */
+function logDataSources() {
+  console.log('');
+  console.log('数据来源 ─────────────────────────────────────────────');
+  console.log('  采集器  : Confluence（dist/collector/confluence/confluence-main.js）');
+  console.log(
+    `  上游记录: fixture → ${relFromRepo(SAMPLE_FIXTURE)}（合成页面 + 正文，离线、不联网）`,
+  );
+  console.log(`            空场景 → ${relFromRepo(NONE_FIXTURE)}`);
+  console.log(`  落盘输入: ${relFromRepo(SEED_DIR)}（${SEED_FILES.length} 份合成档案，非真实 data/）`);
+  console.log(`  补齐文件: 真实 data/ 的 ${OPTIONAL_FILES.join(', ')}`);
+  console.log('  真实数据: 只读，3 个文件以 sha256 断言未被触碰');
+  console.log('───────────────────────────────────────────────────────');
+}
+
 const require = createRequire(import.meta.url);
 /** 直接断言编译产物里的解析函数（展示名抽取） */
 const { extractRenderedUserNames } = require(
-  join(APPS_API, 'dist', 'collector', 'confluence-content.parser.js'),
+  join(APPS_API, 'dist', 'collector', 'confluence', 'confluence-content.parser.js'),
 );
 
 /**
@@ -152,6 +172,10 @@ function runCli(dataDir, { fixture, spaces = SPACES, args = [] }) {
   });
 
   const output = `${result.stdout ?? ''}${result.stderr ?? ''}`;
+  // 采集器自身会打印「采集开始：mode=… source=…」：回显出来，本次跑的是哪份数据一目了然
+  // （Nest Logger 会带 ANSI 颜色码，去掉后便于阅读与比对）
+  const sourceLine = output.match(/采集开始：[^\n]*/)?.[0];
+  if (sourceLine) console.log(`  · ${sourceLine.replace(/\u001b\[[0-9;]*m/g, '')}`);
   return { status: result.status, output };
 }
 
@@ -187,10 +211,11 @@ function metricsOf(wiki, orgId) {
 /** 去掉时间戳后序列化，用于跨轮幂等比较（updatedAt 每轮必然变化） */
 function stableAccounts(accounts) {
   return JSON.stringify(
-    accounts.data.map(({ accountId, displayName, orgId, personId, confluence }) => ({
+    accounts.data.map(({ accountId, displayName, orgId, orgSource, personId, confluence }) => ({
       accountId,
       displayName,
       orgId,
+      orgSource,
       personId,
       confluence,
     })),
@@ -206,6 +231,8 @@ function main() {
     console.error(`✗ 未找到编译产物：${DIST_ENTRY}\n  请先执行：npm run build -w @openan/api`);
     process.exit(1);
   }
+
+  logDataSources();
 
   // ── 0. 单元断言：渲染视图抽取展示名 ────────────────────────
   const renderedNames = extractRenderedUserNames(RENDERED_VIEW_SAMPLE);
@@ -238,7 +265,7 @@ function main() {
       wiki.data.length === orgCount,
       `实际 ${wiki.data.length} vs 期望 ${orgCount}`,
     );
-    check('wiki envelope 已提升到 schemaVersion 2', wiki.schemaVersion === 2,
+    check('wiki envelope 已提升到 schemaVersion 3', wiki.schemaVersion === 3,
       `实际 ${wiki.schemaVersion}`);
 
     // ── 选页口径 ──────────────────────────────────────────────
@@ -283,10 +310,10 @@ function main() {
         .topicShares === 0,
       JSON.stringify(readAccounts(dataDir).data.find((x) => x.accountId === 'acct-ghost-1')));
 
-    // ── 归属路径 ──────────────────────────────────────────────
-    check('身份认领边命中 → nova-silicon（需求 2 / 议题分享 1）',
-      metricsOf(wiki, 'nova-silicon')?.requirements === 2 &&
-        metricsOf(wiki, 'nova-silicon')?.topicShares === 1,
+    // ── 归属路径（采集口径，ADR-0010：认领边不参与裁决）──────────
+    check('认领边不参与采集口径归属裁决 → nova-silicon 组织级为 0',
+      metricsOf(wiki, 'nova-silicon')?.requirements === 0 &&
+        metricsOf(wiki, 'nova-silicon')?.topicShares === 0,
       JSON.stringify(metricsOf(wiki, 'nova-silicon')));
     check('aliases 展示名命中 → lumen-dev（需求 1 / 议题分享 2）',
       metricsOf(wiki, 'lumen-dev')?.requirements === 1 &&
@@ -296,9 +323,9 @@ function main() {
       metricsOf(wiki, 'orbit-data')?.requirements === 2 &&
         metricsOf(wiki, 'orbit-data')?.topicShares === 0,
       JSON.stringify(metricsOf(wiki, 'orbit-data')));
-    check('无别名无认领边且空间未认领 → 兜底独立开发者（需求 2 / 议题分享 1）',
-      metricsOf(wiki, 'unattributed')?.requirements === 2 &&
-        metricsOf(wiki, 'unattributed')?.topicShares === 1,
+    check('无别名无空间命中的账号（含只有认领边的）→ 全部兜底独立开发者（需求 4 / 议题分享 2）',
+      metricsOf(wiki, 'unattributed')?.requirements === 4 &&
+        metricsOf(wiki, 'unattributed')?.topicShares === 2,
       JSON.stringify(metricsOf(wiki, 'unattributed')));
     check('空间外页面未计入任何组织',
       ['harbor-cloud', 'stellar-foundry', 'openan-labs'].every(
@@ -313,11 +340,11 @@ function main() {
     const accountsStable = stableAccounts(accounts);
     const wikiStable = stableWiki(wiki);
 
-    check('账号级 envelope 已提升到 schemaVersion 2', accounts.schemaVersion === 2,
+    check('账号级 envelope 已提升到 schemaVersion 4', accounts.schemaVersion === 4,
       `实际 ${accounts.schemaVersion}`);
     check('账号级条目数 = 5', accounts.data.length === 5, `实际 ${accounts.data.length}`);
     check(
-      '账号级排序：需求降序 → 议题分享降序 → accountId 升序',
+      '账号级排序：需求降序 → 议题分享降序 → 编辑量降序 → accountId 升序',
       JSON.stringify(accounts.data.map((x) => x.accountId)) ===
         JSON.stringify([
           'acct-nova-001',
@@ -328,7 +355,7 @@ function main() {
         ]),
       JSON.stringify(accounts.data.map((x) => x.accountId)),
     );
-    for (const dimension of ['requirements', 'topicShares']) {
+    for (const dimension of ['requirements', 'topicShares', 'edits']) {
       check(
         `账号级 ${dimension} 合计 = 组织级合计（组织级必须由账号级派生）`,
         accountTotalOf(accounts, dimension) === wikiTotalOf(wiki, dimension),
@@ -341,8 +368,9 @@ function main() {
         ),
       );
     }
-    check('账号级：认领边派生 → nova-silicon + personId 非空',
-      byKey['acct-nova-001']?.orgId === 'nova-silicon' &&
+    check('账号级：认领边只写 personId 快照，不改写采集口径 orgId（ADR-0010）',
+      byKey['acct-nova-001']?.orgId === null &&
+        byKey['acct-nova-001']?.orgSource === 'unattributed' &&
         byKey['acct-nova-001']?.personId === 'nora-kim',
       JSON.stringify(byKey['acct-nova-001']));
     check('账号级：aliases 展示名命中 → lumen-dev（personId 未认领）',
@@ -372,8 +400,15 @@ function main() {
       ),
       first.output.match(/展示名来源：[^\n]*/)?.[0] ?? '');
     check('账号级：整体替换（既有陈旧条目已被清除）', byKey['acct-stale-001'] === undefined);
-    check('账号级：orgId / personId 字段显式存在',
-      accounts.data.every((x) => 'orgId' in x && 'personId' in x));
+    check('账号级：orgId / personId / orgSource 字段显式存在',
+      accounts.data.every((x) => 'orgId' in x && 'personId' in x && 'orgSource' in x));
+    check('账号级：orgSource 与归属路径一致（alias / space / unattributed）',
+      byKey['acct-lumen-9']?.orgSource === 'alias' &&
+        byKey['acct-orbit-1']?.orgSource === 'space' &&
+        byKey['acct-nova-001']?.orgSource === 'unattributed' &&
+        byKey['acct-solo-1']?.orgSource === 'unattributed' &&
+        byKey['acct-ghost-1']?.orgSource === 'unattributed',
+      JSON.stringify(accounts.data.map((x) => [x.accountId, x.orgSource])));
 
     // ── 状态文件：口径自检与运营待办 ────────────────────────────
     const state = readState(dataDir);
@@ -390,12 +425,14 @@ function main() {
       state.minutesWithoutAgenda.length === 1 &&
         state.minutesWithoutAgenda[0] === '2026-08-11 TSC Minutes',
       JSON.stringify(state.minutesWithoutAgenda));
-    check('状态文件暴露未归属账号（accountId + 展示名 + 两维度量）',
-      state.unattributedAccounts.length === 2 &&
-        state.unattributedAccounts[0].accountId === 'acct-solo-1' &&
+    check('状态文件暴露未归属账号（accountId + 展示名 + 三维度量，含仅有认领边的）',
+      state.unattributedAccounts.map((x) => x.accountId).join(',') ===
+        'acct-nova-001,acct-solo-1,acct-ghost-1' &&
+        state.unattributedAccounts[0].requirements === 2 &&
         state.unattributedAccounts[0].topicShares === 1 &&
-        state.unattributedAccounts[1].accountId === 'acct-ghost-1' &&
-        state.unattributedAccounts.every((x) => x.requirements === 1),
+        state.unattributedAccounts[0].edits === 0 &&
+        state.unattributedAccounts[1].topicShares === 1 &&
+        state.unattributedAccounts[2].topicShares === 0,
       JSON.stringify(state.unattributedAccounts));
     check('状态文件暴露未能解析的纯文本 @人（需求行 + 纪要段，供运营修正正文）',
       state.unresolvedContacts.length === 2 &&

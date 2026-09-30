@@ -9,7 +9,7 @@ import type {
   ConfluencePageVersionRecord,
   ConfluenceSource,
   ConfluenceUserNameFetchResult,
-} from './confluence-source.types';
+} from './confluence-source.port';
 
 interface FixtureFile {
   records: ConfluencePageRecord[];
@@ -35,7 +35,7 @@ interface FixtureFile {
  * 用途：在没有 CONFLUENCE_TOKEN 的环境下验证「取数 → 口径解析 → 归属映射 → 落盘」全链路，
  * 以及回归测试；不发起任何网络请求。
  */
-export class FixtureConfluenceSource implements ConfluenceSource {
+export class ConfluenceFixtureSource implements ConfluenceSource {
   readonly label = 'confluence-fixture';
 
   constructor(private readonly filePath: string) {}

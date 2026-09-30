@@ -5,16 +5,16 @@ import configuration, { ConfluenceConfig, GithubConfig } from '../config/configu
 import { validateEnv } from '../config/env.validation';
 import { RepositoriesModule } from '../repositories/repositories.module';
 import { GITHUB_SOURCE, CONFLUENCE_SOURCE } from './collector.tokens';
-import { ConfluenceCollectorService } from './confluence-collector.service';
-import { ConfluenceRestSource } from './confluence-rest.source';
-import { ConfluenceStateStore } from './confluence-state.store';
-import { FixtureConfluenceSource } from './fixture-confluence.source';
-import type { ConfluenceSource } from './confluence-source.types';
-import { ContributionCollectorService } from './contribution-collector.service';
-import { FixtureGithubSource } from './fixture-github.source';
-import { GithubSource } from './github-source.types';
-import { GraphqlGithubSource } from './graphql-github.source';
-import { SyncStateStore } from './sync-state.store';
+import { ConfluenceCollectorService } from './confluence/confluence-collector.service';
+import { ConfluenceRestSource } from './confluence/confluence-rest.source';
+import { ConfluenceStateStore } from './confluence/confluence-state.store';
+import { ConfluenceFixtureSource } from './confluence/confluence-fixture.source';
+import type { ConfluenceSource } from './confluence/confluence-source.port';
+import { GithubCollectorService } from './github/github-collector.service';
+import { GithubFixtureSource } from './github/github-fixture.source';
+import { GithubSource } from './github/github-source.port';
+import { GithubGraphqlSource } from './github/github-graphql.source';
+import { GithubSyncStateStore } from './github/github-sync-state.store';
 
 /**
  * 采集器独立上下文：**不启动 HTTP 服务**，只跑采集并落盘。
@@ -32,12 +32,12 @@ import { SyncStateStore } from './sync-state.store';
     RepositoriesModule,
   ],
   providers: [
-    ContributionCollectorService,
+    GithubCollectorService,
     ConfluenceCollectorService,
     {
-      provide: SyncStateStore,
+      provide: GithubSyncStateStore,
       useFactory: (config: ConfigService) =>
-        new SyncStateStore(config.getOrThrow<string>('dataDir')),
+        new GithubSyncStateStore(config.getOrThrow<string>('dataDir')),
       inject: [ConfigService],
     },
     {
@@ -52,11 +52,11 @@ import { SyncStateStore } from './sync-state.store';
         // GITHUB_FIXTURE：离线模式，从固定 JSON 读取记录，用于无 token 验证
         const fixture = process.env.GITHUB_FIXTURE?.trim();
         if (fixture) {
-          return new FixtureGithubSource(resolve(process.cwd(), fixture));
+          return new GithubFixtureSource(resolve(process.cwd(), fixture));
         }
 
         const github = config.get<GithubConfig>('github');
-        return new GraphqlGithubSource({
+        return new GithubGraphqlSource({
           token: github?.token ?? '',
           orgs: github?.orgs ?? [],
           repos: github?.repos ?? [],
@@ -71,7 +71,7 @@ import { SyncStateStore } from './sync-state.store';
         // CONFLUENCE_FIXTURE：离线模式，从固定 JSON 读取页面事实，用于无 token 验证
         const fixture = process.env.CONFLUENCE_FIXTURE?.trim();
         if (fixture) {
-          return new FixtureConfluenceSource(resolve(process.cwd(), fixture));
+          return new ConfluenceFixtureSource(resolve(process.cwd(), fixture));
         }
 
         const confluence = config.get<ConfluenceConfig>('confluence');
@@ -84,9 +84,9 @@ import { SyncStateStore } from './sync-state.store';
     },
   ],
   exports: [
-    ContributionCollectorService,
+    GithubCollectorService,
     ConfluenceCollectorService,
-    SyncStateStore,
+    GithubSyncStateStore,
     ConfluenceStateStore,
     GITHUB_SOURCE,
     CONFLUENCE_SOURCE,

@@ -40,3 +40,43 @@
 {"at":"2026-09-28T12:16:45.770Z","action":"claim.create","personId":"yonglong-wang","claimId":"clm_a146c9f3-4e31-4eb3-83a3-b141362abe4e","source":"confluence","accountKey":"712020:eb69db15-9d15-4a5f-bcd0-2b95a967bf3b"}
 {"at":"2026-09-28T12:16:55.298Z","action":"claim.create","personId":"yonglong-wang","claimId":"clm_3b4276e0-f266-48b4-8de2-c8bef0fa803a","source":"github","accountKey":"127069813"}
 {"at":"2026-09-28T12:17:02.724Z","action":"claim.create","personId":"chuanyu-chen","claimId":"clm_58be276f-6cb0-4baf-a8dd-f70d4a4921ac","source":"confluence","accountKey":"5e58b7c15a495e0c91a94b44"}
+{"at":"2026-09-29T11:45:57.433Z","action":"person.create","personId":"jie-zhou-2","detail":{"displayName":"Jie Zhou"}}
+{"at":"2026-09-29T11:46:03.991Z","action":"claim.create","personId":"jie-zhou-2","claimId":"clm_73bc8dad-b6da-4a94-a79f-128465eb08c2","source":"github","accountKey":"9649802"}
+{"at":"2026-09-29T11:46:17.356Z","action":"person.create","personId":"junjie-huang","detail":{"displayName":"Junjie Huang"}}
+{"at":"2026-09-29T11:46:19.082Z","action":"claim.create","personId":"junjie-huang","claimId":"clm_e11b9a57-aa96-40bc-8a62-8c31592be7ef","source":"github","accountKey":"287865201"}
+{"at":"2026-09-29T11:46:23.915Z","action":"claim.create","personId":"fei-guo","claimId":"clm_aa1b374b-14e8-416b-b702-81adff09112e","source":"github","accountKey":"169223219"}
+{"at":"2026-09-29T11:46:51.578Z","action":"claim.create","personId":"junjie-huang","claimId":"clm_409e8b88-beca-442c-8b0a-17cc11026f3f","source":"confluence","accountKey":"712020:fd6a8616-70b4-4ce8-b65a-01ca4856875e"}
+{"at":"2026-09-29T11:46:58.616Z","action":"claim.create","personId":"jie-zhou-2","claimId":"clm_b9dd28bd-89cc-4d65-88a4-2d7e352ad41a","source":"confluence","accountKey":"712020:20284c60-7d6e-4949-9d8f-3c6ef28c4eb3"}
+{"at":"2026-09-29T11:47:09.700Z","action":"person.delete","personId":"jie-zhou","detail":{"removedClaims":0}}
+{"at":"2026-09-29T11:47:16.347Z","action":"person.update","personId":"jie-zhou-2","detail":{"orgId":"huawei"}}
+{"at":"2026-09-29T11:47:38.565Z","action":"claim.create","personId":"casey-cain","claimId":"clm_3e9f863b-f160-4880-aba4-d50a389ff5c3","source":"confluence","accountKey":"5d00c37ddf6c8f0bbd781cd5"}
+{"at":"2026-09-29T11:48:03.233Z","action":"person.update","personId":"junjie-huang","detail":{"orgId":"huawei"}}
+{"at":"2026-09-29T11:48:03.236Z","action":"person.update","personId":"xunli-yang","detail":{"orgId":"huawei"}}
+{"at":"2026-09-29T11:48:03.240Z","action":"person.update","personId":"yonglong-wang","detail":{"orgId":"huawei"}}
+{"at":"2026-09-29T11:48:31.355Z","action":"person.create","personId":"xiaobin-shi","detail":{"displayName":"Xiaobin Shi"}}
+{"at":"2026-09-29T11:48:38.232Z","action":"claim.create","personId":"xiaobin-shi","claimId":"clm_b778048d-8593-4020-8cdc-5a170f3e2b9c","source":"confluence","accountKey":"712020:a0730888-323b-4928-80e4-fd39f1999b8d"}
+{"at":"2026-09-29T11:49:04.568Z","action":"person.update","personId":"xiaobin-shi","detail":{"orgId":"zte"}}
+{"at":"2026-09-29T11:58:57.034Z","action":"person.create","personId":"yanlin-wang","detail":{"displayName":"Yanlin Wang"}}
+{"at":"2026-09-29T11:58:58.445Z","action":"claim.create","personId":"yanlin-wang","claimId":"clm_7fed1769-88df-46ec-b48a-0ab37da3f81f","source":"github","accountKey":"43065037"}
+{"at":"2026-09-29T11:59:10.174Z","action":"person.update","personId":"yanlin-wang","detail":{"orgId":"huawei"}}
+{"at":"2026-09-29T11:59:24.890Z","action":"person.create","personId":"wenjun-zhang","detail":{"displayName":"Wenjun Zhang"}}
+{"at":"2026-09-29T11:59:26.125Z","action":"claim.create","personId":"wenjun-zhang","claimId":"clm_9aff9e3a-e2f0-497f-9c75-0b3868de310f","source":"github","accountKey":"293838403"}
+{"at":"2026-09-29T11:59:32.702Z","action":"person.update","personId":"wenjun-zhang","detail":{"orgId":"huawei"}}
+{"at":"2026-09-29T12:00:10.100Z","action":"person.create","personId":"lv-bo","detail":{"displayName":"Lv Bo"}}
+{"at":"2026-09-29T12:00:14.851Z","action":"claim.create","personId":"lv-bo","claimId":"clm_a685ae91-892d-4766-a48f-5092a5259c32","source":"github","accountKey":"23048127"}
+{"at":"2026-09-29T12:00:21.905Z","action":"person.update","personId":"lv-bo","detail":{"orgId":"zte"}}
+{"at":"2026-09-29T12:00:44.509Z","action":"person.create","personId":"lorenzo-cipriani","detail":{"displayName":"Lorenzo Cipriani"}}
+{"at":"2026-09-29T12:00:45.784Z","action":"claim.create","personId":"lorenzo-cipriani","claimId":"clm_60f3a415-48a8-450e-a18e-1e73371a63de","source":"github","accountKey":"178486491"}
+{"at":"2026-09-29T12:00:50.720Z","action":"person.update","personId":"lorenzo-cipriani","detail":{"orgId":"huawei"}}
+{"at":"2026-09-29T12:03:10.276Z","action":"claim.create","personId":"wenjun-zhang","claimId":"clm_7f534777-4848-436d-b3b3-8b7026e481cd","source":"confluence","accountKey":"712020:60c80aad-c5b2-49e6-b103-749303dce5de"}
+{"at":"2026-09-29T12:03:22.522Z","action":"claim.create","personId":"wenjun-zhang","claimId":"clm_556491b8-ccdd-44cf-9a37-8fd86b45084c","source":"confluence","accountKey":"5da66d619810cf0c3ce3a7ff"}
+{"at":"2026-09-29T12:03:39.044Z","action":"claim.create","personId":"tingyu-ding","claimId":"clm_908a940a-9b7c-4856-9a42-e8a6f6e8055f","source":"confluence","accountKey":"712020:e2ae8a82-d8c6-4bda-9ee1-082c56635505"}
+{"at":"2026-09-29T12:03:51.420Z","action":"claim.create","personId":"lorenzo-cipriani","claimId":"clm_a087bdc8-967f-4436-983e-0eec79e2550c","source":"confluence","accountKey":"557058:822eb146-7cd1-4d0a-8772-22d2773be7c5"}
+{"at":"2026-09-29T12:04:21.186Z","action":"claim.delete","personId":"wenjun-zhang","claimId":"clm_556491b8-ccdd-44cf-9a37-8fd86b45084c","source":"confluence","accountKey":"5da66d619810cf0c3ce3a7ff"}
+{"at":"2026-09-29T12:04:37.945Z","action":"person.create","personId":"yijun-yu","detail":{"displayName":"Yijun Yu"}}
+{"at":"2026-09-29T12:04:50.195Z","action":"claim.create","personId":"yijun-yu","claimId":"clm_96f36287-9546-4074-b2d6-342c18f71239","source":"confluence","accountKey":"5da66d619810cf0c3ce3a7ff"}
+{"at":"2026-09-29T12:05:22.830Z","action":"person.create","personId":"jinjin-chen","detail":{"displayName":"Jinjin Chen"}}
+{"at":"2026-09-29T12:05:24.418Z","action":"claim.create","personId":"jinjin-chen","claimId":"clm_12870e65-2d16-41be-8986-b3ad93f8439f","source":"github","accountKey":"22369073"}
+{"at":"2026-09-29T12:05:45.587Z","action":"person.update","personId":"jinjin-chen","detail":{"orgId":"huawei"}}
+{"at":"2026-09-29T12:05:59.700Z","action":"claim.create","personId":"jinjin-chen","claimId":"clm_dae0a01b-94b0-4098-9790-a9362b6833a4","source":"github","accountKey":"23572557"}
+{"at":"2026-09-29T12:06:07.683Z","action":"person.update","personId":"yijun-yu","detail":{"orgId":"huawei"}}

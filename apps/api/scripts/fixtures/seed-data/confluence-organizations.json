@@ -1,61 +1,61 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "updatedAt": "2026-09-18T09:00:00Z",
   "data": [
     {
       "orgId": "openan-labs",
       "orgName": "OpenAN Labs",
       "logoUrl": "https://avatars.githubusercontent.com/u/0000001?v=4",
-      "confluence": { "requirements": 0, "topicShares": 0 },
+      "confluence": { "requirements": 0, "topicShares": 0, "edits": 0 },
       "updatedAt": "2026-09-18T09:00:00Z"
     },
     {
       "orgId": "nova-silicon",
       "orgName": "NovaSilicon",
       "logoUrl": "https://avatars.githubusercontent.com/u/0000002?v=4",
-      "confluence": { "requirements": 0, "topicShares": 0 },
+      "confluence": { "requirements": 0, "topicShares": 0, "edits": 0 },
       "updatedAt": "2026-09-18T09:00:00Z"
     },
     {
       "orgId": "harbor-cloud",
       "orgName": "HarborCloud",
       "logoUrl": "https://avatars.githubusercontent.com/u/0000003?v=4",
-      "confluence": { "requirements": 0, "topicShares": 0 },
+      "confluence": { "requirements": 0, "topicShares": 0, "edits": 0 },
       "updatedAt": "2026-09-18T09:00:00Z"
     },
     {
       "orgId": "lumen-dev",
       "orgName": "Lumen Dev",
       "logoUrl": "https://avatars.githubusercontent.com/u/0000004?v=4",
-      "confluence": { "requirements": 0, "topicShares": 0 },
+      "confluence": { "requirements": 0, "topicShares": 0, "edits": 0 },
       "updatedAt": "2026-09-18T09:00:00Z"
     },
     {
       "orgId": "stellar-foundry",
       "orgName": "Stellar Foundry",
       "logoUrl": "https://avatars.githubusercontent.com/u/0000005?v=4",
-      "confluence": { "requirements": 0, "topicShares": 0 },
+      "confluence": { "requirements": 0, "topicShares": 0, "edits": 0 },
       "updatedAt": "2026-09-18T09:00:00Z"
     },
     {
       "orgId": "orbit-data",
       "orgName": "Orbit Data",
       "logoUrl": "https://avatars.githubusercontent.com/u/0000006?v=4",
-      "confluence": { "requirements": 0, "topicShares": 0 },
+      "confluence": { "requirements": 0, "topicShares": 0, "edits": 0 },
       "updatedAt": "2026-09-18T09:00:00Z"
     },
     {
       "orgId": "delta-node",
       "orgName": "Delta Node",
       "logoUrl": "https://avatars.githubusercontent.com/u/0000007?v=4",
-      "confluence": { "requirements": 0, "topicShares": 0 },
+      "confluence": { "requirements": 0, "topicShares": 0, "edits": 0 },
       "updatedAt": "2026-09-18T09:00:00Z"
     },
     {
       "orgId": "unattributed",
       "orgName": "独立开发者",
       "logoUrl": "",
-      "confluence": { "requirements": 0, "topicShares": 0 },
+      "confluence": { "requirements": 0, "topicShares": 0, "edits": 0 },
       "updatedAt": "2026-09-18T09:00:00Z"
     }
   ]

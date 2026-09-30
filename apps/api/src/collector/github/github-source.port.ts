@@ -1,8 +1,8 @@
 /**
  * 采集源抽象：把「数据从哪来」与「怎么聚合落盘」解耦。
  *
- * - GraphqlGithubSource：真实 GitHub GraphQL 通道
- * - FixtureGithubSource：离线固定数据，用于无 token 环境下的端到端验证
+ * - GithubGraphqlSource：真实 GitHub GraphQL 通道
+ * - GithubFixtureSource：离线固定数据，用于无 token 环境下的端到端验证
  */
 
 export type GithubRecordKind = 'pullRequest' | 'issue';

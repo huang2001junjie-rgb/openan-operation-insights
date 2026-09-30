@@ -6,6 +6,8 @@ export interface AvatarProps {
   src?: string;
   name?: string;
   fallbackId?: string;
+  /** 无图降级徽标显示的自定义文案；缺省按姓名首字母（initialsOf） */
+  fallbackText?: string;
   size?: 'sm' | 'md' | 'lg' | 'banner';
   className?: string;
 }
@@ -18,8 +20,8 @@ const SIZE_CLASSES = {
   banner: 'w-full aspect-[3/1] text-xl',
 } as const;
 
-/** 组织 Logo 横版头像（3:1）：logoUrl 缺失或加载失败时降级为姓名首字母的渐变徽标 */
-export function Avatar({ src, name, fallbackId, size = 'md', className }: AvatarProps) {
+/** 组织 Logo 横版头像（3:1）：logoUrl 缺失或加载失败时降级为姓名首字母（或 fallbackText）的渐变徽标 */
+export function Avatar({ src, name, fallbackId, fallbackText, size = 'md', className }: AvatarProps) {
   const [broken, setBroken] = useState(false);
   const url = src?.trim();
 
@@ -49,7 +51,7 @@ export function Avatar({ src, name, fallbackId, size = 'md', className }: Avatar
           onError={() => setBroken(true)}
         />
       ) : (
-        initialsOf(name, fallbackId)
+        fallbackText ?? initialsOf(name, fallbackId)
       )}
     </span>
   );

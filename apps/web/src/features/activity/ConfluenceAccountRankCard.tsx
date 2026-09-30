@@ -8,6 +8,7 @@ import { IconBolt } from '@/components/icons';
 import { cn } from '@/lib/cn';
 import { formatDateTime, formatNumber, initialsOf } from '@/lib/format';
 import type { ConfluenceAccountView, Organization } from '@/types/contract';
+import { ORG_UNATTRIBUTED, UNATTRIBUTED_LABEL } from './org-display';
 
 type MetricKey = 'requirements' | 'topicShares' | 'edits';
 
@@ -23,15 +24,12 @@ const METRIC_UNIT: Record<MetricKey, string> = {
   edits: '次编辑',
 };
 
-/** 独立开发者伪组织（与后端 effective-org / organizations.json 一致） */
-const ORG_UNATTRIBUTED = 'unattributed';
-
 const TOP_N = 8;
 
 export interface ConfluenceAccountRankCardProps {
   /** 账号级 Confluence 明细（含生效归属，见 ADR-0010） */
   accounts?: ConfluenceAccountView[];
-  /** 组织档案：用于把 effectiveOrgId 解析成组织名；未归属显示为伪组织「独立开发者」 */
+  /** 组织档案：用于把 effectiveOrgId 解析成组织名；未归属显示为伪组织（展示名 individual） */
   organizations: Organization[];
   isLoading: boolean;
   isError: boolean;
@@ -107,7 +105,7 @@ export function ConfluenceAccountRankCard({
             {ranking.map(({ item, value }, index) => {
               const isUnattributed = item.effectiveOrgId === ORG_UNATTRIBUTED;
               const orgLabel = isUnattributed
-                ? (orgNames.get(ORG_UNATTRIBUTED) ?? '独立开发者')
+                ? (orgNames.get(ORG_UNATTRIBUTED) ?? UNATTRIBUTED_LABEL)
                 : (orgNames.get(item.effectiveOrgId) ?? item.effectiveOrgId);
               const ratio = maxValue > 0 ? (value / maxValue) * 100 : 0;
 
@@ -183,7 +181,7 @@ export function ConfluenceAccountRankCard({
       </div>
 
       <p className="mt-4 border-t border-white/[0.06] pt-3 text-[0.68rem] leading-relaxed text-slate-500">
-        口径：Confluence 成果按账号聚合，归属为生效归属（人工认领优先于采集口径）；未归属账号归入「独立开发者」；阶段一时间区间筛选暂不生效。
+        口径：Confluence 成果按账号聚合，归属为生效归属（人工认领优先于采集口径）；未归属账号归入「{UNATTRIBUTED_LABEL}」；阶段一时间区间筛选暂不生效。
         {updatedAt ? <span className="ml-1">数据更新于 {formatDateTime(updatedAt)}。</span> : null}
       </p>
     </Card>

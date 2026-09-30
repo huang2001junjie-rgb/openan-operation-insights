@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-09-28T12:17:02.721Z",
+  "updatedAt": "2026-09-29T12:05:59.626Z",
   "data": [
     {
       "claimId": "clm_8f9e7a2d-a75c-496c-af24-cd7057d87834",
@@ -73,6 +73,142 @@
       "accountKey": "5e58b7c15a495e0c91a94b44",
       "displayName": "Chuanyu Chen",
       "createdAt": "2026-09-28T12:17:02.721Z"
+    },
+    {
+      "claimId": "clm_73bc8dad-b6da-4a94-a79f-128465eb08c2",
+      "personId": "jie-zhou-2",
+      "source": "github",
+      "accountKey": "9649802",
+      "displayName": "Jie Zhou",
+      "createdAt": "2026-09-29T11:46:03.987Z"
+    },
+    {
+      "claimId": "clm_e11b9a57-aa96-40bc-8a62-8c31592be7ef",
+      "personId": "junjie-huang",
+      "source": "github",
+      "accountKey": "287865201",
+      "displayName": "Junjie Huang",
+      "createdAt": "2026-09-29T11:46:19.074Z"
+    },
+    {
+      "claimId": "clm_aa1b374b-14e8-416b-b702-81adff09112e",
+      "personId": "fei-guo",
+      "source": "github",
+      "accountKey": "169223219",
+      "displayName": "guofei66",
+      "createdAt": "2026-09-29T11:46:23.909Z"
+    },
+    {
+      "claimId": "clm_409e8b88-beca-442c-8b0a-17cc11026f3f",
+      "personId": "junjie-huang",
+      "source": "confluence",
+      "accountKey": "712020:fd6a8616-70b4-4ce8-b65a-01ca4856875e",
+      "displayName": "Junjie Huang",
+      "createdAt": "2026-09-29T11:46:51.575Z"
+    },
+    {
+      "claimId": "clm_b9dd28bd-89cc-4d65-88a4-2d7e352ad41a",
+      "personId": "jie-zhou-2",
+      "source": "confluence",
+      "accountKey": "712020:20284c60-7d6e-4949-9d8f-3c6ef28c4eb3",
+      "displayName": "Jie Zhou",
+      "createdAt": "2026-09-29T11:46:58.611Z"
+    },
+    {
+      "claimId": "clm_3e9f863b-f160-4880-aba4-d50a389ff5c3",
+      "personId": "casey-cain",
+      "source": "confluence",
+      "accountKey": "5d00c37ddf6c8f0bbd781cd5",
+      "displayName": "Casey Cain",
+      "createdAt": "2026-09-29T11:47:38.557Z"
+    },
+    {
+      "claimId": "clm_b778048d-8593-4020-8cdc-5a170f3e2b9c",
+      "personId": "xiaobin-shi",
+      "source": "confluence",
+      "accountKey": "712020:a0730888-323b-4928-80e4-fd39f1999b8d",
+      "displayName": "Xiaobin Shi",
+      "createdAt": "2026-09-29T11:48:38.228Z"
+    },
+    {
+      "claimId": "clm_7fed1769-88df-46ec-b48a-0ab37da3f81f",
+      "personId": "yanlin-wang",
+      "source": "github",
+      "accountKey": "43065037",
+      "displayName": "Yan-lin Wang",
+      "createdAt": "2026-09-29T11:58:58.440Z"
+    },
+    {
+      "claimId": "clm_9aff9e3a-e2f0-497f-9c75-0b3868de310f",
+      "personId": "wenjun-zhang",
+      "source": "github",
+      "accountKey": "293838403",
+      "displayName": "zhangwenjun-huawei",
+      "createdAt": "2026-09-29T11:59:26.117Z"
+    },
+    {
+      "claimId": "clm_a685ae91-892d-4766-a48f-5092a5259c32",
+      "personId": "lv-bo",
+      "source": "github",
+      "accountKey": "23048127",
+      "displayName": "Lv Bo",
+      "createdAt": "2026-09-29T12:00:14.843Z"
+    },
+    {
+      "claimId": "clm_60f3a415-48a8-450e-a18e-1e73371a63de",
+      "personId": "lorenzo-cipriani",
+      "source": "github",
+      "accountKey": "178486491",
+      "displayName": "Lorenzo Cipriani",
+      "createdAt": "2026-09-29T12:00:45.775Z"
+    },
+    {
+      "claimId": "clm_7f534777-4848-436d-b3b3-8b7026e481cd",
+      "personId": "wenjun-zhang",
+      "source": "confluence",
+      "accountKey": "712020:60c80aad-c5b2-49e6-b103-749303dce5de",
+      "displayName": "Wenjun Zhang",
+      "createdAt": "2026-09-29T12:03:10.271Z"
+    },
+    {
+      "claimId": "clm_908a940a-9b7c-4856-9a42-e8a6f6e8055f",
+      "personId": "tingyu-ding",
+      "source": "confluence",
+      "accountKey": "712020:e2ae8a82-d8c6-4bda-9ee1-082c56635505",
+      "displayName": "Tingyu Ding",
+      "createdAt": "2026-09-29T12:03:39.040Z"
+    },
+    {
+      "claimId": "clm_a087bdc8-967f-4436-983e-0eec79e2550c",
+      "personId": "lorenzo-cipriani",
+      "source": "confluence",
+      "accountKey": "557058:822eb146-7cd1-4d0a-8772-22d2773be7c5",
+      "displayName": "Lorenzo Cipriani",
+      "createdAt": "2026-09-29T12:03:51.416Z"
+    },
+    {
+      "claimId": "clm_96f36287-9546-4074-b2d6-342c18f71239",
+      "personId": "yijun-yu",
+      "source": "confluence",
+      "accountKey": "5da66d619810cf0c3ce3a7ff",
+      "displayName": "Yijun Yu",
+      "createdAt": "2026-09-29T12:04:50.190Z"
+    },
+    {
+      "claimId": "clm_12870e65-2d16-41be-8986-b3ad93f8439f",
+      "personId": "jinjin-chen",
+      "source": "github",
+      "accountKey": "22369073",
+      "displayName": "chenjinjin",
+      "createdAt": "2026-09-29T12:05:24.413Z"
+    },
+    {
+      "claimId": "clm_dae0a01b-94b0-4098-9790-a9362b6833a4",
+      "personId": "jinjin-chen",
+      "source": "github",
+      "accountKey": "23572557",
+      "displayName": "唐志强",
+      "createdAt": "2026-09-29T12:05:59.626Z"
     }
   ]
 }

@@ -7,6 +7,7 @@ import { IconBolt } from '@/components/icons';
 import { cn } from '@/lib/cn';
 import { formatDateTime, formatNumber, initialsOf } from '@/lib/format';
 import type { ContributorContribution, Organization } from '@/types/contract';
+import { ORG_UNATTRIBUTED, UNATTRIBUTED_LABEL } from './org-display';
 
 type MetricKey = 'pullRequests' | 'commits' | 'issues' | 'linesChanged';
 
@@ -23,9 +24,6 @@ const METRIC_UNIT: Record<MetricKey, string> = {
   issues: '个 Issue',
   linesChanged: '行变更',
 };
-
-/** 独立开发者伪组织（与后端 collector.constants / 04 文档 §3.7 一致） */
-const ORG_UNATTRIBUTED = 'unattributed';
 
 const TOP_N = 8;
 
@@ -151,7 +149,7 @@ export function ContributorRankCard({
             {ranking.map(({ item, value }, index) => {
               const orgLabel = item.orgId
                 ? (orgNames.get(item.orgId) ?? item.orgId)
-                : (orgNames.get(ORG_UNATTRIBUTED) ?? '独立开发者');
+                : (orgNames.get(ORG_UNATTRIBUTED) ?? UNATTRIBUTED_LABEL);
               const isIndependent = !item.orgId;
               const ratio = maxValue > 0 ? (value / maxValue) * 100 : 0;
 
@@ -221,7 +219,7 @@ export function ContributorRankCard({
       </div>
 
       <p className="mt-4 border-t border-white/[0.06] pt-3 text-[0.68rem] leading-relaxed text-slate-500">
-        口径：GitHub 公开协作数据按个人聚合，独立开发者归入「独立开发者」；阶段一时间区间筛选暂不生效。
+        口径：GitHub 公开协作数据按个人聚合，未归属组织者归入「{UNATTRIBUTED_LABEL}」；阶段一时间区间筛选暂不生效。
         {updatedAt ? <span className="ml-1">数据更新于 {formatDateTime(updatedAt)}。</span> : null}
       </p>
     </Card>

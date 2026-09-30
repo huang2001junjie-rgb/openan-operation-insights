@@ -24,7 +24,7 @@
 
 同时，04 §3.9 / §3.10 早已把「归属」定义了唯一真相：`Person.orgId`，并明确 `IdentityClaim.accountKey` 对 `confluence` 来源取 accountId。也就是说「平台账号 → 自然人 → 组织」这条通路**本就存在，只是没人接**。
 
-另有一处实现约束：`SyncStateStore.write()` 是**整体覆盖**写 `data/.sync-state.json`，Confluence 若复用会清掉 GitHub 游标。
+另有一处实现约束：`GithubSyncStateStore.write()` 是**整体覆盖**写 `data/.sync-state.json`，Confluence 若复用会清掉 GitHub 游标。
 
 ## 决策
 
@@ -68,7 +68,7 @@
 **不受影响**
 
 - `data/wiki.json` 契约与 `schemaVersion` 不变；API 只读链路、Controller/Service/DTO、前端均零改动。
-- GitHub 采集与其状态文件不变。本次另补齐了 `seed-data/wiki.json`，顺手修好原先因缺该种子而**必然失败**的 `npm run collect:check`。
+- GitHub 采集与其状态文件不变。本次另补齐了 `seed-data/wiki.json`，顺手修好原先因缺该种子而**必然失败**的 `npm run collect:github:check`。
 
 ## 备注
 

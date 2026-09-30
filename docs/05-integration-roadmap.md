@@ -247,8 +247,8 @@ flowchart LR
 | 展示名 | 兜底顺序：**渲染视图 `body.view`**（随正文一并取回，零额外请求）→ 正文 `ri:username` → 页面创建者展示名 → `GET /rest/api/user` → accountId。**不参与计数与归属**，故各档失败只降级、不报错（单页取不到正文则跳过并告警，单页异常不中断整轮；全页无 `Agenda` 段、或有 `Agenda` 段却解析出 0 个分享人，都会判为口径失配而中止）。采集日志按来源分档计数（`展示名来源：渲染视图 N｜正文 username N｜创建者 N｜账号查询 N｜降级 accountId N`）。**实测（2026-09-28）**：正文 mention 只有 `ri:account-id` / `ri:local-id`（`ri:username` 永不命中），`/rest/api/user` 返回 **403**；而渲染视图已给出名字，15 个账号全部换出真名、0 个降级 |
 | 增量 | **暂不做，恒全量重算**。聚合是"按 orgId 整体重写"的全量替换语义，只取增量页面会把未变更页面的计数一起洗掉；安全增量需按页账本，页面量级（数十~数百）尚不值当 |
 | 认证 | Bearer PAT，存于 `CONFLUENCE_TOKEN`；日志绝不输出 token 与完整响应体 |
-| 状态文件 | **独立** `data/.sync-state.confluence.json`：GitHub 的 `SyncStateStore.write()` 会整体覆盖 `.sync-state.json`，复用会清掉 GitHub 游标 |
-| 离线自检 | `npm run collect:wiki:check`（固定 fixture + 合成档案，70 项断言，不联网） |
+| 状态文件 | **独立** `data/.sync-state.confluence.json`：GitHub 的 `GithubSyncStateStore.write()` 会整体覆盖 `.sync-state.json`，复用会清掉 GitHub 游标 |
+| 离线自检 | `npm run collect:wiki:check`（固定 fixture + 合成档案，73 项断言，不联网） |
 
 ### 3.3 与 GitHub 采集的差异
 
@@ -382,7 +382,7 @@ flowchart LR
 }
 ```
 
-> **为何另立文件**：GitHub 的 `SyncStateStore.write()` 是**整体覆盖**写入，若把 Confluence 状态塞进同一文件，
+> **为何另立文件**：GitHub 的 `GithubSyncStateStore.write()` 是**整体覆盖**写入，若把 Confluence 状态塞进同一文件，
 > 每次 GitHub 采集都会把它清掉（反之亦然）。独立文件零风险，语义等价于原设计的"多来源状态"。
 >
 > 两个状态文件都**不属于业务契约**，前端不可见，可随时删除。
@@ -399,15 +399,15 @@ flowchart LR
 
 ```bash
 npm run build -w @openan/api
-npm run collect:check -w @openan/api        # GitHub，期望输出：46/46 通过
-npm run collect:wiki:check -w @openan/api   # Confluence，期望输出：全部通过（70 项）
+npm run collect:github:check -w @openan/api # GitHub，期望输出：46/46 通过
+npm run collect:wiki:check -w @openan/api   # Confluence，期望输出：全部通过（73 项）
 ```
 
 - 合成种子刻意与仓库 `data/` 解耦：真实 `data/` 会随每次线上采集而变化，若直接作为校验输入，断言将随数据漂移而失效；脚本结尾会逐字节比对，确认真实 `data/` 与种子均未被改动。
 - 固定记录中的 `commitEmail`（PR 首提交作者邮箱）与 `author.email`（账户公开资料邮箱）**仅用于内存归属判定**，脚本会断言其未出现在任何落盘文件中。
 - 覆盖的归属场景：登录名别名精确命中、提交邮箱子域命中（`mail.novasilicon.com` → `novasilicon.com`）、公开资料邮箱兜底、提交邮箱优先于资料邮箱、`@users.noreply.github.com` 不误判。
 
-**Confluence 自检**：固定页面记录（含 `bodies` 覆盖正文口径、`views` 覆盖渲染视图取展示名、`users` 覆盖账号查询兜底）在 `apps/api/scripts/fixtures/confluence-records.sample.json`，空结果反例在 `confluence-records.none.json`；`scripts/confluence-check.mjs` 用 `CONFLUENCE_FIXTURE` 指向它们跑**编译产物**，**70 项断言**覆盖：
+**Confluence 自检**：固定页面记录（含 `bodies` 覆盖正文口径、`views` 覆盖渲染视图取展示名、`users` 覆盖账号查询兜底）在 `apps/api/scripts/fixtures/confluence-records.sample.json`，空结果反例在 `confluence-records.none.json`；`scripts/confluence-check.mjs` 用 `CONFLUENCE_FIXTURE` 指向它们跑**编译产物**，**73 项断言**覆盖：
 
 - **结构选页**：标题 + 祖先链命中 `Requirement Proposal`（且排除 `Releases` 下的同名模板页）、纪要页父页/标题正则命中；
 - **两个取数口径**：`Contacts` 列每个 @ 各 1 条（含一行两位联系人）、`Agenda` 段**内** @（段落里的与表格行里的都算）按期去重，同页出席签到段与行动项的 @ 一律不计；

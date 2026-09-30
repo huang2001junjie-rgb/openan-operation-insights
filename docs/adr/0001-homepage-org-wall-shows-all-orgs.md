@@ -16,7 +16,7 @@
 
 经评审拷问，确定以下四点：
 
-1. **展示逻辑**：首页组织墙默认展示 `organizations.json` **全量组织**，按**综合贡献分**降序排列；评分公式不变（`PR + Issue + 需求 + best-practice + 代码量(行)/10000`，四舍五入）。零分组织保留在末尾，同分之间保持默认顺序（`type` 权重 → `name` 升序，由稳定排序自然保证）。（**修订**：公式中的 `best-practice` 项已由 [ADR-0009](./0009-confluence-two-dimension-extraction-from-page-body.md) 更名为 `议题分享`，其余不变。）
+1. **展示逻辑**：首页组织墙默认展示 `organizations.json` **全量组织**，按**综合贡献分**降序排列；评分公式不变（`PR + Issue + 需求 + best-practice + 代码量(行)/10000`，四舍五入）。零分组织保留在末尾，同分之间保持默认顺序（`type` 权重 → `name` 升序，由稳定排序自然保证）。（**修订**：公式中的 `best-practice` 项已由 [ADR-0009](./0009-confluence-two-dimension-extraction-from-page-body.md) 更名为 `议题分享`；随后 [ADR-0011](./0011-confluence-edit-count-metric.md) 又在行为项中加入**编辑量**，并把等级阈值由 `300 / 100` 重标定为 `600 / 100`。）
 2. **接口契约**：URL 参数 `scope=contributing` **名字保留、语义变更**——不再过滤无贡献组织，改为"返回全部组织 + 附带 `contributionScore` / `contributionLevel` + 按分降序"。`scope=all`（默认）行为不变。
 3. **零分展示**：后端照旧对 0 分返回 `contributionLevel='low'`，**契约类型不变**；前端特判 `contributionScore === 0`，显示"暂无贡献"灰色徽章并将进度条置空。
 4. **数据治理**：删除 `wiki.json` 中 6 条孤儿记录（`data` 置空），待真实 Confluence 数据接入后重新填充。
@@ -36,4 +36,4 @@
 
 - **正面**：首页呈现社区全貌；零贡献组织可见（便于运营跟进）；数据文件与组织档案不再存在"幽灵记录"。
 - **负面**：`scope=contributing` 参数名与行为不符（有意接受，见上表）；"贡献的组织"一词沿用为产品术语，语义已在 README 术语表重定义。
-- **不受影响**：社区活跃度页（`scope=all`，组织下拉只取 `orgId/name`）、贡献分公式与阈值（high ≥ 300 / medium ≥ 100）、独立开发者伪组织卡片（`unattributed` 按分数参与排序）。
+- **不受影响**：社区活跃度页（`scope=all`，组织下拉只取 `orgId/name`）、独立开发者伪组织卡片（`unattributed` 按分数参与排序）。（**修订**：贡献分**公式与阈值**并非长期不变——[ADR-0011](./0011-confluence-edit-count-metric.md) 起行为项含编辑量、阈值由 `high ≥ 300 / medium ≥ 100` 重标定为 `≥ 600 / ≥ 100`。）

@@ -3,7 +3,7 @@
  *
  * 用法：
  *   npm run build -w @openan/api
- *   npm run collect:check -w @openan/api
+ *   npm run collect:github:check -w @openan/api
  *
  * 原理：把**合成种子数据**（scripts/fixtures/seed-data，与 github-records.sample.json 配套）
  * 复制到系统临时目录，用 GITHUB_FIXTURE 跑**真实落盘**，校验全量替换 / 增量叠加 / 幂等 /
@@ -15,16 +15,18 @@
 import { spawnSync } from 'node:child_process';
 import { cpSync, existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const apiDir = resolve(scriptDir, '..');
+/** 仓库根：仅用于把日志里的绝对路径收敛成可读相对路径 */
+const repoRoot = resolve(apiDir, '../..');
 /** 校验输入：与 fixture 记录配套的合成种子，不随线上采集漂移 */
 const seedDir = resolve(scriptDir, 'fixtures/seed-data');
 /** 真实数据目录：仅用于「未被本脚本改动」的隔离性断言 */
 const realDataDir = resolve(apiDir, '../../data');
-const cliPath = join(apiDir, 'dist/collector/main.js');
+const cliPath = join(apiDir, 'dist/collector/github/github-main.js');
 const fixture = 'scripts/fixtures/github-records.sample.json';
 const DATA_FILES = [
   'github-organizations.json',
@@ -34,6 +36,24 @@ const DATA_FILES = [
   'confluence-organizations.json',
   'summits.json',
 ];
+
+/** 相对仓库根的展示路径（日志里避免绝对路径噪音） */
+function relFromRepo(path) {
+  return relative(repoRoot, path).replace(/\\/g, '/');
+}
+
+/** 打印本次校验的数据来源：上游记录 / 落盘输入 / 真实数据隔离 */
+function logDataSources() {
+  console.log('');
+  console.log('数据来源 ─────────────────────────────────────────────');
+  console.log('  采集器  : GitHub（dist/collector/github/github-main.js）');
+  console.log(
+    `  上游记录: fixture → ${relFromRepo(join(apiDir, fixture))}（合成 PR / Issue 记录，离线、无需 token）`,
+  );
+  console.log(`  落盘输入: ${relFromRepo(seedDir)}（合成种子，非真实 data/）`);
+  console.log(`  真实数据: ${relFromRepo(realDataDir)} 只读，仅用于「未被改动」逐字节断言`);
+  console.log('───────────────────────────────────────────────────────');
+}
 
 const realSnapshotBefore = snapshotDir(realDataDir);
 
@@ -72,6 +92,10 @@ function runCollector(dataDir, args) {
   if (result.status !== 0) {
     throw new Error(`采集器退出码 ${result.status}\n${output}`);
   }
+  // 采集器自身会打印「采集开始：mode=… source=…」：回显出来，本次跑的是哪份数据一目了然
+  // （Nest Logger 会带 ANSI 颜色码，去掉后便于阅读与比对）
+  const sourceLine = output.match(/采集开始：[^\n]*/)?.[0];
+  if (sourceLine) console.log(`  · ${sourceLine.replace(/\u001b\[[0-9;]*m/g, '')}`);
   return output;
 }
 
@@ -167,6 +191,8 @@ function main() {
     console.error(`未找到采集器产物 ${cliPath}，请先执行 npm run build -w @openan/api`);
     process.exit(1);
   }
+
+  logDataSources();
 
   console.log('\n[1] 全量 dry-run 只计算不落盘');
   {

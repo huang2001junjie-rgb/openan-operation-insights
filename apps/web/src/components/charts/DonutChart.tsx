@@ -7,7 +7,7 @@ import type { EChartsCoreOption } from '@/lib/echarts';
 export interface DonutSlice {
   name: string;
   value: number;
-  /** 可选：为单个扇区指定颜色（如「其他」聚合扇区使用中性色），缺省时回退到全局调色板 */
+  /** 可选：为单个扇区指定颜色，缺省时回退到全局调色板 */
   color?: string;
 }
 

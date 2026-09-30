@@ -1,10 +1,10 @@
 import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
-import { CollectorModule } from './collector.module';
-import { CollectOptions, ContributionCollectorService } from './contribution-collector.service';
-import { RateLimitFloorError } from './graphql-github.source';
-import { SyncState, SyncStateStore } from './sync-state.store';
+import { CollectorModule } from '../collector.module';
+import { GithubCollectOptions, GithubCollectorService } from './github-collector.service';
+import { RateLimitFloorError } from './github-graphql.source';
+import { GithubSyncState, GithubSyncStateStore } from './github-sync-state.store';
 
 type RequestedMode = 'auto' | 'incremental' | 'full';
 
@@ -28,7 +28,7 @@ function parseArgs(argv: string[]): CliArgs {
  * - auto：有游标 → 增量；游标缺失/损坏 → 全量
  * - 显式指定则尊重入参
  */
-function resolveMode(requested: RequestedMode, state: SyncState): 'incremental' | 'full' {
+function resolveMode(requested: RequestedMode, state: GithubSyncState): 'incremental' | 'full' {
   if (requested !== 'auto') return requested;
   return state.lastSyncAt ? 'incremental' : 'full';
 }
@@ -39,7 +39,7 @@ function resolveMode(requested: RequestedMode, state: SyncState): 'incremental' 
  */
 function resolveSince(
   mode: 'incremental' | 'full',
-  state: SyncState,
+  state: GithubSyncState,
   lookbackDays: number,
 ): string | null {
   if (mode === 'full') return null;
@@ -55,8 +55,8 @@ async function bootstrap(): Promise<void> {
     logger: ['error', 'warn', 'log'],
   });
 
-  const collector = app.get(ContributionCollectorService);
-  const syncState = app.get(SyncStateStore);
+  const collector = app.get(GithubCollectorService);
+  const syncState = app.get(GithubSyncStateStore);
   const config = app.get(ConfigService);
 
   const previous = await syncState.read();
@@ -70,7 +70,7 @@ async function bootstrap(): Promise<void> {
     );
   }
 
-  const options: CollectOptions = { mode, since, dryRun: args.dryRun };
+  const options: GithubCollectOptions = { mode, since, dryRun: args.dryRun };
 
   try {
     const outcome = await collector.run(options);

@@ -14,7 +14,7 @@
 | `data/github-organizations.json` | `JsonFileEnvelope<OrganizationContribution[]>` | GitHub 维度贡献 | 数十 |
 | `data/confluence-organizations.json` | `JsonFileEnvelope<OrganizationWiki[]>` | wiki 维度贡献（Confluence） | 数十 |
 | `data/github-accounts.json` | `JsonFileEnvelope<Contributor[]>` | 个人贡献者档案（GitHub 账号维度） | 数百 |
-| `data/confluence-accounts.json` | `JsonFileEnvelope<ConfluenceAccount[]>` | Confluence 账号级事实（账号 × 两个维度；组织级的求和来源，ADR-0010） | 数十～数百 |
+| `data/confluence-accounts.json` | `JsonFileEnvelope<ConfluenceAccount[]>` | Confluence 账号级事实（账号 × 三个维度：需求 / 议题分享 / 编辑；组织级的求和来源，ADR-0010） | 数十～数百 |
 | `data/summits.json` | `JsonFileEnvelope<SummitDetail[]>` | 峰会时间线与详情 | 十余 |
 | `data/meetings.json` | `JsonFileEnvelope<MeetingAttendanceMatrix>` | 例会参会矩阵（人 × 日期） | 1 |
 | `data/persons.json` | `JsonFileEnvelope<Person[]>` | 自然人档案（身份匹配控制台的**点**） | 数十 |
@@ -75,14 +75,17 @@ erDiagram
     string orgId FK
     number requirements
     number topicShares
+    number edits
   }
   CONFLUENCE_ACCOUNT {
     string accountId PK "Confluence accountId"
     string displayName
     string orgId FK "可空"
+    string orgSource "alias | space | unattributed"
     string personId FK "可空"
     number requirements
     number topicShares
+    number edits
   }
   CONTRIBUTOR {
     string contributorId PK
@@ -221,11 +224,12 @@ erDiagram
 | `logoUrl` | string | ✅ | 冗余 Logo |
 | `confluence.requirements` | number | ✅ | 需求条数：`Requirement Proposal` 页（`Release Planning` 之下）需求表格 `Contacts` 列的 @ 提及数（每个提及各 1 条） |
 | `confluence.topicShares` | number | ✅ | 议题分享次数：会议纪要页 `Agenda` 段**内**的 @ 数（段落与表格行都算，同一期同一账号去重） |
+| `confluence.edits` | number | ✅ | 编辑量：空间内页面的**版本作者条数**（按版本记录的作者计，**含页面创建那一次**），覆盖空间内全部页面、不做单页封顶（见 ADR-0011） |
 | `updatedAt` | string | ✅ | 该条记录更新时间 |
 
 > **派生投影**（ADR-0008）：本实体不再独立计算，其 `confluence` 计数由账号级 `ConfluenceAccount`（见 3.11）按 `orgId` 求和派生，账号级是唯一原子事实。
 >
-> **口径与版本**（ADR-0009）：两个维度均按**账号 × 维度的提及数**计数（组织级为求和派生），选页用**结构选择器**（标题 + 祖先链，非标签、非标题关键字）。`schemaVersion` 已由 1 升至 2（不兼容字段改名 `bestPractices → topicShares`），读侧对不匹配版本 **fail-fast**。
+> **口径与版本**：三个维度中，`requirements` / `topicShares` 按**账号 × 维度的提及数**计数（组织级为求和派生），`edits` 按**账号的页面版本作者条数**计数；选页用**结构选择器**（标题 + 祖先链，非标签、非标题关键字，ADR-0009）。`schemaVersion` 已升至 **3**：v2 为不兼容字段改名（`bestPractices → topicShares`，ADR-0009），v3 新增 `edits`（ADR-0011）；读侧对不匹配版本 **fail-fast**。
 
 ### 3.4 `HomeSummary`（首页概览）
 
@@ -378,20 +382,21 @@ erDiagram
 | 字段 | 类型 | 必填 | 说明 |
 | --- | --- | --- | --- |
 | `accountId` | string | ✅ | 稳定键：Confluence `accountId`；取不到时退化为 `displayName:<展示名>` |
-| `displayName` | string | ✅ | 展示名（兜底顺序：**渲染视图 `body.view`** → 正文 `ri:username` → 页面创建者展示名 → `GET /rest/api/user` → accountId）。**不参与计数与归属**（只参与 `aliases.confluence` 的可读名匹配），故各档失败只降级、不报错。**实测（2026-09-28）**：正文 mention 只有 `ri:account-id` / `ri:local-id`（`ri:username` 永不命中）、`/rest/api/user` 返回 403，但渲染视图已带出展示名（`<a … data-account-id="…">FeiGuo</a>`），故首采 15 个账号全部为真名 |
+| `displayName` | string | ✅ | 展示名（兜底顺序：**渲染视图 `body.view`** → 正文 `ri:username` → 页面创建者展示名 → `GET /rest/api/user` → accountId）。**不参与计数与归属**（只参与 `aliases.confluence` 的可读名匹配），故各档失败只降级、不报错。**实测（2026-09-28）**：正文 mention 只有 `ri:account-id` / `ri:local-id`（`ri:username` 永不命中）、`/rest/api/user` 返回 403，但渲染视图已带出展示名（`<a … data-account-id="…">FeiGuo</a>`），故首采 15 个账号全部为真名（引入编辑量后账号集扩至 **21 个**，仍全部为真名、0 个降级，见 08 A3） |
 | `orgId` | string \| null | ✅ | **采集口径**的所属组织（`aliases.confluence` → 空间兜底）；`null` = 采集器未归属。**不是接口对外值**，对外用读时派生的 `effectiveOrgId`（见 5.3.16、ADR-0010） |
 | `orgSource` | `'alias' \| 'space' \| 'unattributed'` | ✅ | 采集口径 `orgId` 的来源。认领命中的 `'claim'` **不落盘**，由读时派生层覆写（故本字段只有三个取值） |
 | `personId` | string \| null | ✅ | 认领到的自然人；`null` = 尚未认领 |
 | `confluence.requirements` | number | ✅ | 该账号在需求页表格 `Contacts` 列被 @ 的次数（每个提及各 1 条，含同页多次） |
 | `confluence.topicShares` | number | ✅ | 该账号在会议纪要 `Agenda` 段**内**被 @ 的**期数**（段落与表格行都算，同一期去重） |
+| `confluence.edits` | number | ✅ | 该账号作为**页面版本作者**的版本条数（**含创建那次**，版本号从 1 起不做扣减），覆盖空间内全部页面、不做单页封顶（ADR-0011） |
 | `updatedAt` | string | ✅ | 该条记录更新时间 |
 
 **口径声明**：
 
-- 文件内**每条记录都来自至少一次被 @ 的提及**（采集器只按提及聚合），故不存在"零贡献账号"；只有档案、无提及的账号不会出现。
-- `requirements` / `topicShares` 统计的是**账号被 @ 的次数 / 期数**，不是页面数；选页口径见 ADR-0009，与组织级完全同源（见 08 §3.2.1）。
+- 文件内每条记录**至少满足一项**：在需求页被 @ 过、在会议纪要 `Agenda` 段被 @ 过、或作为页面版本作者编辑过（采集器按这三类事实聚合）。故不存在"零贡献账号"，但**存在三个指标并非全非零的账号**——例如只编辑、从未被 @ 的账号为 `edits > 0` 而 `requirements = topicShares = 0`；只有档案、三类事实都没有的账号不会出现。
+- `requirements` / `topicShares` 统计的是**账号被 @ 的次数 / 期数**，不是页面数；`edits` 统计的是**版本作者条数**，同样不是页面数（一页被同一人编辑多次即计多条）。选页口径见 ADR-0009，与组织级完全同源（见 08 §3.2.1）。
 - `orgId` 是**采集器自动归属**的结果（`aliases.confluence` → 空间兜底 → 伪组织 `unattributed`），**只作落盘兜底与审计**；对外**生效归属**为读时派生的 `effectiveOrgId = 认领边派生的 Person.orgId ?? orgId ?? 'unattributed'`（人工认领优先，见 ADR-0010）。本实体已**不含**认领边裁决，`personId` 仅为落盘快照，接口以读时派生为准。
-- **不变式**：`OrganizationWiki.confluence.requirements`（3.3）与 `.topicShares` 恒等于本实体对应字段按 **`effectiveOrgId`** 求和（含伪组织 `unattributed`）——`GET /api/wiki` 读时派生，不读 `confluence-organizations.json`，从构造上消除双写与时机漂移。
+- **不变式**：`OrganizationWiki.confluence`（3.3）的 `requirements` / `topicShares` / `edits` 分别恒等于本实体对应字段按 **`effectiveOrgId`** 求和（含伪组织 `unattributed`）——`GET /api/wiki` 读时派生，不读 `confluence-organizations.json`，从构造上消除双写与时机漂移。
 
 ---
 
@@ -537,35 +542,35 @@ erDiagram
 
 ```json
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "updatedAt": "2026-09-18T09:00:00Z",
   "data": [
     {
       "orgId": "openan-labs",
       "orgName": "OpenAN Labs",
       "logoUrl": "https://avatars.githubusercontent.com/u/0000001?v=4",
-      "confluence": { "requirements": 42, "topicShares": 18 },
+      "confluence": { "requirements": 42, "topicShares": 18, "edits": 310 },
       "updatedAt": "2026-09-18T09:00:00Z"
     },
     {
       "orgId": "nova-silicon",
       "orgName": "NovaSilicon",
       "logoUrl": "https://avatars.githubusercontent.com/u/0000002?v=4",
-      "confluence": { "requirements": 26, "topicShares": 11 },
+      "confluence": { "requirements": 26, "topicShares": 11, "edits": 143 },
       "updatedAt": "2026-09-18T09:00:00Z"
     },
     {
       "orgId": "harbor-cloud",
       "orgName": "HarborCloud",
       "logoUrl": "https://avatars.githubusercontent.com/u/0000003?v=4",
-      "confluence": { "requirements": 17, "topicShares": 7 },
+      "confluence": { "requirements": 17, "topicShares": 7, "edits": 96 },
       "updatedAt": "2026-09-18T09:00:00Z"
     },
     {
       "orgId": "lumen-dev",
       "orgName": "Lumen Dev",
       "logoUrl": "https://avatars.githubusercontent.com/u/0000004?v=4",
-      "confluence": { "requirements": 4, "topicShares": 3 },
+      "confluence": { "requirements": 4, "topicShares": 3, "edits": 21 },
       "updatedAt": "2026-09-18T09:00:00Z"
     }
   ]
@@ -789,8 +794,8 @@ erDiagram
 
 ```json
 {
-  "schemaVersion": 3,
-  "updatedAt": "2026-09-28T03:44:37.847Z",
+  "schemaVersion": 4,
+  "updatedAt": "2026-09-29T03:44:11.583Z",
   "data": [
     {
       "accountId": "5da66d619810cf0c3ce3a7ff",
@@ -798,14 +803,14 @@ erDiagram
       "orgId": null,
       "orgSource": "unattributed",
       "personId": null,
-      "confluence": { "requirements": 1, "topicShares": 3 },
-      "updatedAt": "2026-09-28T03:44:37.845Z"
+      "confluence": { "requirements": 0, "topicShares": 0, "edits": 218 },
+      "updatedAt": "2026-09-29T03:44:11.580Z"
     }
   ]
 }
 ```
 
-> 说明：**初始文件为 `"data": []`**，由 Confluence 采集器（`npm run collect:wiki`）全量重算后整体替换（与 `confluence-organizations.json` 同轮写入，先写账号级、再写组织级）。`schemaVersion` 已升至 **3**（新增 `orgSource`）。`orgId` / `personId` 为 `null` 表示该账号尚未归属 / 尚未认领；`orgSource` 标明采集口径归属的来源。`requirements` / `topicShares` 均为该账号被 @ 的次数 / 期数（见 ADR-0009）。**组织级 `confluence-organizations.json` 由本表求和派生（采集器写入、退化为基线快照）；接口对外一律按 `effectiveOrgId` 读时派生（见 ADR-0010）。**
+> 说明：**初始文件为 `"data": []`**，由 Confluence 采集器（`npm run collect:wiki`）全量重算后整体替换（与 `confluence-organizations.json` 同轮写入，先写账号级、再写组织级）。`schemaVersion` 已升至 **4**：v3 新增 `orgSource`（ADR-0010），v4 在 `confluence` 下新增 `edits`（ADR-0011）。`orgId` / `personId` 为 `null` 表示该账号尚未归属 / 尚未认领；`orgSource` 标明采集口径归属的来源。`requirements` / `topicShares` 均为该账号被 @ 的次数 / 期数（见 ADR-0009），`edits` 为其页面版本作者条数（见 ADR-0011）——上例即一个**只编辑、从未被 @** 的账号。**组织级 `confluence-organizations.json` 由本表求和派生（采集器写入、退化为基线快照）；接口对外一律按 `effectiveOrgId` 读时派生（见 ADR-0010）。**
 
 ---
 
@@ -850,9 +855,9 @@ erDiagram
 | 16 | DELETE | `/api/identity/persons/:personId` | 物理删除自然人（不可逆，仅限误建/重复提取） | 身份匹配控制台 |
 | 17 | POST | `/api/identity/claims` | 认领来源账号 | 身份匹配控制台 |
 | 18 | DELETE | `/api/identity/claims/:claimId` | 解除认领（账号回池） | 身份匹配控制台 |
-| 19 | GET | `/api/confluence-accounts` | 账号级 Confluence 贡献（个人维度，生效口径，ADR-0010） | 服务端候选池取数源；暂无直接前端调用方 |
+| 19 | GET | `/api/confluence-accounts` | 账号级 Confluence 贡献（个人维度，生效口径，ADR-0010） | 服务端候选池取数源 + Confluence 视图账号榜 |
 
-> 第 10～13 项为**只读**（不鉴权，但响应为 `no-store`，见 5.1 缓存头）；第 14～18 项为**写接口**，统一位于 `/api/identity/*`，需要 `X-Admin-Token`（见 5.1 与 5.3.14）。第 19 项为普通只读接口（缓存策略同 5.1 看板接口），**当前无直接前端调用方**（其数据由 `CandidateService` 在服务端直接读取，见 5.3.11）。第 4、19 两项均按**生效归属 `effectiveOrgId`** 读时派生（人工认领优先，ADR-0010）。
+> 第 10～13 项为**只读**（不鉴权，但响应为 `no-store`，见 5.1 缓存头）；第 14～18 项为**写接口**，统一位于 `/api/identity/*`，需要 `X-Admin-Token`（见 5.1 与 5.3.14）。第 19 项为普通只读接口（缓存策略同 5.1 看板接口），已由 Confluence 视图账号榜直接调用（`useConfluenceAccounts` → `ConfluenceAccountRankCard`），其数据同时由 `CandidateService` 在服务端直接读取（见 5.3.11）。第 4、19 两项均按**生效归属 `effectiveOrgId`** 读时派生（人工认领优先，ADR-0010）。
 
 ### 5.3 接口详细定义
 
@@ -907,8 +912,8 @@ erDiagram
 
 | 字段 | 类型 | 说明 |
 | --- | --- | --- |
-| `contributionScore` | number | 综合贡献分：`(PR + Issue + 需求 + 议题分享) + 代码量(行) / 10000`，四舍五入取整；无贡献记录的组织为 `0` |
-| `contributionLevel` | `'high' \| 'medium' \| 'low'` | `≥300` → high，`≥100` → medium，其余 → low；**0 分同样返回 low**，由前端以「暂无贡献」样式呈现（见 ADR-0001） |
+| `contributionScore` | number | 综合贡献分：`(PR + Issue + 需求 + 议题分享 + 编辑量) + 代码量(行) / 10000`，四舍五入取整；无贡献记录的组织为 `0`（编辑量同属"行为频次"，直接计入，见 ADR-0011） |
+| `contributionLevel` | `'high' \| 'medium' \| 'low'` | `≥600` → high，`≥100` → medium，其余 → low；**0 分同样返回 low**，由前端以「暂无贡献」样式呈现（见 ADR-0001。阈值随后引入的编辑量按新量级重标定 `300 → 600`，见 ADR-0011） |
 
 ```json
 {
@@ -1006,6 +1011,7 @@ erDiagram
 | `totals.linesChanged` | number | 代码量总数 |
 | `totals.requirements` | number | 需求总数（各组织求和） |
 | `totals.topicShares` | number | 议题分享总数（各组织求和） |
+| `totals.edits` | number | 编辑量总数（各组织求和，见 ADR-0011） |
 | `orgCount` | number | 参与统计的组织数 |
 | `updatedAt` | string | 数据更新时间 |
 
@@ -1019,7 +1025,8 @@ erDiagram
       "issues": 353,
       "linesChanged": 579300,
       "requirements": 89,
-      "topicShares": 39
+      "topicShares": 39,
+      "edits": 672
     },
     "orgCount": 4,
     "updatedAt": "2026-09-18T09:00:00Z"
@@ -1027,7 +1034,7 @@ erDiagram
 }
 ```
 
-> **口径**：环形图自 ADR-0003 起按**组织提交数**（`github.commits`）统计，占比低于 3% 的组织并入「其他」，数据复用 `GET /api/contributions`；本接口的 `totals` 仅作聚合参考，`linesChanged` 单独在排行榜中展示。
+> **口径**：环形图自 ADR-0003 起按**组织提交数**（`github.commits`）统计，自 [ADR-0013](./adr/0013-org-distribution-lists-all-orgs.md) 起**列出全部参与组织**（不再并入「其他」），数据复用 `GET /api/contributions`；本接口的 `totals` 仅作聚合参考，`linesChanged` 单独在排行榜中展示。
 
 ---
 
@@ -1224,7 +1231,7 @@ erDiagram
 | `source` | 来源文件 | `accountKey` | `displayName` | 备注 |
 | --- | --- | --- | --- | --- |
 | `github` | `github-accounts.json` | `githubId` 的字符串形式 | `name` | 头像取 `avatarUrl` |
-| `confluence` | `confluence-accounts.json`（账号级，ADR-0010） | Confluence `accountId` | 账户展示名 | 按账号去重；每条带 `metrics: { requirements, topicShares }`（**被 @ 过才出现**，与 3.11 同源） |
+| `confluence` | `confluence-accounts.json`（账号级，ADR-0010） | Confluence `accountId` | 账户展示名 | 按账号去重；每条带 `metrics: { requirements, topicShares, edits }`（**三类事实至少命中其一才出现**，与 3.11 同源） |
 | `meeting` | `meetings.json` | `columns` 中的人名**原文** | 同 `accountKey` | 按原文去重；**同原文即同一条**，重名者由人工判别 |
 
 **请求参数**：无。
@@ -1251,7 +1258,7 @@ erDiagram
         "source": "confluence",
         "accountKey": "5da66d619810cf0c3ce3a7ff",
         "displayName": "Yijun Yu",
-        "metrics": { "requirements": 1, "topicShares": 3 },
+        "metrics": { "requirements": 0, "topicShares": 0, "edits": 218 },
         "claimedBy": []
       }
     ],
@@ -1271,14 +1278,14 @@ erDiagram
 | `accountKey` | string | ✅ | 来源内稳定标识（语义同 3.10） |
 | `displayName` | string | ✅ | 展示名 |
 | `avatarUrl` | string | ❌ | 仅 `github` 有值 |
-| `metrics` | `GithubMetrics \| ConfluenceMetrics` | ❌ | `github` → `{ pullRequests, commits, issues, linesChanged }`；`confluence` → `{ requirements, topicShares }`；`meeting` 无此字段 |
+| `metrics` | `GithubMetrics \| ConfluenceMetrics` | ❌ | `github` → `{ pullRequests, commits, issues, linesChanged }`；`confluence` → `{ requirements, topicShares, edits }`；`meeting` 无此字段 |
 | `claimedBy` | `{ personId, displayName }[]` | ✅ | **空数组 = 待认领**；长度 > 1 表示冲突（同一账号被多人引用） |
 
 **口径声明**：
 
 - **不返回**邮箱、令牌等敏感身份字段。
 - `claimedBy` 由 `identity-claims.json` 与 `persons.json` 关联派生。
-- `confluence` 分组来自**账号级** `confluence-accounts.json`（ADR-0010），每条记录都**至少被 @ 过一次**；`github` 的 `metrics` 取自 `github-accounts.json` 的 `github` 字段（人工维护、无采集记录时缺失）。
+- `confluence` 分组来自**账号级** `confluence-accounts.json`（ADR-0010），每条记录**至少满足一项**：在需求表格被 @、在会议纪要 `Agenda` 段被 @、或是页面版本作者（ADR-0011 起 `metrics` 含 `edits`，三者可同时为 0）；`github` 的 `metrics` 取自 `github-accounts.json` 的 `github` 字段（人工维护、无采集记录时缺失）。
 - 任一**来源文件**（`github-accounts.json` / `confluence-accounts.json` / `meetings.json`）缺失或为空时**降级为空数组**并在 `warnings` 中说明，**不阻断**整个接口。
 
 **失败场景**：`50001`（`persons.json` 或 `identity-claims.json` 缺失/损坏）。
@@ -1443,11 +1450,11 @@ erDiagram
 
 #### 5.3.16 `GET /api/confluence-accounts`
 
-**用途**：Confluence 维度的**账号级**贡献明细（ADR-0008），回答「谁在 Confluence 提交了需求」，与组织维度接口（5.3.4）互补。**当前无直接前端调用方**（其数据由 `CandidateService` 在服务端直接读取，见 5.3.11）；供个人维度展示与身份匹配控制台取数。**出参为生效口径**（ADR-0010）。
+**用途**：Confluence 维度的**账号级**贡献明细（ADR-0008），回答「谁在 Confluence 提交了需求 / 议题分享 / 编辑」，与组织维度接口（5.3.4）互补。直接调用方为社区活跃度页的 Confluence 视图账号榜（`useConfluenceAccounts` → `ConfluenceAccountRankCard`，见 02 §4.1）；其数据同时由 `CandidateService` 在服务端直接读取，供身份匹配控制台候选池取数（见 5.3.11）。**出参为生效口径**（ADR-0010）。
 
-**请求参数**：与 `/api/wiki` 相同（`sortBy` 可选值为 `requirements` / `topicShares`，默认 `requirements`；`order` 默认 `desc`；`limit` 1–200）。
+**请求参数**：与 `/api/wiki` 相同（`sortBy` 可选值为 `requirements` / `topicShares`，默认 `requirements`；`order` 默认 `desc`；`limit` 1–200）。前端账号榜的 `edits` 口径为**客户端排序**，不经本参数（见 02 §4.1）。
 
-**响应 `data`**：`ConfluenceAccount[]`，字段见 3.11，另附读时派生的 `effectiveOrgId` 与 `orgSource`。仅返回采集器落盘的账号级事实——**每条记录都至少被 @ 过一次**（需求表格或会议纪要）。
+**响应 `data`**：`ConfluenceAccount[]`，字段见 3.11，另附读时派生的 `effectiveOrgId` 与 `orgSource`。仅返回采集器落盘的账号级事实——每条记录**至少满足一项**：在需求表格被 @、在会议纪要 `Agenda` 段被 @、或是页面版本作者（故 `requirements` / `topicShares` / `edits` 三者可同时有 0）。
 
 ```json
 {
@@ -1461,8 +1468,8 @@ erDiagram
       "orgSource": "unattributed",
       "effectiveOrgId": "unattributed",
       "personId": null,
-      "confluence": { "requirements": 1, "topicShares": 0 },
-      "updatedAt": "2026-09-28T03:44:37.845Z"
+      "confluence": { "requirements": 0, "topicShares": 0, "edits": 218 },
+      "updatedAt": "2026-09-29T03:44:11.580Z"
     }
   ]
 }
@@ -1476,7 +1483,7 @@ erDiagram
 >
 > - `orgIds` 命中规则：`effectiveOrgId` 为 `unattributed` 的未归属账号按伪组织参与筛选（与 5.3.8 同构）；筛选基于**生效归属**；
 > - `from` / `to` 当前接受但**不生效**（账号级记录无时间切片），与 5.3.4 / 5.3.8 的说明一致；
-> - **不变式**：本接口 `requirements` 之和恒等于 `GET /api/wiki`（5.3.4）的组织级之和（含伪组织 `unattributed`）——`/api/wiki` 正是由本接口的同源账号级事实读时求和，可互相核对（ADR-0010）。
+> - **不变式**：本接口 `requirements` / `topicShares` / `edits` 之和分别恒等于 `GET /api/wiki`（5.3.4）的组织级对应字段之和（含伪组织 `unattributed`）——`/api/wiki` 正是由本接口的同源账号级事实读时求和，可互相核对（ADR-0010）。
 
 ---
 
@@ -1496,6 +1503,7 @@ erDiagram
 | `github.pullRequests` | 所有 PR | **已合并**的 PR |
 | `github.linesChanged` | 净增行数 / 文件级过滤后的行数 | **PR 级** `additions + deletions` 累加，含全部文件类型 |
 | `github.issues` | 仅 opened | 提出或参与（含评论/被指派）的 Issue |
+| `confluence.edits` | 页面数 / 去重后的编辑人数 | **页面版本作者条数**：一页被同一人编辑多次即计多条，**含页面创建那一次**，不做单页封顶（ADR-0011） |
 | `type = 'external'` | 非社区成员 | 独立外部开发者（非单位身份） |
 | `type = 'individual'` | 一个真人 / 一家组织 | **伪组织** `unattributed` 专用类型，代表「未归属的独立开发者聚合」 |
 | `isUpcoming` | 未开始 | **未结束**（进行中的峰会同样为 `true`） |

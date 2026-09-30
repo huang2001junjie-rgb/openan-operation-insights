@@ -1,20 +1,22 @@
 import { Logger } from '@nestjs/common';
 import {
   MAX_PAGES,
+  REQUEST_SPACING_MS,
+} from '../collector.constants';
+import {
   PAGE_SIZE,
   RATE_LIMIT_FLOOR,
-  REQUEST_SPACING_MS,
   SEARCH_RESULT_LIMIT,
-} from './collector.constants';
+} from './github.constants';
 import type {
   GithubAuthorRef,
   GithubContributionRecord,
   GithubFetchOptions,
   GithubFetchResult,
   GithubSource,
-} from './github-source.types';
+} from './github-source.port';
 
-export interface GraphqlGithubSourceConfig {
+export interface GithubGraphqlSourceConfig {
   token: string;
   /** 组织白名单：GITHUB_REPOS 为空时，仓库列表由这些组织枚举得出 */
   orgs: string[];
@@ -179,10 +181,10 @@ query ($login: String!, $after: String) {
  * - 增量：`search`（限定 merged/created > since），一次覆盖全部仓库，成本低；
  * - 全量：逐仓库 `repository.pullRequests(states: MERGED)` 遍历，**规避搜索接口单查询 1000 条上限**。
  */
-export class GraphqlGithubSource implements GithubSource {
+export class GithubGraphqlSource implements GithubSource {
   readonly label = 'github-graphql';
 
-  private readonly logger = new Logger(GraphqlGithubSource.name);
+  private readonly logger = new Logger(GithubGraphqlSource.name);
   private readonly endpoint: string;
 
   private requestCount = 0;
@@ -190,7 +192,7 @@ export class GraphqlGithubSource implements GithubSource {
   private lastRequestAt = 0;
   private resolvedRepos: string[] | null = null;
 
-  constructor(private readonly config: GraphqlGithubSourceConfig) {
+  constructor(private readonly config: GithubGraphqlSourceConfig) {
     if (!config.token) {
       throw new Error('缺少 GITHUB_TOKEN，无法启用 GitHub 采集通道');
     }

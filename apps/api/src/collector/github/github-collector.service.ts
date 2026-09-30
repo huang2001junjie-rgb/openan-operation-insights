@@ -5,21 +5,21 @@ import {
   HomeFileData,
   Organization,
   OrganizationContribution,
-} from '../contract/entities';
-import { JsonRepository } from '../repositories/json-repository';
+} from '../../contract/entities';
+import { JsonRepository } from '../../repositories/json-repository';
 import {
   CONTRIBUTIONS_REPOSITORY,
   CONTRIBUTORS_REPOSITORY,
   HOME_REPOSITORY,
   ORGANIZATIONS_REPOSITORY,
-} from '../repositories/repository.tokens';
-import { ORG_UNATTRIBUTED, UNATTRIBUTED_DISPLAY_NAME } from './collector.constants';
-import { GITHUB_SOURCE } from './collector.tokens';
-import type { GithubContributionRecord, GithubSource } from './github-source.types';
-import { SyncStateStore } from './sync-state.store';
-import type { SyncState } from './sync-state.store';
+} from '../../repositories/repository.tokens';
+import { ORG_UNATTRIBUTED, UNATTRIBUTED_DISPLAY_NAME } from '../collector.constants';
+import { GITHUB_SOURCE } from '../collector.tokens';
+import type { GithubContributionRecord, GithubSource } from './github-source.port';
+import { GithubSyncStateStore } from './github-sync-state.store';
+import type { GithubSyncState } from './github-sync-state.store';
 
-export interface CollectOptions {
+export interface GithubCollectOptions {
   mode: 'incremental' | 'full';
   /** 增量游标（ISO 8601）；full 模式为 null */
   since: string | null;
@@ -27,7 +27,7 @@ export interface CollectOptions {
   dryRun: boolean;
 }
 
-export interface CollectOutcome {
+export interface GithubCollectOutcome {
   mode: 'incremental' | 'full';
   recordCount: number;
   requestCount: number;
@@ -73,8 +73,8 @@ interface ResolvedAuthor {
  *   避免一次增量运行把历史累计清零；仓库集合由 .sync-state.json 的 orgRepos 求并集得出。
  */
 @Injectable()
-export class ContributionCollectorService {
-  private readonly logger = new Logger(ContributionCollectorService.name);
+export class GithubCollectorService {
+  private readonly logger = new Logger(GithubCollectorService.name);
 
   constructor(
     @Inject(GITHUB_SOURCE) private readonly source: GithubSource,
@@ -86,10 +86,10 @@ export class ContributionCollectorService {
     private readonly contributors: JsonRepository<Contributor[]>,
     @Inject(HOME_REPOSITORY)
     private readonly home: JsonRepository<HomeFileData>,
-    private readonly syncState: SyncStateStore,
+    private readonly syncState: GithubSyncStateStore,
   ) {}
 
-  async run(options: CollectOptions): Promise<CollectOutcome> {
+  async run(options: GithubCollectOptions): Promise<GithubCollectOutcome> {
     const startedAt = new Date().toISOString();
     this.logger.log(
       `采集开始：mode=${options.mode} source=${this.source.label} since=${options.since ?? '(全量)'}`,
@@ -130,7 +130,7 @@ export class ContributionCollectorService {
         ? this.unionLogins(previousState.unattributedLogins, unattributedLogins)
         : unattributedLogins;
 
-    const outcome: CollectOutcome = {
+    const outcome: GithubCollectOutcome = {
       mode: options.mode,
       recordCount: fetched.records.length,
       requestCount: fetched.requestCount,
@@ -160,7 +160,7 @@ export class ContributionCollectorService {
       )),
     );
 
-    const nextState: SyncState = {
+    const nextState: GithubSyncState = {
       ...previousState,
       schemaVersion: 1,
       lastSyncAt: startedAt,
@@ -183,7 +183,7 @@ export class ContributionCollectorService {
   }
 
   /** 失败收尾：只记录状态，绝不清空既有业务数据 */
-  async recordFailure(options: CollectOptions, error: Error): Promise<void> {
+  async recordFailure(options: GithubCollectOptions, error: Error): Promise<void> {
     const previous = await this.syncState.read();
     await this.syncState.write({
       ...previous,
@@ -262,7 +262,7 @@ export class ContributionCollectorService {
 
   /** 增量基线：把已入库的累计值作为聚合初值 */
   private buildSeed(
-    previousState: SyncState,
+    previousState: GithubSyncState,
     baseline: OrganizationContribution[] | null,
   ): Map<string, MetricsAggregate> {
     const seed = new Map<string, MetricsAggregate>();
@@ -285,7 +285,7 @@ export class ContributionCollectorService {
 
   /** 个人维度增量基线（ADR-0003）：把 github-accounts.json 已入库的 github 指标作为聚合初值 */
   private buildContributorSeed(
-    previousState: SyncState,
+    previousState: GithubSyncState,
     baseline: Contributor[] | null,
   ): Map<string, MetricsAggregate> {
     const seed = new Map<string, MetricsAggregate>();
@@ -479,7 +479,7 @@ export class ContributionCollectorService {
     return result;
   }
 
-  private sumTotals(aggregates: Map<string, MetricsAggregate>): CollectOutcome['totals'] {
+  private sumTotals(aggregates: Map<string, MetricsAggregate>): GithubCollectOutcome['totals'] {
     const totals = { pullRequests: 0, commits: 0, issues: 0, linesChanged: 0 };
     aggregates.forEach((bucket) => {
       totals.pullRequests += bucket.pullRequests;
@@ -501,7 +501,7 @@ export class ContributionCollectorService {
     contributions: OrganizationContribution[],
     authors: Map<string, ResolvedAuthor>,
     personAggregates: Map<string, MetricsAggregate>,
-    mode: CollectOptions['mode'],
+    mode: GithubCollectOptions['mode'],
   ): Promise<string[]> {
     const written: string[] = [];
 
@@ -572,7 +572,7 @@ export class ContributionCollectorService {
     current: Contributor[],
     authors: Map<string, ResolvedAuthor>,
     personAggregates: Map<string, MetricsAggregate>,
-    mode: CollectOptions['mode'],
+    mode: GithubCollectOptions['mode'],
   ): Contributor[] {
     const merged = [...current];
     const index = new Map(merged.map((item, position) => [item.contributorId, position]));
@@ -635,7 +635,7 @@ export class ContributionCollectorService {
     return merged;
   }
 
-  private logSummary(outcome: CollectOutcome): void {
+  private logSummary(outcome: GithubCollectOutcome): void {
     this.logger.log(
       `聚合结果（mode=${outcome.mode}）：${outcome.orgCount} 个组织 / 带指标贡献者 ${outcome.personCount} 人（独立开发者 ${outcome.unattributedCount} 人）；` +
         `PR ${outcome.totals.pullRequests}，提交 ${outcome.totals.commits}，Issue ${outcome.totals.issues}，行数 ${outcome.totals.linesChanged}`,

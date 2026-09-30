@@ -8,6 +8,7 @@ import { IconExternal, IconFile } from '@/components/icons';
 import { cn } from '@/lib/cn';
 import { formatDateTime, formatNumber } from '@/lib/format';
 import { sortConfluenceRows, type ConfluenceRow, type ConfluenceSortKey } from './merge';
+import { UNATTRIBUTED_LABEL, orgBadgeFallback } from './org-display';
 
 const COLUMNS: Array<{ key: ConfluenceSortKey; label: string; align?: 'right' }> = [
   { key: 'orgName', label: '组织' },
@@ -124,7 +125,12 @@ export function ConfluenceDetailTable({ rows, isLoading, isError, error, onRetry
                   <tr key={row.orgId}>
                     <td>
                       <div className="flex items-center gap-3">
-                        <Avatar src={row.logoUrl} name={row.orgName} size="sm" />
+                        <Avatar
+                          src={row.logoUrl}
+                          name={row.orgName}
+                          size="sm"
+                          fallbackText={orgBadgeFallback(row.orgId)}
+                        />
                         <div className="flex min-w-0 items-center gap-2">
                           <span className="truncate font-medium text-slate-100">{row.orgName}</span>
                           {row.homepageUrl ? (
@@ -173,7 +179,7 @@ export function ConfluenceDetailTable({ rows, isLoading, isError, error, onRetry
 
           <p className="mt-3 flex items-center gap-1.5 text-[0.7rem] text-slate-500">
             <IconFile width={13} height={13} />
-            归属为生效归属：人工认领优先于采集口径；未归属账号归入「独立开发者」。
+            归属为生效归属：人工认领优先于采集口径；未归属账号归入「{UNATTRIBUTED_LABEL}」。
             「编辑」按页面版本数计（含建页那一次），不剔除多人共编的大页，解读时请结合页数看。
           </p>
         </AsyncState>

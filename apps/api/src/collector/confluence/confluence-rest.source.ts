@@ -1,11 +1,11 @@
 import { Logger } from '@nestjs/common';
+import { REQUEST_SPACING_MS } from '../collector.constants';
 import {
   CONFLUENCE_MAX_PAGES,
   CONFLUENCE_PAGE_SIZE,
   CONFLUENCE_VERSION_MAX_PAGES,
   CONFLUENCE_VERSION_PAGE_SIZE,
-  REQUEST_SPACING_MS,
-} from './collector.constants';
+} from './confluence.constants';
 import { extractRenderedUserNames } from './confluence-content.parser';
 import type {
   ConfluenceBodyFetchResult,
@@ -16,7 +16,7 @@ import type {
   ConfluencePageVersionRecord,
   ConfluenceSource,
   ConfluenceUserNameFetchResult,
-} from './confluence-source.types';
+} from './confluence-source.port';
 
 export interface ConfluenceRestSourceOptions {
   /** 站点根地址（不含 /wiki 后缀） */

@@ -7,7 +7,7 @@ import { dirname, join } from 'node:path';
  * 采集元信息（见 05 文档 1.2 / 2.4）。
  * 独立存放于 data/.sync-state.json，**不污染**业务数据文件。
  */
-export interface SyncState {
+export interface GithubSyncState {
   schemaVersion: 1;
   /** 时间游标：下次增量采集的起点（单游标制） */
   lastSyncAt: string | null;
@@ -34,7 +34,7 @@ export interface SyncState {
   lastError?: string;
 }
 
-const EMPTY_STATE: SyncState = {
+const EMPTY_STATE: GithubSyncState = {
   schemaVersion: 1,
   lastSyncAt: null,
   lastRunAt: null,
@@ -51,24 +51,24 @@ const EMPTY_STATE: SyncState = {
  * 原子读写 .sync-state.json。
  * 文件缺失或损坏时按「无游标」处理 —— 由调用方回退到 GITHUB_LOOKBACK_DAYS 兜底窗口。
  */
-export class SyncStateStore {
+export class GithubSyncStateStore {
   readonly label = '.sync-state.json';
 
-  private readonly logger = new Logger('SyncStateStore');
+  private readonly logger = new Logger('GithubSyncStateStore');
   private readonly filePath: string;
 
   constructor(dataDir: string) {
     this.filePath = join(dataDir, this.label);
   }
 
-  async read(): Promise<SyncState> {
+  async read(): Promise<GithubSyncState> {
     if (!existsSync(this.filePath)) {
       return { ...EMPTY_STATE };
     }
 
     try {
       const raw = await readFile(this.filePath, 'utf8');
-      const parsed = JSON.parse(raw) as Partial<SyncState>;
+      const parsed = JSON.parse(raw) as Partial<GithubSyncState>;
       return {
         ...EMPTY_STATE,
         ...parsed,
@@ -87,7 +87,7 @@ export class SyncStateStore {
     }
   }
 
-  async write(state: SyncState): Promise<void> {
+  async write(state: GithubSyncState): Promise<void> {
     const dir = dirname(this.filePath);
     const tmpPath = `${this.filePath}.${process.pid}.tmp`;
 

@@ -1,10 +1,10 @@
 import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
-import { CollectorModule } from './collector.module';
+import { CollectorModule } from '../collector.module';
 import {
   ConfluenceCollectorService,
-  WikiCollectOptions,
+  ConfluenceCollectOptions,
 } from './confluence-collector.service';
 
 
@@ -69,7 +69,7 @@ async function bootstrap(): Promise<void> {
     return;
   }
 
-  const options: WikiCollectOptions = {
+  const options: ConfluenceCollectOptions = {
     mode: resolveMode(args.mode),
     dryRun: args.dryRun,
     reportOnly: args.reportOnly,

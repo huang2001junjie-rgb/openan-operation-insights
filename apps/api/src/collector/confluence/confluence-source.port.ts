@@ -2,7 +2,7 @@
  * Confluence 采集源抽象：把「数据从哪来」与「怎么聚合落盘」解耦。
  *
  * - ConfluenceRestSource：真实 Confluence REST（v1 search + CQL）
- * - FixtureConfluenceSource：离线固定数据，用于无 token 环境下的端到端验证
+ * - ConfluenceFixtureSource：离线固定数据，用于无 token 环境下的端到端验证
  *
  * 记录刻意**保留全部可能有归属价值的信号**（创建者 / 编辑者 / 标签 / 祖先层级）：
  * Confluence 空间内是否存在"组织"概念、以何种形式存在，以真实数据为准，

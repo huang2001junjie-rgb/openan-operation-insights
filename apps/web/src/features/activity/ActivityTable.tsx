@@ -8,6 +8,7 @@ import { IconExternal, IconFile, IconPullRequest } from '@/components/icons';
 import { cn } from '@/lib/cn';
 import { formatDateTime, formatNumber } from '@/lib/format';
 import { sortRows, type ActivityRow, type SortKey } from './merge';
+import { orgBadgeFallback } from './org-display';
 
 const COLUMNS: Array<{ key: SortKey; label: string; align?: 'right' }> = [
   { key: 'orgName', label: '组织' },
@@ -137,7 +138,12 @@ export function ActivityTable({ rows, isLoading, isError, error, onRetry }: Acti
                   <tr key={row.orgId}>
                     <td>
                       <div className="flex items-center gap-3">
-                        <Avatar src={row.logoUrl} name={row.orgName} size="sm" />
+                        <Avatar
+                          src={row.logoUrl}
+                          name={row.orgName}
+                          size="sm"
+                          fallbackText={orgBadgeFallback(row.orgId)}
+                        />
                         <div className="min-w-0">
                           <div className="flex items-center gap-2">
                             <span className="truncate font-medium text-slate-100">{row.orgName}</span>

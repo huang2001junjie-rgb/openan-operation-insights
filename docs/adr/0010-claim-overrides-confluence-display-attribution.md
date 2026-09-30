@@ -83,4 +83,4 @@ ADR-0008 决策 3 让「采集器自动归属（展示口径）」与「人工 `
 ## 备注
 
 - 本 ADR 由一轮「拷问式评审」（grill-with-docs）产生：先给建议与取舍，再由决策者逐条拍板。
-- 关键证据：`apps/api/src/collector/confluence-collector.service.ts`（`resolveAccountOrg` / `buildClaimIndex` / `lookupAlias`）、`apps/api/src/modules/identity/candidate.service.ts`、`apps/api/src/contract/entities.ts`（`ConfluenceAccount` / `IdentityCandidate` / `IdentitySource`）、`apps/api/src/repositories/repositories.module.ts`（`schemaVersion`）。
+- 关键证据：`apps/api/src/collector/confluence/confluence-collector.service.ts`（`resolveAccountOrg` / `buildClaimIndex` / `lookupAlias`）、`apps/api/src/modules/identity/candidate.service.ts`、`apps/api/src/contract/entities.ts`（`ConfluenceAccount` / `IdentityCandidate` / `IdentitySource`）、`apps/api/src/repositories/repositories.module.ts`（`schemaVersion`）。

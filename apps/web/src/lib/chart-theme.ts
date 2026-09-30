@@ -1,7 +1,23 @@
 import { echarts } from './echarts';
 
-/** 图表配色：与 Tailwind 主题中的 brand / accent / violet 保持一致 */
-export const CHART_PALETTE = ['#4b96ff', '#3fdcc6', '#a78bfa', '#fbbf24', '#fb7185', '#60a5fa'] as const;
+/**
+ * 图表配色：与 Tailwind 主题中的 brand / accent / violet 保持一致。
+ * 扩至 12 色，供「列出全部组织」的组织构成环形图使用，尽量延后循环取色（见 ADR-0013）。
+ */
+export const CHART_PALETTE = [
+  '#4b96ff',
+  '#3fdcc6',
+  '#a78bfa',
+  '#fbbf24',
+  '#fb7185',
+  '#60a5fa',
+  '#34d399',
+  '#f472b6',
+  '#22d3ee',
+  '#fb923c',
+  '#a3e635',
+  '#c084fc',
+] as const;
 
 export const AXIS_TEXT = '#94a3b8';
 export const SPLIT_LINE = 'rgba(255,255,255,0.07)';

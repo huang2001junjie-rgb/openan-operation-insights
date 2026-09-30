@@ -8,16 +8,17 @@ import {
   Organization,
   OrganizationWiki,
   Person,
-} from '../contract/entities';
-import { buildConfluenceClaimIndex, type ConfluenceClaimIndex } from '../common/effective-org';
-import { JsonRepository } from '../repositories/json-repository';
+} from '../../contract/entities';
+import { buildConfluenceClaimIndex, type ConfluenceClaimIndex } from '../../common/effective-org';
+import { JsonRepository } from '../../repositories/json-repository';
 import {
   CONFLUENCE_ACCOUNTS_REPOSITORY,
   IDENTITY_CLAIMS_REPOSITORY,
   ORGANIZATIONS_REPOSITORY,
   PERSONS_REPOSITORY,
   WIKI_REPOSITORY,
-} from '../repositories/repository.tokens';
+} from '../../repositories/repository.tokens';
+import { ORG_UNATTRIBUTED } from '../collector.constants';
 import {
   CONFLUENCE_UNATTRIBUTED_LIMIT,
   CONFLUENCE_UNRESOLVED_LIMIT,
@@ -28,21 +29,20 @@ import {
   DEFAULT_REQUIREMENT_CONTACT_COLUMN,
   DEFAULT_REQUIREMENT_PAGE_TITLE,
   DEFAULT_REQUIREMENT_TITLE_COLUMN,
-  ORG_UNATTRIBUTED,
-} from './collector.constants';
-import { CONFLUENCE_SOURCE } from './collector.tokens';
+} from './confluence.constants';
+import { CONFLUENCE_SOURCE } from '../collector.tokens';
 import { parseAgendaShares, parseRequirementContacts } from './confluence-content.parser';
 import type {
   ConfluencePageRecord,
   ConfluencePageVersionRecord,
   ConfluenceSource,
-} from './confluence-source.types';
+} from './confluence-source.port';
 import {
   buildConfluenceReport,
   renderConfluenceReport,
-  writeConfluenceSnapshot,
   type ConfluenceReport,
 } from './confluence-report';
+import { writeConfluenceSnapshot } from './confluence-snapshot';
 import { ConfluenceStateStore } from './confluence-state.store';
 import type {
   ConfluenceSyncState,
@@ -50,7 +50,7 @@ import type {
   UnresolvedContact,
 } from './confluence-state.store';
 
-export interface WikiCollectOptions {
+export interface ConfluenceCollectOptions {
   /**
    * 恒为 full。Confluence 聚合是**全量替换**语义（按 orgId 整体重写 confluence-organizations.json），
    * 只取增量页面会把未变更页面的计数一起洗掉；安全增量需按页账本，尚未实现（见 ADR-0009）。
@@ -64,7 +64,7 @@ export interface WikiCollectOptions {
   writeSnapshot: boolean;
 }
 
-export interface WikiCollectOutcome {
+export interface ConfluenceCollectOutcome {
   mode: 'full';
   pageCount: number;
   requestCount: number;
@@ -194,7 +194,7 @@ export class ConfluenceCollectorService {
     private readonly config: ConfigService,
   ) {}
 
-  async run(options: WikiCollectOptions): Promise<WikiCollectOutcome> {
+  async run(options: ConfluenceCollectOptions): Promise<ConfluenceCollectOutcome> {
     const startedAt = new Date().toISOString();
     const spaces = this.config.get<string[]>('confluence.spaces') ?? [];
     const criteria = this.readCriteria();
@@ -323,7 +323,7 @@ export class ConfluenceCollectorService {
       previous,
     });
 
-    const outcome: WikiCollectOutcome = {
+    const outcome: ConfluenceCollectOutcome = {
       mode: options.mode,
       pageCount: fetched.pages.length,
       requestCount,
@@ -415,7 +415,7 @@ export class ConfluenceCollectorService {
   }
 
   /** 失败收尾：只记录状态，绝不清空既有业务数据 */
-  async recordFailure(options: WikiCollectOptions, error: Error): Promise<void> {
+  async recordFailure(options: ConfluenceCollectOptions, error: Error): Promise<void> {
     const previous = await this.stateStore.read();
     await this.stateStore.write({
       ...previous,
@@ -772,7 +772,7 @@ export class ConfluenceCollectorService {
    * 用途是"接入口径核对"：在把数字写进看板之前，先看清选到了哪些页、解析出多少人。
    */
   private async finishReportOnly(
-    options: WikiCollectOptions,
+    options: ConfluenceCollectOptions,
     input: {
       pages: ConfluencePageRecord[];
       requestCount: number;
@@ -783,7 +783,7 @@ export class ConfluenceCollectorService {
       spaces: string[];
       criteria: ResolvedCriteria;
     },
-  ): Promise<WikiCollectOutcome> {
+  ): Promise<ConfluenceCollectOutcome> {
     const { pages, requestCount, requirementPages, minutesPages, parsed, report } = input;
     const written: string[] = [];
     const pageTitleById = new Map(pages.map((page) => [page.pageId, page.title]));
@@ -1409,7 +1409,7 @@ export class ConfluenceCollectorService {
     }
   }
 
-  private logSummary(outcome: WikiCollectOutcome): void {
+  private logSummary(outcome: ConfluenceCollectOutcome): void {
     this.logger.log('── 采集结果 ──────────────────────────────');
     this.logger.log(`页面总数    : ${outcome.pageCount}`);
     this.logger.log(`需求页/行/条: ${outcome.requirementPageCount} 页 / ${outcome.requirementRowCount} 行 / ${outcome.totals.requirements} 条`);

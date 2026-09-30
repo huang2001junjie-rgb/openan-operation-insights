@@ -54,7 +54,7 @@ export interface GithubConfig {
  *
  * 口径项（页面结构选择器与列名）全部为**留空取内置默认**：
  * 真实空间改版（标题改名、列改名、年份滚动）时可用环境变量就地校正，不必改代码发版；
- * 默认值集中在 collector.constants.ts，改一处即可。
+ * 默认值集中在 collector/confluence/confluence.constants.ts，改一处即可。
  */
 export interface ConfluenceConfig {
   /** 站点根地址（不含 /wiki 后缀），如 https://example.atlassian.net */
