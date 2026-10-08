@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-09-30T02:31:48.993Z",
+  "updatedAt": "2026-10-08T07:24:09.664Z",
   "data": [
     {
       "claimId": "clm_8f9e7a2d-a75c-496c-af24-cd7057d87834",
@@ -321,6 +321,70 @@
       "accountKey": "712020:abc95452-d9f7-4db4-af48-4eaa86795f0f",
       "displayName": "zhangpenghe",
       "createdAt": "2026-09-30T02:31:48.993Z"
+    },
+    {
+      "claimId": "clm_4e2992be-091b-410d-89d3-487af331c2a2",
+      "personId": "yijun-yu",
+      "source": "meeting",
+      "accountKey": "Yijun Yu(Huawei)",
+      "displayName": "Yijun Yu(Huawei)",
+      "createdAt": "2026-10-08T07:22:37.575Z"
+    },
+    {
+      "claimId": "clm_51f788dc-a7a0-4667-b35e-6663979eb448",
+      "personId": "kailai-zhang",
+      "source": "meeting",
+      "accountKey": "Kailai Zhang(China Mobile)",
+      "displayName": "Kailai Zhang(China Mobile)",
+      "createdAt": "2026-10-08T07:22:52.281Z"
+    },
+    {
+      "claimId": "clm_4fd90d45-7f61-42a8-9489-2302057d8e3d",
+      "personId": "mohammed-el-barhichi",
+      "source": "meeting",
+      "accountKey": "Mohammed El Barhichi (Orange)",
+      "displayName": "Mohammed El Barhichi (Orange)",
+      "createdAt": "2026-10-08T07:23:05.860Z"
+    },
+    {
+      "claimId": "clm_382bac42-5843-4ef6-974b-044ce89c4368",
+      "personId": "boonchoung-tansuthepverawongse",
+      "source": "meeting",
+      "accountKey": "Boonchoung Tansuthepverawongse(AIS)",
+      "displayName": "Boonchoung Tansuthepverawongse(AIS)",
+      "createdAt": "2026-10-08T07:23:16.981Z"
+    },
+    {
+      "claimId": "clm_b347267c-3be8-4b92-8621-850450b9ab1e",
+      "personId": "eduardo-m-panciera-molanes",
+      "source": "meeting",
+      "accountKey": "Eduardo M Panciera Molanes(Telecom Argentina)",
+      "displayName": "Eduardo M Panciera Molanes(Telecom Argentina)",
+      "createdAt": "2026-10-08T07:23:45.486Z"
+    },
+    {
+      "claimId": "clm_8f8dd32c-3d66-4b92-91eb-6c5fb65b2c5d",
+      "personId": "ullas-krishnan",
+      "source": "meeting",
+      "accountKey": "Ullas Krishnan  (Infosys)",
+      "displayName": "Ullas Krishnan  (Infosys)",
+      "createdAt": "2026-10-08T07:23:54.097Z"
+    },
+    {
+      "claimId": "clm_2d3d8f3a-fbc2-436b-a6cd-3664a8ba03c7",
+      "personId": "xiaobin-shi",
+      "source": "meeting",
+      "accountKey": "Xiaobin Shi(ZTE)",
+      "displayName": "Xiaobin Shi(ZTE)",
+      "createdAt": "2026-10-08T07:23:57.132Z"
+    },
+    {
+      "claimId": "clm_35f8e1e4-a175-49de-844f-8cfc8cfb3fb2",
+      "personId": "dajiang-du",
+      "source": "meeting",
+      "accountKey": "Dajiang Du(AsiaInfo)",
+      "displayName": "Dajiang Du(AsiaInfo)",
+      "createdAt": "2026-10-08T07:24:09.664Z"
     }
   ]
 }

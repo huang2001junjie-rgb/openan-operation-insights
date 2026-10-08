@@ -1250,7 +1250,11 @@ erDiagram
         "displayName": "Chuanyu Chen",
         "avatarUrl": "https://avatars.githubusercontent.com/u/22441124?v=4",
         "metrics": { "pullRequests": 12, "commits": 48, "issues": 5, "linesChanged": 9120 },
-        "claimedBy": [{ "personId": "zhang-san", "displayName": "张三" }]
+        "orgId": "huawei",
+        "orgName": "Huawei",
+        "claimedBy": [
+          { "personId": "zhang-san", "displayName": "张三", "orgId": "orange", "orgName": "Orange" }
+        ]
       }
     ],
     "confluence": [
@@ -1259,6 +1263,9 @@ erDiagram
         "accountKey": "5da66d619810cf0c3ce3a7ff",
         "displayName": "Yijun Yu",
         "metrics": { "requirements": 0, "topicShares": 0, "edits": 218 },
+        "orgId": "huawei",
+        "orgSource": "alias",
+        "orgName": "Huawei",
         "claimedBy": []
       }
     ],
@@ -1279,13 +1286,18 @@ erDiagram
 | `displayName` | string | ✅ | 展示名 |
 | `avatarUrl` | string | ❌ | 仅 `github` 有值 |
 | `metrics` | `GithubMetrics \| ConfluenceMetrics` | ❌ | `github` → `{ pullRequests, commits, issues, linesChanged }`；`confluence` → `{ requirements, topicShares, edits }`；`meeting` 无此字段 |
-| `claimedBy` | `{ personId, displayName }[]` | ✅ | **空数组 = 待认领**；长度 > 1 表示冲突（同一账号被多人引用） |
+| `orgId` | string \| null | ✅（`github` / `confluence`） | **采集口径**归属（`github-accounts.json` / `confluence-accounts.json` 落盘 `orgId`，ADR-0014）；`null` = 未归属 / 独立贡献者；`meeting` 无此字段 |
+| `orgSource` | `'alias' \| 'space' \| 'unattributed'` | ✅（仅 `confluence`） | 采集口径 `orgId` 的来源（与 3.11 落盘一致） |
+| `orgName` | string \| null | ✅（`github` / `confluence`） | 组织展示名（读时解析 `organizations.json`）；未归属或档案缺失时为 `null` |
+| `claimedBy` | `{ personId, displayName, orgId, orgName }[]` | ✅ | **空数组 = 待认领**；长度 > 1 表示冲突（同一账号被多人引用）。`orgId` / `orgName` 为该认领自然人的归属（`Person.orgId` 读时 join，ADR-0014），未归属为 `null` |
 
 **口径声明**：
 
 - **不返回**邮箱、令牌等敏感身份字段。
 - `claimedBy` 由 `identity-claims.json` 与 `persons.json` 关联派生。
 - `confluence` 分组来自**账号级** `confluence-accounts.json`（ADR-0010），每条记录**至少满足一项**：在需求表格被 @、在会议纪要 `Agenda` 段被 @、或是页面版本作者（ADR-0011 起 `metrics` 含 `edits`，三者可同时为 0）；`github` 的 `metrics` 取自 `github-accounts.json` 的 `github` 字段（人工维护、无采集记录时缺失）。
+- `orgId` / `orgSource` 恒为**采集口径**（「采集器看到了什么」），**不随认领变化**；Confluence 的对外展示口径仍为 `effectiveOrgId`（ADR-0010，见 5.3.16），两者用途不同、互不替代。前端以此做认领前的归属冲突比对（ADR-0014）。
+- 组织档案（`organizations.json`）缺失 / 损坏时**降级**：`orgName` 一律为 `null`（`orgId` 照常返回）并在 `warnings` 中说明。
 - 任一**来源文件**（`github-accounts.json` / `confluence-accounts.json` / `meetings.json`）缺失或为空时**降级为空数组**并在 `warnings` 中说明，**不阻断**整个接口。
 
 **失败场景**：`50001`（`persons.json` 或 `identity-claims.json` 缺失/损坏）。

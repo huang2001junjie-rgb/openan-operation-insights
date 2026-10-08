@@ -1,6 +1,6 @@
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Field';
-import { IconAlert, IconCheck, IconLink, IconUnlink } from '@/components/icons';
+import { IconAlert, IconBuilding, IconCheck, IconLink, IconUnlink } from '@/components/icons';
 import { cn } from '@/lib/cn';
 import { formatNumber } from '@/lib/format';
 import type { IdentityCandidate, IdentityClaim } from '@/types/contract';
@@ -109,8 +109,26 @@ export function ClaimRow({
         )}
       </div>
 
-      {owners.length > 0 ? (
+      {candidate.source !== 'meeting' || owners.length > 0 ? (
         <div className="mt-2 flex flex-wrap items-center gap-1.5 border-t border-white/[0.06] pt-2">
+          {candidate.source !== 'meeting' ? (
+            <span
+              className={cn(
+                'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[0.7rem]',
+                candidate.orgId
+                  ? 'border-white/10 bg-white/[0.05] text-slate-300'
+                  : 'border-white/[0.07] text-slate-500',
+              )}
+              title={
+                candidate.source === 'confluence'
+                  ? `采集口径归属（${candidate.orgSource === 'alias' ? '别名匹配' : candidate.orgSource === 'space' ? '空间兜底' : '未归属'}）`
+                  : '采集口径归属'
+              }
+            >
+              <IconBuilding width={11} height={11} />
+              {candidate.orgId ? (candidate.orgName ?? candidate.orgId) : '独立开发者'}
+            </span>
+          ) : null}
           {conflicted ? (
             <span className="inline-flex items-center gap-1 text-[0.7rem] font-medium text-amber-200">
               <IconAlert width={12} height={12} />
@@ -125,6 +143,7 @@ export function ClaimRow({
                 className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.05] py-0.5 pl-2.5 pr-1 text-[0.7rem] text-slate-200"
               >
                 已归属 {owner.displayName}
+                <span className="text-slate-500">· {owner.orgName ?? '独立开发者'}</span>
                 {claim ? (
                   <button
                     type="button"

@@ -5,10 +5,9 @@ import { ORGANIZATIONS_REPOSITORY } from '../../repositories/repository.tokens';
 import { ListOrganizationsQuery, OrganizationPort } from '../ports/organization.port';
 
 const TYPE_WEIGHT: Record<Organization['type'], number> = {
-  community: 0,
-  partner: 1,
-  external: 2,
-  individual: 3,
+  tsc: 0,
+  participant: 1,
+  individual: 2,
 };
 
 @Injectable()

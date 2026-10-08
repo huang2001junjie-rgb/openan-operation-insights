@@ -56,13 +56,12 @@ export function ContributionLevelBadge({ level }: { level?: ContributionLevel })
 }
 
 const TYPE_LABEL: Record<OrganizationType, string> = {
-  community: '社区组织',
-  partner: '伙伴单位',
-  external: '外部开发者',
+  tsc: 'TSC 成员单位',
+  participant: '参与单位',
   individual: '独立开发者',
 };
 
 export function OrganizationTypeBadge({ type }: { type: OrganizationType }) {
-  const tone: BadgeTone = type === 'community' ? 'violet' : type === 'partner' ? 'brand' : 'neutral';
+  const tone: BadgeTone = type === 'tsc' ? 'violet' : 'neutral';
   return <Badge tone={tone}>{TYPE_LABEL[type]}</Badge>;
 }

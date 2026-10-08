@@ -246,6 +246,9 @@ export function useDeletePerson() {
 export interface CreateClaimVars {
   personId: string;
   personDisplayName: string;
+  /** 乐观更新用：认领人的组织归属（ADR-0014 后候选的 claimedBy 携带该字段） */
+  personOrgId: string | null;
+  personOrgName: string | null;
   source: IdentitySource;
   accountKey: string;
   displayName?: string;
@@ -258,13 +261,13 @@ export function useCreateClaim() {
       apiMutate<IdentityClaim>('POST', '/identity/claims', {
         body: { personId, source, accountKey, displayName },
       }),
-    onMutate: async ({ personId, personDisplayName, source, accountKey }) => {
+    onMutate: async ({ personId, personDisplayName, personOrgId, personOrgName, source, accountKey }) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.identityCandidates });
       const snapshot = snapshotIdentity(queryClient);
       patchCandidateOwners(queryClient, source, accountKey, (owners) =>
         owners.some((owner) => owner.personId === personId)
           ? owners
-          : [...owners, { personId, displayName: personDisplayName }],
+          : [...owners, { personId, displayName: personDisplayName, orgId: personOrgId, orgName: personOrgName }],
       );
       return { snapshot };
     },

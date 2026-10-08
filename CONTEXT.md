@@ -52,7 +52,7 @@ _Avoid_: 脏数据, 异常行
 **组织花名册 (Org Roster)**: 「组织 → 其下开发者」的**派生视图**，由 `Person.orgId` 分组得到，不落盘。"查询组织下所有 dev"即读该视图，写入仍只经由 `Person.orgId`。
 _Avoid_: 落盘的组织成员列表
 
-**候选池 (Candidate Pool)**: 待认领 / 已认领的来源账号集合，由 `github-accounts.json`、`confluence-accounts.json`（账号级，ADR-0010）与 `meetings.json` **实时派生**，不落盘、零维护。按来源分三组，顺序固定为 **GitHub → Confluence → Meeting**；支持 `?source=confluence` 深链预选分组（供活跃页「去账号认领」入口落地）。
+**候选池 (Candidate Pool)**: 待认领 / 已认领的来源账号集合，由 `github-accounts.json`、`confluence-accounts.json`（账号级，ADR-0010）与 `meetings.json` **实时派生**，不落盘、零维护。按来源分三组，顺序固定为 **GitHub → Confluence → Meeting**；支持 `?source=confluence` 深链预选分组（供活跃页「去账号认领」入口落地）。每条 GitHub / Confluence 候选带**采集口径归属**（`orgId` / `orgName`，Confluence 另带 `orgSource`），`claimedBy` 带各认领自然人的归属（ADR-0014）；认领目标归属与候选采集归属不一致时，认领前弹模态确认（**提醒不阻断**），自然人未归属时提供「认领并归属到该组织」快捷路径（先认领、成功后再改归属）。
 _Avoid_: 账号表
 
 **认领目标 (Claim Target)**: 自然人模式下左栏花名册中被选中的自然人，是候选池「认领」动作的唯一对象；页面级瞬时状态，不落盘、不进 URL。与「详情抽屉」是两个**独立**状态：选中不打开抽屉，关抽屉不清空目标（ADR-0006）。

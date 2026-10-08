@@ -146,7 +146,7 @@ flowchart LR
 | **契约** | Contract | 由 04 文档定义的字段与接口规范，前后端共同遵守 |
 | **自然人** | Person | 跨来源被认定为同一个人的**身份根**（`personId` + 展示名 + 归属组织），是身份认领的唯一锚点，由身份匹配控制台维护；一经创建仅可改名与调整归属（见 04 §3.9） |
 | **身份认领** | Identity Claim | 「把某来源账号判定为某自然人」的单条映射**边**（`source` + `accountKey`）；解除匹配 = 物理删除该边（见 04 §3.10） |
-| **候选池** | Identity Candidate | 待认领 / 已认领的来源账号集合，由 `github-accounts.json`、`meetings.json` 与 Confluence 来源**派生**，不落盘（见 04 §5.3.11） |
+| **候选池** | Identity Candidate | 待认领 / 已认领的来源账号集合，由 `github-accounts.json`、`meetings.json` 与 Confluence 来源**派生**，不落盘（见 04 §5.3.11）；每条带采集口径组织归属、认领人归属，认领冲突时弹窗确认（见 [ADR-0014](./adr/0014-candidate-pool-org-display-and-claim-conflict-dialog.md)） |
 | **组织花名册** | Org Roster | 「组织 → 其下开发者」视图，由 `Person.orgId` **派生**；组织档案上不存成员清单，避免两份真相（见 04 §5.3.13） |
 | **认领目标** | Claim Target | 自然人模式下左栏花名册中被选中的自然人，是候选池「认领」动作的唯一对象；页面级瞬时状态，不落盘、不进 URL。**与「详情抽屉」是两个独立状态**——选中不开抽屉、关抽屉不清目标（见 [ADR-0006](./adr/0006-identity-console-selection-vs-detail.md)） |
 | **详情抽屉** | Person Detail Drawer | 自然人模式下由行内「详情」按钮单独打开的模态面板，用于改名 / 调整归属 / 解除认领 / 物理删除；开关不影响认领目标（见 [ADR-0006](./adr/0006-identity-console-selection-vs-detail.md)） |

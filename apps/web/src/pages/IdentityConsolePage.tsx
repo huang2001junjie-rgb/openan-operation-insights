@@ -16,10 +16,11 @@ import {
   useOrgRoster,
   useUpdatePerson,
 } from '@/hooks/useIdentity';
-import type { IdentityCandidate, IdentityClaim } from '@/types/contract';
+import type { IdentityCandidate, IdentityClaim, PersonListItem } from '@/types/contract';
 import { AdminTokenDialog } from '@/features/identity/AdminTokenDialog';
 import { CandidatePool } from '@/features/identity/CandidatePool';
 import { IdentityModeSwitch, type IdentityMode } from '@/features/identity/IdentityModeSwitch';
+import { OrgConflictDialog } from '@/features/identity/OrgConflictDialog';
 import { OrgMemberPanel } from '@/features/identity/OrgMemberPanel';
 import { OrganizationRosterPanel } from '@/features/identity/OrganizationRosterPanel';
 import { PersonDetailDrawer } from '@/features/identity/PersonDetailDrawer';
@@ -143,15 +144,54 @@ export function IdentityConsolePage() {
     ? { personId: selectedPerson.personId, displayName: selectedPerson.displayName }
     : null;
 
-  const handleClaim = (candidate: IdentityCandidate) => {
-    if (!selectedPerson) return;
+  /** 归属冲突待确认：候选的采集归属与认领目标不一致时先弹窗（ADR-0014），确认后继续认领 */
+  const [orgConflict, setOrgConflict] = useState<{
+    candidate: IdentityCandidate;
+    person: PersonListItem;
+  } | null>(null);
+
+  const runClaim = (candidate: IdentityCandidate, person: PersonListItem) => {
     createClaim.mutate({
-      personId: selectedPerson.personId,
-      personDisplayName: selectedPerson.displayName,
+      personId: person.personId,
+      personDisplayName: person.displayName,
+      personOrgId: person.orgId,
+      personOrgName: person.orgId ? (orgNameById.get(person.orgId) ?? person.orgId) : null,
       source: candidate.source,
       accountKey: candidate.accountKey,
       displayName: candidate.displayName,
     });
+  };
+
+  const handleClaim = (candidate: IdentityCandidate) => {
+    if (!selectedPerson) return;
+    // 冲突判定（ADR-0014）：meeting 无采集归属、候选无采集归属时均无可比对象，直接放行
+    const accountOrgId = candidate.source === 'meeting' ? null : candidate.orgId;
+    if (accountOrgId && accountOrgId !== selectedPerson.orgId) {
+      setOrgConflict({ candidate, person: selectedPerson });
+      return;
+    }
+    runClaim(candidate, selectedPerson);
+  };
+
+  /** 「认领并归属到该组织」：先认领，认领成功后再改自然人归属（认领被拒则不动归属，避免半成品状态） */
+  const handleClaimAndAssign = () => {
+    if (!orgConflict || orgConflict.candidate.source === 'meeting') return;
+    const { candidate, person } = orgConflict;
+    const orgId = candidate.orgId;
+    setOrgConflict(null);
+    if (!orgId) return;
+    createClaim.mutate(
+      {
+        personId: person.personId,
+        personDisplayName: person.displayName,
+        personOrgId: person.orgId,
+        personOrgName: person.orgId ? (orgNameById.get(person.orgId) ?? person.orgId) : null,
+        source: candidate.source,
+        accountKey: candidate.accountKey,
+        displayName: candidate.displayName,
+      },
+      { onSuccess: () => updatePerson.mutate({ personId: person.personId, orgId }) },
+    );
   };
 
   /** 抽屉内的物理删除：关闭抽屉，并在删掉的正是当前认领目标时同步归零 */
@@ -288,6 +328,33 @@ export function IdentityConsolePage() {
         onDeletePerson={handleDeletePerson}
         onUnclaim={(claimId) => deleteClaim.mutate(claimId)}
         isMutating={isMutating}
+      />
+
+      <OrgConflictDialog
+        open={Boolean(orgConflict)}
+        accountLabel={
+          orgConflict ? orgConflict.candidate.displayName || orgConflict.candidate.accountKey : ''
+        }
+        accountOrgName={
+          orgConflict && orgConflict.candidate.source !== 'meeting'
+            ? (orgConflict.candidate.orgName ?? orgConflict.candidate.orgId ?? '')
+            : ''
+        }
+        personName={orgConflict?.person.displayName ?? ''}
+        personOrgName={
+          orgConflict?.person.orgId
+            ? (orgNameById.get(orgConflict.person.orgId) ?? orgConflict.person.orgId)
+            : null
+        }
+        isMutating={isMutating}
+        onCancel={() => setOrgConflict(null)}
+        onClaimOnly={() => {
+          if (!orgConflict) return;
+          const { candidate, person } = orgConflict;
+          setOrgConflict(null);
+          runClaim(candidate, person);
+        }}
+        onClaimAndAssign={handleClaimAndAssign}
       />
 
       <AdminTokenDialog open={tokenOpen} onClose={() => setTokenOpen(false)} />

@@ -530,7 +530,8 @@ bg-white/70 backdrop-blur-xl border border-white/60 shadow-glass rounded-2xl
 | 区块 | 组件 | 本轮变更 |
 | --- | --- | --- |
 | 候选池 | `CandidatePool` | `confluence` 分组由「恒空」改为接入**账号级** `confluence-accounts.json`；组标题带「待认领 N」徽标；每条候选显示来源指标 |
-| 候选行 | `ClaimRow` | `confluence` 候选展示 `metrics`（需求 / 议题分享） |
+| 候选行 | `ClaimRow` | `confluence` 候选展示 `metrics`（需求 / 议题分享）；ADR-0014 起每条候选展示**组织归属**（见 §14.5） |
+| 冲突弹窗 | `OrgConflictDialog` | ADR-0014 新增：认领目标与候选账号的归属不一致时，认领前弹模态确认（见 §14.6） |
 
 ### 14.2 分组、排序与深链
 
@@ -548,3 +549,16 @@ bg-white/70 backdrop-blur-xl border border-white/60 shadow-glass rounded-2xl
 
 - `confluence` 分组为空时的 `emptyLabel` 改为「Confluence 账号级数据尚未采集，或全部已认领」。
 - `warnings` 非空时在池顶部提示（既有行为），不阻塞其它分组。
+
+### 14.5 候选行的组织归属展示（ADR-0014）
+
+- `github` / `confluence` 候选行底部展示**采集口径归属**徽标：有归属时显示组织名（`orgName`，缺失回退 `orgId`），未归属显示「独立开发者」；`confluence` 的徽标悬停提示归属来源（别名匹配 / 空间兜底 / 未归属）。`meeting` 候选与组织无关联，**不展示**该行。
+- 已认领自然人的归属在「已归属 {姓名}」徽标内一并展示（`· {orgName}`），未归属显示「独立开发者」——与全局口径一致（`Person.orgId` 为空前端归入「独立开发者」）。
+- 归属徽标为**只读展示**，不参与认领动作；冲突判定逻辑见 §14.6。
+
+### 14.6 认领前的归属冲突确认（ADR-0014）
+
+- **触发条件**（纯前端比对，认领点击时求值）：候选的采集口径 `orgId` **非空** 且 `≠` 认领目标的 `Person.orgId`。候选无采集归属（`null`）或 `meeting` 来源 → 无可比对象，直接放行不弹窗。
+- **交互**：`OrgConflictDialog` 模态（沿用 `AdminTokenDialog` 模式：遮罩 + Escape 关闭），列明「账号自动匹配归属」与「自然人当前归属」；**提醒不阻断**（ADR-0008 决策 5）——
+  - 目标自然人**已有归属**（硬冲突）：[取消] / [仍要认领]，确认后照常认领，两套口径保持不一致、不自动仲裁。
+  - 目标自然人**未归属**：额外提供 [认领并归属到 {组织}] 快捷路径——**先认领，认领成功后**再 `PATCH` 自然人归属（复用 `useUpdatePerson`，无新接口）；认领被拒则不动归属，避免半成品状态。反向操作（把已归属的自然人改到账号的组织）**不提供**快捷路径，仍走详情抽屉。

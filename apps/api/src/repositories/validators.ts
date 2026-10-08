@@ -28,7 +28,7 @@ const isStringArray = (value: unknown): value is string[] =>
 const isNullableString = (value: unknown): value is string | null | undefined =>
   value === undefined || value === null || isString(value);
 
-const ORGANIZATION_TYPES = ['partner', 'external', 'community', 'individual'];
+const ORGANIZATION_TYPES = ['tsc', 'participant', 'individual'];
 const DELTA_DIRECTIONS = ['up', 'down', 'flat'];
 
 function isMetricValue(value: unknown): value is MetricValue {

@@ -3,7 +3,7 @@
  * 端口（providers/ports）与前端 types/ 必须与此逐字段对齐。
  */
 
-export type OrganizationType = 'partner' | 'external' | 'community' | 'individual';
+export type OrganizationType = 'tsc' | 'participant' | 'individual';
 export type DeltaDirection = 'up' | 'down' | 'flat';
 
 export interface Organization {
@@ -258,6 +258,10 @@ export interface PersonListItem extends Person {
 export interface IdentityCandidateOwner {
   personId: string;
   displayName: string;
+  /** 该自然人的归属组织（Person.orgId，ADR-0014）；null = 未归属 */
+  orgId: string | null;
+  /** 组织展示名（读时解析 organizations.json）；未归属或档案缺失时为 null */
+  orgName: string | null;
 }
 
 /**
@@ -283,12 +287,22 @@ export interface GithubIdentityCandidate extends IdentityCandidateBase {
   source: 'github';
   avatarUrl?: string;
   metrics?: Omit<GithubMetrics, 'repos'>;
+  /** 采集口径归属（`github-accounts.json` 落盘 `orgId`，ADR-0014）；null = 独立贡献者 */
+  orgId: string | null;
+  /** 组织展示名（读时解析 organizations.json）；未归属或档案缺失时为 null */
+  orgName: string | null;
 }
 
 /** Confluence 候选：每条都至少被 @ 过一次，`metrics` 恒有值 */
 export interface ConfluenceIdentityCandidate extends IdentityCandidateBase {
   source: 'confluence';
   metrics: ConfluenceMetrics;
+  /** 采集口径归属（落盘 `orgId`）；null = 采集器未归属。候选池输出采集口径（非 effectiveOrgId），供认领冲突比对（ADR-0014） */
+  orgId: string | null;
+  /** 采集口径 `orgId` 的来源（落盘三值：alias / space / unattributed） */
+  orgSource: ConfluenceOrgSource;
+  /** 组织展示名（读时解析 organizations.json）；未归属或档案缺失时为 null */
+  orgName: string | null;
 }
 
 /** 例会候选：人名原文，无指标 */

@@ -10,6 +10,7 @@ import {
   IdentityClaim,
   MeetingAttendanceMatrix,
   MeetingIdentityCandidate,
+  Organization,
   Person,
 } from '../../contract/entities';
 import { JsonRepository } from '../../repositories/json-repository';
@@ -18,6 +19,7 @@ import {
   CONTRIBUTORS_REPOSITORY,
   IDENTITY_CLAIMS_REPOSITORY,
   MEETINGS_REPOSITORY,
+  ORGANIZATIONS_REPOSITORY,
   PERSONS_REPOSITORY,
 } from '../../repositories/repository.tokens';
 
@@ -45,6 +47,8 @@ export class CandidateService {
     @Inject(MEETINGS_REPOSITORY) private readonly meetings: JsonRepository<MeetingAttendanceMatrix>,
     @Inject(PERSONS_REPOSITORY) private readonly persons: JsonRepository<Person[]>,
     @Inject(IDENTITY_CLAIMS_REPOSITORY) private readonly claims: JsonRepository<IdentityClaim[]>,
+    @Inject(ORGANIZATIONS_REPOSITORY)
+    private readonly organizations: JsonRepository<Organization[]>,
   ) {}
 
   async getCandidates(): Promise<IdentityCandidatesData> {
@@ -53,20 +57,26 @@ export class CandidateService {
     // persons / identity-claims 缺失或损坏 → 50001（不再降级）
     const [persons, claims] = await Promise.all([this.persons.read(), this.claims.read()]);
 
+    // 组织展示名（ADR-0014）：档案不可用时降级为 null，候选仍带 orgId
+    const orgNameById = await this.loadOrgNames(warnings);
+
     const [github, confluence, meeting] = await Promise.all([
-      this.loadGithub(warnings),
-      this.loadConfluence(warnings),
+      this.loadGithub(warnings, orgNameById),
+      this.loadConfluence(warnings, orgNameById),
       this.loadMeeting(warnings),
     ]);
 
-    const nameByPerson = new Map(persons.data.map((person) => [person.personId, person.displayName]));
+    const personById = new Map(persons.data.map((person) => [person.personId, person]));
     const ownersByKey = new Map<string, IdentityCandidateOwner[]>();
     for (const claim of claims.data) {
       const key = candidateKey(claim.source, claim.accountKey);
       const owners = ownersByKey.get(key) ?? [];
+      const person = personById.get(claim.personId);
       owners.push({
         personId: claim.personId,
-        displayName: nameByPerson.get(claim.personId) ?? claim.personId,
+        displayName: person?.displayName ?? claim.personId,
+        orgId: person?.orgId ?? null,
+        orgName: person?.orgId ? (orgNameById.get(person.orgId) ?? null) : null,
       });
       ownersByKey.set(key, owners);
     }
@@ -92,7 +102,22 @@ export class CandidateService {
     );
   }
 
-  private async loadGithub(warnings: string[]): Promise<GithubIdentityCandidate[]> {
+  /** 组织展示名索引：档案缺失/损坏时降级为空表（orgName 为 null，orgId 照常返回） */
+  private async loadOrgNames(warnings: string[]): Promise<Map<string, string>> {
+    try {
+      const { data } = await this.organizations.read();
+      return new Map(data.map((org) => [org.orgId, org.name]));
+    } catch (error) {
+      warnings.push('组织档案不可用，候选的组织归属仅显示 orgId');
+      this.logger.warn(`组织档案读取失败：${(error as Error).message}`);
+      return new Map();
+    }
+  }
+
+  private async loadGithub(
+    warnings: string[],
+    orgNameById: Map<string, string>,
+  ): Promise<GithubIdentityCandidate[]> {
     try {
       const { data } = await this.contributors.read();
       return data.map((contributor) => ({
@@ -100,6 +125,9 @@ export class CandidateService {
         accountKey: String(contributor.githubId),
         displayName: contributor.name,
         ...(contributor.avatarUrl ? { avatarUrl: contributor.avatarUrl } : {}),
+        // 采集口径归属（ADR-0014）：供候选池展示与认领冲突比对
+        orgId: contributor.orgId ?? null,
+        orgName: contributor.orgId ? (orgNameById.get(contributor.orgId) ?? null) : null,
         // repos 不进候选池（噪声大），其余指标按 Omit<GithubMetrics,'repos'> 对齐
         ...(contributor.github
           ? {
@@ -120,13 +148,20 @@ export class CandidateService {
     }
   }
 
-  private async loadConfluence(warnings: string[]): Promise<ConfluenceIdentityCandidate[]> {
+  private async loadConfluence(
+    warnings: string[],
+    orgNameById: Map<string, string>,
+  ): Promise<ConfluenceIdentityCandidate[]> {
     try {
       const { data } = await this.confluenceAccounts.read();
       return data.map((account) => ({
         source: 'confluence' as const,
         accountKey: account.accountId,
         displayName: account.displayName,
+        // 采集口径（非 effectiveOrgId，ADR-0014）：冲突比对的基线是「自动匹配结果」
+        orgId: account.orgId,
+        orgSource: account.orgSource,
+        orgName: account.orgId ? (orgNameById.get(account.orgId) ?? null) : null,
         metrics: {
           requirements: account.confluence.requirements,
           topicShares: account.confluence.topicShares,

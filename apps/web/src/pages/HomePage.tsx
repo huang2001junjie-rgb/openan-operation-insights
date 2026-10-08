@@ -162,7 +162,7 @@ export function HomePage() {
           />
           <dl className="mt-5 grid gap-4 text-xs sm:grid-cols-2 lg:grid-cols-4">
             {[
-              { term: '伙伴单位', def: 'organizations.json 中 type=partner 的档案数' },
+              { term: '伙伴单位', def: 'home.json 中运营维护的伙伴单位计数（partnerCount），口径为签署共建协议的组织' },
               { term: '外部开发者', def: 'github-accounts.json 中 orgId 为空的贡献者数' },
               {
                 term: '独立开发者',

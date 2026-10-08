@@ -1,16 +1,16 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-09-23T03:28:05.494Z",
+  "updatedAt": "2026-10-08T07:35:09.162Z",
   "data": {
     "columns": [
-      "Yijun Yu(Huawei)",
-      "Kailai Zhang(China Mobile)",
-      "Mohammed El Barhichi (Orange)",
-      "Boonchoung Tansuthepverawongse(AIS)",
-      "Eduardo M Panciera Molanes(Telecom Argentina)",
-      "Ullas Krishnan  (Infosys)",
-      "Xiaobin Shi(ZTE)",
-      "Dajiang Du(AsiaInfo)"
+      "Huawei(Yijun Yu)",
+      "China Mobile(Kailai Zhang)",
+      "Orange(Mohammed El Barhichi)",
+      "AIS(Boonchoung Tansuthepverawongse)",
+      "Telecom Argentina(Eduardo M Panciera Molanes)",
+      "Infosys(Ullas Krishnan)",
+      "ZTE(Xiaobin Shi)",
+      "AsiaInfo(Dajiang Du)"
     ],
     "rows": [
       {
@@ -207,8 +207,21 @@
           true,
           true
         ]
+      },
+      {
+        "date": "2026-09-29",
+        "attendance": [
+          true,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true
+        ]
       }
     ],
-    "updatedAt": "2026-09-23T03:28:05.491Z"
+    "updatedAt": "2026-10-08T07:35:09.158Z"
   }
 }

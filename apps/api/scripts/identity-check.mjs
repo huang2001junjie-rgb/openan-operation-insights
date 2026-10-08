@@ -57,15 +57,19 @@ function makeRepos(dir, seed) {
     claims: makeRepo(dir, 'identity-claims.json', validators.isIdentityClaimArray),
     organizations: makeRepo(dir, 'organizations.json', validators.isOrganizationArray),
     contributors: makeRepo(dir, 'github-accounts.json', validators.isContributorArray),
-    wiki: makeRepo(dir, 'confluence-organizations.json', validators.isWikiArray),
+    confluenceAccounts: makeRepo(
+      dir,
+      'confluence-accounts.json',
+      validators.isConfluenceAccountArray,
+    ),
     meetings: makeRepo(dir, 'meetings.json', validators.isMeetingAttendanceMatrix),
     seed,
   };
 }
 
 const ORGS = [
-  { orgId: 'huawei', name: 'Huawei', logoUrl: '', homepageUrl: '', type: 'partner', tags: [] },
-  { orgId: 'orange', name: 'Orange', logoUrl: '', homepageUrl: '', type: 'partner', tags: [] },
+  { orgId: 'huawei', name: 'Huawei', logoUrl: '', homepageUrl: '', type: 'participant', tags: [] },
+  { orgId: 'orange', name: 'Orange', logoUrl: '', homepageUrl: '', type: 'participant', tags: [] },
   { orgId: 'unattributed', name: '独立开发者', logoUrl: '', homepageUrl: '', type: 'individual', tags: [] },
 ];
 const CONTRIBUTORS = [
@@ -73,6 +77,10 @@ const CONTRIBUTORS = [
   { contributorId: 'cnafan', githubId: 9312901, name: 'cnafan', orgId: null },
 ];
 const MEETINGS = { columns: ['张三', '张三', 'Chuanyu Chen'], rows: [{ date: '2026-06-09', attendance: [true, false, true] }] };
+const CONFLUENCE_ACCOUNTS = [
+  { accountId: 'acc-feiguo', displayName: 'FeiGuo', orgId: 'huawei', orgSource: 'alias', personId: null, confluence: { requirements: 2, topicShares: 1, edits: 5 }, updatedAt: '2026-01-01T00:00:00Z' },
+  { accountId: 'acc-loner', displayName: 'Loner', orgId: null, orgSource: 'unattributed', personId: null, confluence: { requirements: 0, topicShares: 1, edits: 0 }, updatedAt: '2026-01-01T00:00:00Z' },
+];
 
 function makeDataDir(withSources = true) {
   const dir = mkdtempSync(join(tmpdir(), 'openan-identity-'));
@@ -82,7 +90,7 @@ function makeDataDir(withSources = true) {
   writeFileSync(join(dir, 'organizations.json'), JSON.stringify(envelope(ORGS), null, 2));
   if (withSources) {
     writeFileSync(join(dir, 'github-accounts.json'), JSON.stringify(envelope(CONTRIBUTORS), null, 2));
-    writeFileSync(join(dir, 'confluence-organizations.json'), JSON.stringify(envelope([]), null, 2));
+    writeFileSync(join(dir, 'confluence-accounts.json'), JSON.stringify(envelope(CONFLUENCE_ACCOUNTS), null, 2));
     writeFileSync(join(dir, 'meetings.json'), JSON.stringify(envelope(MEETINGS), null, 2));
   }
   return dir;
@@ -174,19 +182,34 @@ async function scenarioCandidates() {
   const repos = makeRepos(dir);
   repos.dir = dir;
   const personSvc = makePersonService(repos);
-  const cand = new CandidateService(repos.contributors, repos.wiki, repos.meetings, repos.persons, repos.claims);
+  const cand = new CandidateService(
+    repos.contributors,
+    repos.confluenceAccounts,
+    repos.meetings,
+    repos.persons,
+    repos.claims,
+    repos.organizations,
+  );
 
   const person = await personSvc.createPerson({ displayName: 'Chuanyu Chen' });
+  await personSvc.updatePerson(person.personId, { orgId: 'orange' });
   await personSvc.createClaim({ personId: person.personId, source: 'github', accountKey: '22441124' });
 
   const data = await cand.getCandidates();
   check('github 候选 2 条', data.github.length === 2, `len=${data.github.length}`);
   check('meeting 去重后 2 条', data.meeting.length === 2, `len=${data.meeting.length}`);
-  check('confluence 当前为空且有告警', data.confluence.length === 0 && data.warnings.some((w) => w.includes('confluence')), JSON.stringify(data.warnings));
+  check('confluence 候选 2 条', data.confluence.length === 2, `len=${data.confluence.length}`);
+  const feiguo = data.confluence.find((c) => c.accountKey === 'acc-feiguo');
+  check('confluence 候选携带采集口径归属', feiguo?.orgId === 'huawei' && feiguo?.orgSource === 'alias' && feiguo?.orgName === 'Huawei', JSON.stringify({ orgId: feiguo?.orgId, orgSource: feiguo?.orgSource, orgName: feiguo?.orgName }));
+  const loner = data.confluence.find((c) => c.accountKey === 'acc-loner');
+  check('confluence 未归属候选 orgId 为 null', loner?.orgId === null && loner?.orgSource === 'unattributed' && loner?.orgName === null, JSON.stringify({ orgId: loner?.orgId, orgSource: loner?.orgSource }));
   const claimed = data.github.find((c) => c.accountKey === '22441124');
   check('claimedBy 关联到自然人', claimed?.claimedBy?.[0]?.personId === person.personId, JSON.stringify(claimed?.claimedBy));
+  check('认领人携带组织归属', claimed?.claimedBy?.[0]?.orgId === 'orange' && claimed?.claimedBy?.[0]?.orgName === 'Orange', JSON.stringify(claimed?.claimedBy));
+  check('候选携带采集口径归属', claimed?.orgId === 'huawei' && claimed?.orgName === 'Huawei', JSON.stringify({ orgId: claimed?.orgId, orgName: claimed?.orgName }));
   const unclaimed = data.github.find((c) => c.accountKey === '9312901');
   check('未认领项 claimedBy 为空', Array.isArray(unclaimed?.claimedBy) && unclaimed.claimedBy.length === 0, 'empty');
+  check('未归属候选 orgId/orgName 为 null', unclaimed?.orgId === null && unclaimed?.orgName === null, JSON.stringify({ orgId: unclaimed?.orgId, orgName: unclaimed?.orgName }));
 
   // 降级：来源文件缺失
   const degradedDir = makeDataDir(false);
@@ -194,10 +217,11 @@ async function scenarioCandidates() {
   degradedRepos.dir = degradedDir;
   const degraded = new CandidateService(
     degradedRepos.contributors,
-    degradedRepos.wiki,
+    degradedRepos.confluenceAccounts,
     degradedRepos.meetings,
     degradedRepos.persons,
     degradedRepos.claims,
+    degradedRepos.organizations,
   );
   const degradedData = await degraded.getCandidates();
   check(
