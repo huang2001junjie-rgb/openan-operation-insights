@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-09-21T00:00:00Z",
+  "updatedAt": "2026-10-26T00:00:00Z",
   "data": [
     {
       "orgId": "lfn",
       "name": "Linux Foundation Networking",
       "logoUrl": "/logos/lfn.webp",
       "homepageUrl": "https://lfnetworking.org/",
-      "type": "tsc",
+      "type": "operation",
       "tags": [],
       "aliases": { "github": "", "confluence": "" },
       "emailDomains": ["lfnetworking.org", "linuxfoundation.org"],
@@ -98,7 +98,7 @@
     },
     {
       "orgId": "personal",
-      "name": "personal",
+      "name": "Personal",
       "logoUrl": "/logos/personal.webp",
       "homepageUrl": "https://www.telecom.com.ar",
       "type": "tsc",

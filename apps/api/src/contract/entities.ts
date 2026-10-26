@@ -3,7 +3,11 @@
  * 端口（providers/ports）与前端 types/ 必须与此逐字段对齐。
  */
 
-export type OrganizationType = 'tsc' | 'participant' | 'individual';
+/**
+ * 组织类型。`individual` 为伪组织（独立开发者聚合），其余均为真实组织类别。
+ * `partnerCount` 口径为 `type !== 'individual'`，故 operation 计入伙伴单位数。
+ */
+export type OrganizationType = 'tsc' | 'participant' | 'operation' | 'individual';
 export type DeltaDirection = 'up' | 'down' | 'flat';
 
 export interface Organization {
@@ -155,7 +159,14 @@ export interface MetricValue {
 
 /** data/home.json 的 data 结构 */
 export interface HomeFileData {
+  /** 伙伴单位数：口径 = 组织档案内 `type !== 'individual'` 者（TSC 成员单位 + 参与单位 + 运营单位） */
   partnerCount: MetricValue;
+  /**
+   * 独立开发者数（`github-accounts.json` 中 `orgId` 为空者）。
+   * 字段名沿用旧称「外部开发者」；对外文案已统一为「独立开发者」，
+   * 与 `Badge.tsx` 的 `TYPE_LABEL.individual`、组织墙文案一致。改名会波及
+   * 契约 / 校验 / 采集回填 / `home.json`，收益不抵风险，故保留。
+   */
   externalDeveloperCount: MetricValue;
   summitCount: MetricValue;
   useCaseCount: MetricValue;

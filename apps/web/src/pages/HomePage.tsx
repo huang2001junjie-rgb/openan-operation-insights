@@ -59,15 +59,15 @@ export function HomePage() {
               metric={summary.data.partnerCount}
               icon={<IconBuilding width={17} height={17} />}
               tone="brand"
-              hint="签署共建协议的组织"
+              hint="TSC 成员单位与参与单位"
               delay={0}
             />
             <StatCard
-              label="外部开发者"
+              label="独立开发者"
               metric={summary.data.externalDeveloperCount}
               icon={<IconUsers width={17} height={17} />}
               tone="accent"
-              hint="参与过社区贡献的外部开发者"
+              hint="参与过社区贡献、未归属任何单位"
               delay={70}
             />
             <StatCard
@@ -108,7 +108,7 @@ export function HomePage() {
               贡献组织
             </h2>
             <p className="mt-1 text-xs text-slate-400">
-              展示全部社区组织，按综合贡献分降序排列；分数由代码协作行为、成果文档数量加权得出。
+              展示全部在榜组织，按综合贡献分降序排列；分数由代码协作行为、成果文档数量加权得出。
             </p>
           </div>
           {organizations.data ? (
@@ -162,17 +162,23 @@ export function HomePage() {
           />
           <dl className="mt-5 grid gap-4 text-xs sm:grid-cols-2 lg:grid-cols-4">
             {[
-              { term: '伙伴单位', def: 'home.json 中运营维护的伙伴单位计数（partnerCount），口径为签署共建协议的组织' },
-              { term: '外部开发者', def: 'github-accounts.json 中 orgId 为空的贡献者数' },
+              {
+                term: '伙伴单位',
+                def: 'home.json 中运营维护的计数（partnerCount），口径为 organizations.json 内的 TSC 成员单位、参与单位与运营单位（即 type !== individual，与组织墙在榜数一致）',
+              },
               {
                 term: '独立开发者',
-                def: '未归属到任何组织的贡献者；贡献归入伪组织 unattributed（type=individual）',
+                def: 'github-accounts.json 中 orgId 为空的贡献者数；贡献归入伪组织 unattributed（type=individual）',
               },
               { term: '社区峰会', def: 'summits.json 中全部峰会条目数' },
               { term: '应用案例', def: '年度案例登记表中通过评审的案例数' },
               {
                 term: '贡献组织',
                 def: '全部组织档案按综合贡献分降序排列；0 分组织显示「暂无贡献」',
+              },
+              {
+                term: '综合贡献分',
+                def: '由代码协作行为与成果文档数量加权得出（organization.service.ts 的 computeScore）；权重目前为固定常量，尚未做成配置项',
               },
             ].map((item) => (
               <div key={item.term} className="rounded-xl border border-white/[0.07] bg-white/[0.02] p-3.5">

@@ -60,8 +60,8 @@ OpenAN 是一个开放协作社区，其运营工作长期面临信息分散的�
 mindmap
   root((OpenAN<br/>Operation Insights))
     首页
-      社区伙伴数量
-      外部开发者数量
+      伙伴单位数量
+      独立开发者数量
       参加的峰会
       应用案例
       下一次峰会
@@ -375,7 +375,7 @@ openan-operation-insights/
 │   ├── source/                            # 人工维护的源台账（采集器输入，非契约文件）
 │   │   └── meetings.xlsx                  # 例会参会台账（运营手工更新）
 │   ├── home.json                          # 首页指标 + 下一次峰会
-│   ├── organizations.json                 # 组织档案（伙伴 / 外部开发者）
+│   ├── organizations.json                 # 组织档案（TSC 成员单位 / 参与单位 / 运营单位 / 独立开发者伪组织）
 │   ├── github-organizations.json          # 组织 × 贡献指标（GitHub 类）
 │   ├── confluence-organizations.json      # 组织 × Confluence 类指标
 │   ├── github-accounts.json               # 个人贡献者档案（GitHub 账号维度）

@@ -52,7 +52,7 @@ collector/
 ## 后果
 
 - **产物路径变化**：`dist/collector/main.js` → `dist/collector/github/github-main.js`；`dist/collector/confluence-main.js` → `dist/collector/confluence/confluence-main.js`。`package.json` 的采集相关脚本与 `scripts/collector-check.mjs`、`scripts/confluence-check.mjs` 的 dist 路径同步更新 —— 任何**外部**按旧路径调用采集入口的脚本（CI、部署任务、运维手册）都需一并更新。
-- **命令键更名**：`package.json` 的 GitHub 侧采集脚本由 `collect` / `collect:full` / `collect:dev` / `collect:dev:full` / `collect:check` 统一为 `collect:github` / `collect:github:full` / `collect:github:dev` / `collect:github:dev:full` / `collect:github:check`，与 Confluence 侧 `collect:wiki*` 的命名轴对齐（`collect:meetings` 属第三个来源，不动）；全仓引用（`scripts/collector-check.mjs` 注释、`docs/05`、`docs/08`、ADR-0007）同步更新。
+- **命令键更名**：`package.json` 的 GitHub 侧采集脚本由 `collect` / `collect:full` / `collect:dev` / `collect:dev:full` / `collect:check` 统一为 `collect:github` / `collect:github:full` / `collect:github:dev` / `collect:github:dev:full` / `collect:github:check`，与 Confluence 侧 `collect:wiki*` 的命名轴对齐（`collect:meetings` 属第三个来源，不动）；全仓引用（`scripts/collector-check.mjs` 注释、`docs/05`、`docs/07`、ADR-0007）同步更新。
 - **对外契约不变**：HTTP 接口、`data/*.json` 的文件名与结构、`.sync-state*.json` 的落盘路径与字段**全部不动**，本次是纯代码组织调整。
 - **连带更新**：`docs/03` 目录树；`configuration.ts` 与 `confluence-source.port.ts` 等按文件名引用常量的注释；ADR-0007 / 0008 / 0010 / 0011 中失效的路径引用。
 

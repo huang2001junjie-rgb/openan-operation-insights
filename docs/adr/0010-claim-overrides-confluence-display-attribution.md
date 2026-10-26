@@ -2,7 +2,7 @@
 
 - **状态**：✅ 已接受（2026-09-28）
 - **日期**：2026-09-28
-- **关联文档**：04 §1 / §3.11 / §4.10 / §5.2 / §5.3.4 / §5.3.11 / §5.3.16 / §6.2；02 §4 / §7.1 / §8.2；08 §1.2 / §2.2 / §3.2.1 / §4；ADR-0008（决策 3 部分被本 ADR 取代）/ ADR-0009
+- **关联文档**：04 §1 / §3.11 / §4.10 / §5.2 / §5.3.4 / §5.3.11 / §5.3.16 / §6.2；02 §4 / §7.1 / §8.2；07 §1.2 / §2.2 / §3.2.1 / §4；ADR-0008（决策 3 部分被本 ADR 取代）/ ADR-0009
 - **决策者**：项目负责人（R2-1～R2-7、R3-1～R3-6 逐条拍板）
 
 ## 背景
@@ -66,7 +66,7 @@ ADR-0008 决策 3 让「采集器自动归属（展示口径）」与「人工 `
 - **`GET /api/identity/candidates`**：`confluence` 分组改读**账号级**（不再读组织级、不再恒空），并返回 `metrics`；`IdentityCandidate` 改为**来源判别联合**：`github` 带 `{pullRequests,commits,issues,linesChanged}`、`confluence` 带 `{requirements,topicShares}`、`meeting` 无 `metrics`。
 - **采集器**：`buildClaimIndex` 与认领优先级从 `resolveAccountOrg` 移除；账号级落盘新增 `orgSource`。
 - **前端**：活跃度页新增来源切换器（`?source=`）与 Confluence 视图及三态空态；身份控制台候选池接入 Confluence 分组并支持深链 `?source=confluence`。
-- **文档**：本 ADR；ADR-0008 决策 3 标注被取代；04、02、08、`CONTEXT.md`。
+- **文档**：本 ADR；ADR-0008 决策 3 标注被取代；04、02、07、`CONTEXT.md`。
 
 ### 不变
 
@@ -78,7 +78,7 @@ ADR-0008 决策 3 让「采集器自动归属（展示口径）」与「人工 `
 ### 遗留技术债（登记）
 
 1. GitHub 侧仍是「认领不影响展示」+ 组织级 / 账号级双写，与本 ADR 的 Confluence 处理**不一致**；收敛需另立 ADR。
-2. `confluence-organizations.json` 降级为快照后，若被误当权威会读到旧口径；已在 04 / 08 标注「非读路径来源」。
+2. `confluence-organizations.json` 降级为快照后，若被误当权威会读到旧口径；已在 04 / 07 标注「非读路径来源」。
 
 ## 备注
 

@@ -8,7 +8,7 @@
       "logoUrl": "https://avatars.githubusercontent.com/u/0000001?v=4",
       "homepageUrl": "https://github.com/openan-labs",
       "type": "tsc",
-      "tags": ["社区组织", "核心维护"],
+      "tags": ["核心维护"],
       "aliases": { "github": "openan-labs", "confluence": "OpenAN Labs" },
       "emailDomains": ["openan.dev"],
       "joinedAt": "2023-03-01T00:00:00Z",
@@ -44,10 +44,10 @@
       "logoUrl": "https://avatars.githubusercontent.com/u/0000004?v=4",
       "homepageUrl": "https://github.com/lumen-dev",
       "type": "participant",
-      "tags": ["外部开发者", "文档"],
+      "tags": ["文档"],
       "aliases": { "github": "lumen-dev", "confluence": "Lumen" },
       "emailDomains": ["lumen.dev"],
-      "description": "独立开发者，长期贡献中文文档与快速上手指南。"
+      "description": "参与单位，长期贡献中文文档与快速上手指南。"
     },
     {
       "orgId": "stellar-foundry",
@@ -66,7 +66,7 @@
       "logoUrl": "https://avatars.githubusercontent.com/u/0000006?v=4",
       "homepageUrl": "https://github.com/orbit-data",
       "type": "participant",
-      "tags": ["外部开发者", "数据面"],
+      "tags": ["数据面"],
       "aliases": { "github": "orbit-data", "confluence": "ORBIT,Orbit Data" },
       "emailDomains": ["orbitdata.cloud"],
       "description": "贡献数据面组件与可观测性接入。"
@@ -77,7 +77,7 @@
       "logoUrl": "https://avatars.githubusercontent.com/u/0000007?v=4",
       "homepageUrl": "https://github.com/delta-node",
       "type": "participant",
-      "tags": ["外部开发者", "边缘"],
+      "tags": ["边缘"],
       "aliases": { "github": "delta-node", "confluence": "Delta Node" },
       "emailDomains": ["deltanode.dev"],
       "description": "边缘节点接入与轻量运行时适配。"

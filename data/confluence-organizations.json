@@ -92,7 +92,7 @@
     },
     {
       "orgId": "personal",
-      "orgName": "personal",
+      "orgName": "Personal",
       "logoUrl": "/logos/personal.webp",
       "confluence": {
         "requirements": 0,

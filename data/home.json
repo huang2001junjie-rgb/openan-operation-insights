@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-09-30T02:16:02.467Z",
+  "updatedAt": "2026-10-26T03:35:42.322Z",
   "data": {
     "partnerCount": {
-      "value": 10,
+      "value": 11,
       "unit": "家",
       "delta": 3,
       "deltaDirection": "up"

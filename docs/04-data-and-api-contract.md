@@ -10,7 +10,7 @@
 | 文件 | 顶层结构 | 承载内容 | 记录量级 |
 | --- | --- | --- | --- |
 | `data/home.json` | `JsonFileEnvelope<HomeFileData>` | 首页四项指标 + 下一次峰会引用 | 1 |
-| `data/organizations.json` | `JsonFileEnvelope<Organization[]>` | 组织档案（伙伴 / 外部开发者 / 社区） | 数十 |
+| `data/organizations.json` | `JsonFileEnvelope<Organization[]>` | 组织档案（TSC 成员单位 / 参与单位 / 独立开发者伪组织） | 数十 |
 | `data/github-organizations.json` | `JsonFileEnvelope<OrganizationContribution[]>` | GitHub 维度贡献 | 数十 |
 | `data/confluence-organizations.json` | `JsonFileEnvelope<OrganizationWiki[]>` | wiki 维度贡献（Confluence） | 数十 |
 | `data/github-accounts.json` | `JsonFileEnvelope<Contributor[]>` | 个人贡献者档案（GitHub 账号维度） | 数百 |
@@ -132,7 +132,7 @@ erDiagram
 - `MeetingAttendanceMatrix` **与任何实体都不关联**（独立实体，见 ADR-0005）：其 `columns` 是 Excel 台账表头**原文**（人名），**不是主键**，也不关联 `Organization` / `Contributor`，因此**不参与**组织归属判定与个人贡献统计口径。
 - `Person.personId` 是**自然人身份根**主键（见 3.9），`IdentityClaim.personId` 以它关联；`Person.orgId` **可空**，为空表示未归属（前端归入「独立开发者」）。
 - `IdentityClaim` 是**边**（见 3.10）：一条记录表示「某个来源账号被认领给某个自然人」。来源侧由 `source` + `accountKey` 指称；**本期不做唯一性校验**——同一账号可被多个自然人引用，同一自然人也可持有多个来源账号。
-- **`Person.orgId` ≠ `Contributor.orgId`**：前者是**自然人级**归属（身份匹配控制台维护，为其唯一真相），后者是 **GitHub 账号级**归属（贡献数据口径，采集器按别名/邮箱域名判定，见 08 文档 §3.2）。本期两者并存、互不覆盖，看板取数口径不变。
+- **`Person.orgId` ≠ `Contributor.orgId`**：前者是**自然人级**归属（身份匹配控制台维护，为其唯一真相），后者是 **GitHub 账号级**归属（贡献数据口径，采集器按别名/邮箱域名判定，见 07 文档 §3.2）。本期两者并存、互不覆盖，看板取数口径不变。
 - `MeetingAttendanceMatrix.columns` 的人名**不自动关联** `Person`：本期只提供「人工把某个人名认领给某个自然人」的写入入口（见 5.3.14），不做自动匹配。
 - 候选池（`IdentityCandidate`）与组织花名册（`OrgRosterEntry`）均为**派生结果**，不落盘、无对应数据文件，见 5.3.11 / 5.3.13。
 
@@ -174,8 +174,8 @@ erDiagram
 | `name` | string | ✅ | 展示名称 |
 | `logoUrl` | string | ✅ | Logo 地址，对应 GitHub `avatar_url`；为空字符串时前端降级为首字母色块 |
 | `homepageUrl` | string | ✅ | 主页地址，对应 GitHub `html_url` |
-| `type` | `'partner' \| 'external' \| 'community' \| 'individual'` | ✅ | 组织类型：伙伴单位 / 外部开发者 / 社区组织 / **独立开发者**。`individual` 为**伪组织** `unattributed` 专用，不参与伙伴单位等组织计数 |
-| `tags` | string[] | ✅ | 标签，如 `["伙伴单位", "芯片"]`；可为空数组 |
+| `type` | `'tsc' \| 'participant' \| 'operation' \| 'individual'` | ✅ | 组织类型：**TSC 成员单位** / **参与单位** / **运营单位** / **独立开发者**。`individual` 是**伪组织** `unattributed` 专用的哨兵值（非业务类别），不参与任何组织计数；其余三类均为真实组织类别，**在计数口径上完全等价**（各处一律写作 `type !== 'individual'`）。<br>⚠️ 该枚举受 `apps/api/src/repositories/validators.ts` 的 `ORGANIZATION_TYPES` **启动期 fail-fast 校验**：写入枚举外的值会导致后端拒绝加载整份组织档案。<br>⚠️ **新增枚举值必须同步以下 6 处**，缺任一处即启动失败 / 编译失败 / 接口 400：<br>① `apps/api/src/contract/entities.ts` 的 `OrganizationType`；② `apps/web/src/types/contract.ts` 的同名类型（两侧必须逐字对齐）；③ `validators.ts` 的 `ORGANIZATION_TYPES`（漏改 → **启动期 fail-fast，后端拒绝加载**）；④ `list-organizations-query.dto.ts` 的 `@IsIn`（漏改 → 按该类型筛选返回 **400**）；⑤ `apps/web/src/components/ui/Badge.tsx` 的 `TYPE_LABEL`（`Record<OrganizationType, string>` 全覆盖，漏改 → **TS 编译失败**）；⑥ `apps/api/src/providers/json/json-organization.provider.ts` 的 `TYPE_WEIGHT`（`Record<…, number>` 全覆盖，漏改 → **TS 编译失败**；它决定 `scope=all` 列表的排序梯队，**首页组织墙走 `scope=contributing` 按贡献分排序，不经过该表**） |
+| `tags` | string[] | ✅ | 自由文本标签，如 `["独立开发者"]`；可为空数组 |
 | `aliases` | Record<string, string> | ❌ | 多数据源别名映射，如 `{ "github": "OpenAN-Labs", "confluence": "OpenAN Labs" }`。**阶段三归并贡献数据的关键字段** |
 | `emailDomains` | string[] | ❌ | 组织邮箱域名后缀清单（小写），用于按贡献者邮箱域名自动归属，如 `["huawei.com"]`。匹配规则见 3.2 归属判定。伪组织 `unattributed` 不配置 |
 | `joinedAt` | string | ❌ | 加入社区时间，用于"新增伙伴"类统计 |
@@ -213,7 +213,7 @@ erDiagram
 > - `organizations.json` 登记一条 `{ "orgId": "unattributed", "name": "独立开发者", "type": "individual", "logoUrl": "", "tags": ["独立开发者"] }`；
 > - `github-organizations.json` 登记该伪组织的**聚合**贡献（所有未匹配贡献者之和）；
 > - 首页卡片墙将其渲染为**独立开发者卡片**（中性色 + 个人图标）：人数取 `externalDeveloperCount`（= `github-accounts.json` 中 `orgId` 为空的条数），贡献量取其贡献记录；
-> - 该伪组织**不计入**伙伴单位等组织计数，也不出现在 `type=partner/external/community` 的筛选结果中。
+> - 该伪组织**不计入**任何组织计数：首页组织墙的「共 N 家组织在榜」按 `type !== 'individual'` 实时统计（`HomePage.tsx`），`type=tsc` / `participant` / `operation` 的筛选也不会返回它。
 
 ### 3.3 `OrganizationWiki`（wiki 维度贡献，来源 Confluence）
 
@@ -235,8 +235,8 @@ erDiagram
 
 | 字段 | 类型 | 必填 | 说明 |
 | --- | --- | --- | --- |
-| `partnerCount` | `MetricValue` | ✅ | 社区伙伴数量 |
-| `externalDeveloperCount` | `MetricValue` | ✅ | 外部开发者数量 |
+| `partnerCount` | `MetricValue` | ✅ | 伙伴单位数量 = 组织档案中 `type !== 'individual'` 者（TSC 成员单位 + 参与单位 + 运营单位）。**口径只排除伪组织、与具体业务类别无关**，故日后新增类别不影响本值。**含 LFN**：运营 2026-10-26 裁定其计入组织；同日另裁定其 `type` 由 `tsc` 改为 `operation`，**归类变化不改变计入结论**（`operation` 同样满足 `!== 'individual'`）。人工维护，但取值**必须等于**组织墙实时在榜数（现为 `11`）；10 vs 11 冲突及裁定过程见 `README §9` v1.19 |
+| `externalDeveloperCount` | `MetricValue` | ✅ | 独立开发者数量。**字段名沿用旧称**（改名会波及契约 / 校验 / 采集回填 / `home.json`），对外文案已统一为「独立开发者」 |
 | `summitCount` | `MetricValue` | ✅ | 参加的峰会总数 |
 | `useCaseCount` | `MetricValue` | ✅ | 已提供的应用案例数 |
 | `nextSummit` | `SummitSummary \| null` | ✅ | 下一次峰会；无未来峰会时为 `null` |
@@ -348,7 +348,7 @@ erDiagram
 
 - 归属组织**不收录**伪组织 `unattributed`（`type = 'individual'`）；未归属一律以 `orgId = null` 表达，前端在组织视图归入「独立开发者」分组。
 - 自然人**不复用** `Contributor`：`Contributor` 是 GitHub 账号维度档案（见 3.7），一个自然人可以认领多个来源账号，二者非一一对应。
-- 自然人**不含**邮箱等敏感身份字段；邮箱仅用于内存判定，不写入任何数据文件（见 08 文档 §3.2）。
+- 自然人**不含**邮箱等敏感身份字段；邮箱仅用于内存判定，不写入任何数据文件（见 07 文档 §3.2）。
 
 ### 3.10 `IdentityClaim`（身份认领边）
 
@@ -382,7 +382,7 @@ erDiagram
 | 字段 | 类型 | 必填 | 说明 |
 | --- | --- | --- | --- |
 | `accountId` | string | ✅ | 稳定键：Confluence `accountId`；取不到时退化为 `displayName:<展示名>` |
-| `displayName` | string | ✅ | 展示名（兜底顺序：**渲染视图 `body.view`** → 正文 `ri:username` → 页面创建者展示名 → `GET /rest/api/user` → accountId）。**不参与计数与归属**（只参与 `aliases.confluence` 的可读名匹配），故各档失败只降级、不报错。**实测（2026-09-28）**：正文 mention 只有 `ri:account-id` / `ri:local-id`（`ri:username` 永不命中）、`/rest/api/user` 返回 403，但渲染视图已带出展示名（`<a … data-account-id="…">FeiGuo</a>`），故首采 15 个账号全部为真名（引入编辑量后账号集扩至 **21 个**，仍全部为真名、0 个降级，见 08 A3） |
+| `displayName` | string | ✅ | 展示名（兜底顺序：**渲染视图 `body.view`** → 正文 `ri:username` → 页面创建者展示名 → `GET /rest/api/user` → accountId）。**不参与计数与归属**（只参与 `aliases.confluence` 的可读名匹配），故各档失败只降级、不报错。**实测（2026-09-28）**：正文 mention 只有 `ri:account-id` / `ri:local-id`（`ri:username` 永不命中）、`/rest/api/user` 返回 403，但渲染视图已带出展示名（`<a … data-account-id="…">FeiGuo</a>`），故首采 15 个账号全部为真名（引入编辑量后账号集扩至 **21 个**，仍全部为真名、0 个降级，见 07 A3） |
 | `orgId` | string \| null | ✅ | **采集口径**的所属组织（`aliases.confluence` → 空间兜底）；`null` = 采集器未归属。**不是接口对外值**，对外用读时派生的 `effectiveOrgId`（见 5.3.16、ADR-0010） |
 | `orgSource` | `'alias' \| 'space' \| 'unattributed'` | ✅ | 采集口径 `orgId` 的来源。认领命中的 `'claim'` **不落盘**，由读时派生层覆写（故本字段只有三个取值） |
 | `personId` | string \| null | ✅ | 认领到的自然人；`null` = 尚未认领 |
@@ -394,7 +394,7 @@ erDiagram
 **口径声明**：
 
 - 文件内每条记录**至少满足一项**：在需求页被 @ 过、在会议纪要 `Agenda` 段被 @ 过、或作为页面版本作者编辑过（采集器按这三类事实聚合）。故不存在"零贡献账号"，但**存在三个指标并非全非零的账号**——例如只编辑、从未被 @ 的账号为 `edits > 0` 而 `requirements = topicShares = 0`；只有档案、三类事实都没有的账号不会出现。
-- `requirements` / `topicShares` 统计的是**账号被 @ 的次数 / 期数**，不是页面数；`edits` 统计的是**版本作者条数**，同样不是页面数（一页被同一人编辑多次即计多条）。选页口径见 ADR-0009，与组织级完全同源（见 08 §3.2.1）。
+- `requirements` / `topicShares` 统计的是**账号被 @ 的次数 / 期数**，不是页面数；`edits` 统计的是**版本作者条数**，同样不是页面数（一页被同一人编辑多次即计多条）。选页口径见 ADR-0009，与组织级完全同源（见 07 §3.2.1）。
 - `orgId` 是**采集器自动归属**的结果（`aliases.confluence` → 空间兜底 → 伪组织 `unattributed`），**只作落盘兜底与审计**；对外**生效归属**为读时派生的 `effectiveOrgId = 认领边派生的 Person.orgId ?? orgId ?? 'unattributed'`（人工认领优先，见 ADR-0010）。本实体已**不含**认领边裁决，`personId` 仅为落盘快照，接口以读时派生为准。
 - **不变式**：`OrganizationWiki.confluence`（3.3）的 `requirements` / `topicShares` / `edits` 分别恒等于本实体对应字段按 **`effectiveOrgId`** 求和（含伪组织 `unattributed`）——`GET /api/wiki` 读时派生，不读 `confluence-organizations.json`，从构造上消除双写与时机漂移。
 
@@ -432,8 +432,8 @@ erDiagram
       "name": "OpenAN Labs",
       "logoUrl": "https://avatars.githubusercontent.com/u/0000001?v=4",
       "homepageUrl": "https://github.com/openan-labs",
-      "type": "community",
-      "tags": ["社区组织", "核心维护"],
+      "type": "tsc",
+      "tags": ["核心维护"],
       "aliases": { "github": "openan-labs", "confluence": "OpenAN Labs" },
       "emailDomains": ["openan.dev"],
       "joinedAt": "2023-03-01T00:00:00Z",
@@ -444,8 +444,8 @@ erDiagram
       "name": "NovaSilicon",
       "logoUrl": "https://avatars.githubusercontent.com/u/0000002?v=4",
       "homepageUrl": "https://github.com/nova-silicon",
-      "type": "partner",
-      "tags": ["伙伴单位", "芯片", "驱动"],
+      "type": "tsc",
+      "tags": ["芯片", "驱动"],
       "aliases": { "github": "nova-silicon", "confluence": "NovaSilicon 技术团队" },
       "emailDomains": ["novasilicon.com"],
       "joinedAt": "2023-06-15T00:00:00Z",
@@ -456,8 +456,8 @@ erDiagram
       "name": "HarborCloud",
       "logoUrl": "https://avatars.githubusercontent.com/u/0000003?v=4",
       "homepageUrl": "https://github.com/harbor-cloud",
-      "type": "partner",
-      "tags": ["伙伴单位", "云原生", "调度"],
+      "type": "participant",
+      "tags": ["云原生", "调度"],
       "aliases": { "github": "harbor-cloud", "confluence": "HarborCloud 云原生组" },
       "emailDomains": ["harborcloud.io"],
       "joinedAt": "2024-01-20T00:00:00Z",
@@ -468,11 +468,11 @@ erDiagram
       "name": "Lumen Dev",
       "logoUrl": "https://avatars.githubusercontent.com/u/0000004?v=4",
       "homepageUrl": "https://github.com/lumen-dev",
-      "type": "external",
-      "tags": ["外部开发者", "文档"],
+      "type": "participant",
+      "tags": ["文档"],
       "aliases": { "github": "lumen-dev", "confluence": "Lumen" },
       "emailDomains": ["lumen.dev"],
-      "description": "独立开发者，长期贡献中文文档与快速上手指南。"
+      "description": "参与单位，长期贡献中文文档与快速上手指南。"
     },
     {
       "orgId": "unattributed",
@@ -684,7 +684,7 @@ erDiagram
       ],
       "outcomes": [
         "产出 23 个可运行的应用案例原型",
-        "12 名外部开发者成为常驻贡献者"
+        "12 名独立开发者成为常驻贡献者"
       ],
       "minutesUrl": "https://openan.example.org/hackathon/2025/minutes"
     },
@@ -905,7 +905,7 @@ erDiagram
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 | --- | --- | --- | --- | --- |
 | `scope` | `'all' \| 'contributing'` | 否 | `all` | `contributing`：返回**全部**组织并附带 `contributionScore` / `contributionLevel`，按综合贡献分降序（首页使用；**不过滤**零贡献组织，见 ADR-0001） |
-| `type` | `'partner' \| 'external' \| 'community' \| 'individual'` | 否 | — | 按组织类型过滤 |
+| `type` | `'tsc' \| 'participant' \| 'operation' \| 'individual'` | 否 | — | 按组织类型过滤。校验点：`ListOrganizationsQueryDto` 的 `@IsIn(['tsc','participant','operation','individual'])`，传枚举外的值返回 400 |
 | `keyword` | string | 否 | — | 按 `name` 模糊匹配，大小写不敏感 |
 
 **响应 `data`**：`Organization[]`；`scope=contributing` 时为 `OrganizationCard[]`，每项额外附带以下派生字段（仅接口层计算，不落盘）：
@@ -925,8 +925,8 @@ erDiagram
       "name": "NovaSilicon",
       "logoUrl": "https://avatars.githubusercontent.com/u/0000002?v=4",
       "homepageUrl": "https://github.com/nova-silicon",
-      "type": "partner",
-      "tags": ["伙伴单位", "芯片", "驱动"],
+      "type": "tsc",
+      "tags": ["芯片", "驱动"],
       "aliases": { "github": "nova-silicon", "confluence": "NovaSilicon 技术团队" },
       "emailDomains": ["novasilicon.com"],
       "joinedAt": "2023-06-15T00:00:00Z",
@@ -938,7 +938,11 @@ erDiagram
 }
 ```
 
-**排序**：默认（`scope=all`）按 `type` 权重（`community` → `partner` → `external` → `individual`），同权重按 `name` 升序；`scope=contributing` 按 `contributionScore` 降序，同分（含 0 分）保持默认顺序（稳定排序，零分组织自然居于末尾）。
+**排序**：默认（`scope=all`）按 `type` 权重（`tsc` → `participant` → `operation` → `individual`，权重表见 `json-organization.provider.ts` 的 `TYPE_WEIGHT`），同权重按 `name` 升序（`localeCompare(…, 'zh-Hans-CN')`）；`scope=contributing` 按 `contributionScore` 降序，同分（含 0 分）保持默认顺序（稳定排序，零分组织自然居于末尾）。
+
+> ⚠️ 排序在 **provider 层**完成，`OrganizationService.listOrganizations()` 对 `scope=all` 直接透传已排序结果、自身不做排序；勿在 Service 或前端重复排序。
+>
+> 本行此前误写为 `community → partner → external → individual`（照抄了 `json-organization.provider.ts` 的过时注释）。这三个值**从未存在于任何生效枚举**，实际权重键一直是 `tsc` / `participant` / `individual`；2026-10-26 已同步修正代码注释与本行，详见 `README §9` v1.21 与 `06-known-issues.md` 头部「已移除条目清单」。
 
 ---
 
@@ -1327,7 +1331,7 @@ erDiagram
   "data": {
     "organizations": [
       {
-        "organization": { "orgId": "huawei", "name": "Huawei", "logoUrl": "/logos/huawei.png", "homepageUrl": "https://www.huawei.com", "type": "partner", "tags": [] },
+        "organization": { "orgId": "huawei", "name": "Huawei", "logoUrl": "/logos/huawei.png", "homepageUrl": "https://www.huawei.com", "type": "tsc", "tags": [] },
         "memberCount": 3,
         "members": [{ "personId": "zhang-san", "displayName": "张三" }]
       }
@@ -1506,7 +1510,18 @@ erDiagram
 1. 先在本文档修改字段定义与接口描述；
 2. 同步更新 `apps/api` 中的 DTO/端口接口与 `apps/web` 中的 `types/`；
 3. 更新 `data/*.json` 种子数据（如需）；
-4. 若为不兼容变更，提升对应文件的 `schemaVersion` 并在本目录追加变更记录。
+4. **同步其余文档**：本文档是契约的唯一真相，但不是唯一*提到*该契约的地方。凡改动**枚举取值**、**对外术语**或**指标口径**，必须按 §6.1.1 逐处核对；
+5. 若为不兼容变更，提升对应文件的 `schemaVersion`，并在 `README.md` §8 版本表登记。
+
+#### 6.1.1 跨文档同步矩阵
+
+| 改动类型 | 必须同步的位置 |
+| --- | --- |
+| **枚举取值**（如 `Organization.type`） | 本文档 §3 字段表 + §5 对应接口参数 + §6.2；`apps/api/src/contract/entities.ts` **与** `apps/web/src/types/contract.ts`（两侧必须逐字对齐）；`apps/api/src/repositories/validators.ts` 的 `ORGANIZATION_TYPES`（漏改 → 启动期 fail-fast）；`list-organizations-query.dto.ts` 的 `@IsIn`（漏改 → 筛选 400）；`apps/web/src/components/ui/Badge.tsx` 的 `TYPE_LABEL` **与** `json-organization.provider.ts` 的 `TYPE_WEIGHT`（两个 `Record<枚举, …>` 全覆盖映射，漏改 → TS 编译失败）；`03` 的 TS 接口拷贝（含 `HomeSummary` 等口径注释）；`01` 的目录树类别列举；`07` §3.1 类型表 + §1.1/§2 各指标的归类与分布；`README` §5 术语表；**前端页面口径文案**（如 `HomePage.tsx` 的 `def` 提示，用户可见）。逐项清单见 §3.1 `type` 行 |
+| **对外术语**（如「独立开发者」） | `README` §5 术语表（术语的唯一来源）；`01`/`02`/`03`/`07` 正文；前端页面文案（含卡片 `label` 与 `hint`、口径说明区）；`apps/api/scripts/fixtures/seed-data/*.json` 的 `tags` 与描述文案 |
+| **指标口径**（如 `partnerCount`） | 本文档 §3.4 / §3.6；`07` §2 对应指标小节；`README` §5 术语表；前端 `HomePage.tsx` 口径说明区 |
+
+> ⚠️ **历史教训**：2026-09-21 之后曾发生一次 `type` 枚举迁移（`partner` / `external` / `community` → `tsc` / `participant`），代码与数据均已改，但 `01` / `02` / `03` / `04` / `07`（数据采集目录，重编号前为 `08`）/ `README` 六篇文档集体滞留在迁移前，直到 2026-10-16 才修正。根因正是当时的变更流程只要求同步「代码 + 数据」——第 4 步就是为此新增的。取证与明细见 `README §9` v1.18（该问题已于 2026-10-16 修正，故不再登记于 `06`）。
 
 ### 6.2 字段语义速查（供 Code Review）
 
@@ -1516,7 +1531,7 @@ erDiagram
 | `github.linesChanged` | 净增行数 / 文件级过滤后的行数 | **PR 级** `additions + deletions` 累加，含全部文件类型 |
 | `github.issues` | 仅 opened | 提出或参与（含评论/被指派）的 Issue |
 | `confluence.edits` | 页面数 / 去重后的编辑人数 | **页面版本作者条数**：一页被同一人编辑多次即计多条，**含页面创建那一次**，不做单页封顶（ADR-0011） |
-| `type = 'external'` | 非社区成员 | 独立外部开发者（非单位身份） |
+| `type = 'tsc'` / `'participant'` / `'operation'` | 可自由填写的展示标签 | **业务类别**：TSC 成员单位 / 参与单位 / 运营单位（Badge 文案见 `Badge.tsx` 的 `TYPE_LABEL`，排序梯队见 `TYPE_WEIGHT`）。三者在**所有计数口径上等价**，差异仅体现在徽章文案、配色（仅 `tsc` 用紫色强调）与 `scope=all` 列表的排序梯队（**首页组织墙走 `scope=contributing` 按贡献分排序，不经过 `TYPE_WEIGHT`**）。枚举受 `validators.ts` 的 `ORGANIZATION_TYPES` **启动期 fail-fast 校验**：写入枚举外的值会导致后端拒绝加载整份组织档案；扩展枚举须同步 6 处，清单见 §3.1 `type` 行 |
 | `type = 'individual'` | 一个真人 / 一家组织 | **伪组织** `unattributed` 专用类型，代表「未归属的独立开发者聚合」 |
 | `isUpcoming` | 未开始 | **未结束**（进行中的峰会同样为 `true`） |
 | `MeetingAttendanceMatrix.columns` | 主键 / 稳定标识 | 台账表头**原文**（人名），非主键，靠台账人工保持一致 |
@@ -1538,4 +1553,8 @@ erDiagram
 - [ ] 可选字段在前端均有降级展示策略
 - [ ] API 响应信封结构全部一致，无裸返回
 - [ ] 错误码全部取自第 7 节错误码表，无临时硬编码数字
+- [ ] **枚举取值跨文档一致**：同一枚举在本文档、`entities.ts`、`validators.ts`、`Badge.tsx`、`03`、`07`、`README` 各处取值完全相同，无已退休取值残留（`data/.snapshots/**` 为历史备份，不参与此项）
+- [ ] **对外术语全站唯一**：同一含义在首页卡片、组织墙、口径说明与 `README` §5 术语表中用词一致；口径说明中不存在两条定义指向同一个数的重复条目
+- [ ] **指标口径可自洽**：手工维护值与实时统计值若不相等，差异来源已在 `07` 或 `06` 中写明
+- [ ] **无断链**：`docs/` 内不存在指向已删除文件的链接或引用
 

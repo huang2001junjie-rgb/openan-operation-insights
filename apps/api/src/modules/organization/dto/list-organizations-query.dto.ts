@@ -9,7 +9,7 @@ export class ListOrganizationsQueryDto {
   scope?: 'all' | 'contributing';
 
   @IsOptional()
-  @IsIn(['tsc', 'participant', 'individual'])
+  @IsIn(['tsc', 'participant', 'operation', 'individual'])
   type?: OrganizationType;
 
   @IsOptional()

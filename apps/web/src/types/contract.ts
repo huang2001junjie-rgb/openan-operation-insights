@@ -3,7 +3,11 @@
  * 修改任一侧必须同步修改另一侧。
  */
 
-export type OrganizationType = 'tsc' | 'participant' | 'individual';
+/**
+ * 组织类型。`individual` 为伪组织（独立开发者聚合），其余均为真实组织类别。
+ * `partnerCount` 口径为 `type !== 'individual'`，故 operation 计入伙伴单位数。
+ */
+export type OrganizationType = 'tsc' | 'participant' | 'operation' | 'individual';
 export type DeltaDirection = 'up' | 'down' | 'flat';
 export type ContributionLevel = 'high' | 'medium' | 'low';
 
@@ -137,7 +141,9 @@ export interface SummitDetail extends SummitSummary {
 }
 
 export interface HomeSummary {
+  /** 伙伴单位数：口径 = 组织档案内 `type !== 'individual'` 者（TSC 成员单位 + 参与单位 + 运营单位） */
   partnerCount: MetricValue;
+  /** 独立开发者数。字段名沿用旧称「外部开发者」，对外文案已统一为「独立开发者」 */
   externalDeveloperCount: MetricValue;
   summitCount: MetricValue;
   useCaseCount: MetricValue;

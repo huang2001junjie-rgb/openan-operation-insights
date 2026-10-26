@@ -95,7 +95,8 @@ export function Button({
       className={cn(
         'inline-flex h-10 items-center justify-center gap-2 rounded-xl px-4 text-sm font-medium transition',
         // 禁用态必须有可见差异：否则禁用的按钮与可用态外观、悬停反馈完全一致，
-        // 用户看到的「点了没反应」其实是按钮处于 disabled（见 06 已知问题）
+        // 用户看到的「点了没反应」其实是按钮处于 disabled。此行是一处已修复缺陷的
+        // 结论沉淀（原记于 docs/06-known-issues.md，问题确认后已按约定移除），勿删。
         'disabled:pointer-events-none disabled:opacity-45',
         variant === 'primary'
           ? 'bg-gradient-to-b from-brand-500 to-brand-600 text-white shadow-[0_10px_28px_-14px_rgba(36,114,245,0.95)] hover:from-brand-400 hover:to-brand-500'

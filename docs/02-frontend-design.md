@@ -82,8 +82,8 @@ Routes 结构示意（实现时以此为准）：
 
 | 卡片 | 指标键 | 展示字段 | 强调色 | 附属元素 |
 | --- | --- | --- | --- | --- |
-| 社区伙伴数量 | `partnerCount` | `value`、`unit`、`label` | 蓝→青渐变 | 环比角标 `delta`、`deltaDirection` |
-| 外部开发者数量 | `externalDeveloperCount` | 同上 | 蓝→青渐变 | 同上 |
+| 伙伴单位数量 | `partnerCount` | `value`、`unit`、`label` | 蓝→青渐变 | 环比角标 `delta`、`deltaDirection` |
+| 独立开发者数量 | `externalDeveloperCount` | 同上 | 蓝→青渐变 | 同上 |
 | 参加的峰会 | `summitCount` | 同上 | 蓝→青渐变 | 同上 |
 | 已提供的应用案例 | `useCaseCount` | 同上 | 蓝→青渐变 | 同上 |
 | 下一次峰会 | `nextSummit` | 峰会名 + 倒计时文案 | 青→蓝渐变 | `startDate` 格式化、`daysUntil` |
@@ -521,7 +521,7 @@ bg-white/70 backdrop-blur-xl border border-white/60 shadow-glass rounded-2xl
 
 ## 14. 身份匹配控制台（`/admin/identity`）设计
 
-> 本节补记既有的身份匹配控制台设计中与 **Confluence 候选**相关的部分（ADR-0010 / 08 §P7）。
+> 本节补记既有的身份匹配控制台设计中与 **Confluence 候选**相关的部分（ADR-0010 / 07 §P7）。
 
 ### 14.1 页面结构
 

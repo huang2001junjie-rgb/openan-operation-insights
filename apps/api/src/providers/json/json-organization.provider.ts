@@ -4,10 +4,19 @@ import { JsonRepository } from '../../repositories/json-repository';
 import { ORGANIZATIONS_REPOSITORY } from '../../repositories/repository.tokens';
 import { ListOrganizationsQuery, OrganizationPort } from '../ports/organization.port';
 
+/**
+ * `scope=all`（默认）列表的排序权重（数字越小越靠前）。`individual` 为伪组织，恒排末位。
+ * `operation`（运营单位）与 `participant` 同级徽章配色，权重紧随其后。
+ *
+ * ⚠️ **首页组织墙不经过本表**：它走 `scope=contributing`，按 `contributionScore` 降序
+ * （`useContributingOrganizations` → `organization.service.ts`，见 ADR-0001）。当前前端
+ * **无 `scope=all` 调用方**，故调整这里的数字不改变任何现有页面的顺序；改权重前请先确认调用方。
+ */
 const TYPE_WEIGHT: Record<Organization['type'], number> = {
   tsc: 0,
   participant: 1,
-  individual: 2,
+  operation: 2,
+  individual: 3,
 };
 
 @Injectable()
@@ -32,7 +41,7 @@ export class JsonOrganizationProvider implements OrganizationPort {
       result = result.filter((org) => org.name.toLowerCase().includes(keyword));
     }
 
-    // 默认排序：type 权重（community → partner → external → individual），同权重按 name 升序
+    // 默认排序：type 权重（tsc → participant → operation → individual），同权重按 name 升序
     return result.sort((a, b) => {
       const weightDiff = TYPE_WEIGHT[a.type] - TYPE_WEIGHT[b.type];
       if (weightDiff !== 0) return weightDiff;

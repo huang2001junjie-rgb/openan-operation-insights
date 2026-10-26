@@ -58,6 +58,7 @@ export function ContributionLevelBadge({ level }: { level?: ContributionLevel })
 const TYPE_LABEL: Record<OrganizationType, string> = {
   tsc: 'TSC 成员单位',
   participant: '参与单位',
+  operation: '运营单位',
   individual: '独立开发者',
 };
 

@@ -2,7 +2,7 @@
 
 - **状态**：✅ 已接受（2026-09-28）
 - **日期**：2026-09-28
-- **关联文档**：04 §3.2 / §3.3 / §3.7 / §4.4 / §4.5；05 §3；08（A1–A3 / P2 / P5 / P7）；ADR-0003 / ADR-0007
+- **关联文档**：04 §3.2 / §3.3 / §3.7 / §4.4 / §4.5；05 §3；07（A1–A3 / P2 / P5 / P7）；ADR-0003 / ADR-0007
 - **决策者**：项目负责人（对下述 6 个问题逐条拍板）
 
 ## 背景
@@ -14,7 +14,7 @@
 3. **命名易混**：`contributions.json`（组织）vs `contributors.json`（个人），一个字母之差。
 4. **「个人」有歧义**：`Contributor` 是**平台账号**档案，`Person` 是**自然人**。
 5. **组织归属有 3 条并行路径、零校验**：采集器自动归属（`aliases` + `emailDomains`）、身份控制台人工 `Person.orgId`、组织级独立再算一遍。彼此之间无任何比对代码。
-6. **「个人之和 = 组织之和」只是口头约定**（08 §A2），无断言保证。
+6. **「个人之和 = 组织之和」只是口头约定**（07 §A2），无断言保证。
 
 ## 决策
 
@@ -79,7 +79,7 @@ Confluence   confluence-organizations.json ←→ confluence-accounts.json
 - **契约文件重命名**（破坏性、但前后端零感知）：代码侧唯一改动点是 `repositories.module.ts` 中 3 处 `makeRepository('...')` 的文件名；采集器与 API 都经 `JsonRepository` 读写，故改名不影响调用方。离线自检脚本（`collector-check.mjs` / `confluence-check.mjs` / `identity-check.mjs`）与 `scripts/fixtures/seed-data/` 需同步文件名。
 - **新增账号级 Confluence 契约**：`ConfluenceAccount` 实体、校验器、仓储 token、`confluence-accounts.json` 写入、读接口 `GET /api/confluence-accounts`（本轮不对接前端）。
 - **归属逻辑收敛**：抽取共享归属函数，GitHub 与 Confluence 共用；新增两项 WARN（跨口径冲突、求和一致）。
-- **文档**：04（粒度模型 + 新文件路径 + 新实体）、05、08（A3/P7/待办）、`CONTEXT.md` 术语表。
+- **文档**：04（粒度模型 + 新文件路径 + 新实体）、05、07（A3/P7/待办）、`CONTEXT.md` 术语表。
 
 ### 不变
 
