@@ -9,6 +9,7 @@ import { NextSummitBanner } from '@/features/home/NextSummitBanner';
 import { OrganizationWall } from '@/features/home/OrganizationWall';
 import { useContributingOrganizations, useHomeSummary } from '@/hooks/useHomeSummary';
 import { formatDateTime } from '@/lib/format';
+import { APP_VERSION } from '@/lib/version';
 import {
   IconBolt,
   IconBuilding,
@@ -26,6 +27,7 @@ export function HomePage() {
       <PageHeading
         eyebrow="Operation Insights"
         title="社区运营概览"
+        version={APP_VERSION}
         description="伙伴共建规模、社区贡献与峰会参与的统一视图。所有数字均来自后端 JSON 数据源，前端只做呈现。"
         meta={
           <>
