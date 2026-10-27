@@ -194,7 +194,7 @@
     {
       "orgId": "unicom",
       "name": "China Unicom",
-      "logoUrl": "",
+      "logoUrl": "/logos/china_unicom.png",
       "homepageUrl": "https://www.chinaunicom.com.cn/",
       "type": "participant",
       "tags": [],
