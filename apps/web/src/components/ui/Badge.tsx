@@ -1,6 +1,6 @@
 import type { HTMLAttributes, ReactNode } from 'react';
 import { cn } from '@/lib/cn';
-import type { ContributionLevel, OrganizationType } from '@/types/contract';
+import type { OrganizationType } from '@/types/contract';
 
 export type BadgeTone = 'neutral' | 'brand' | 'accent' | 'violet' | 'amber' | 'rose';
 
@@ -30,28 +30,6 @@ export function Badge({ tone = 'neutral', className, children, ...rest }: BadgeP
     >
       {children}
     </span>
-  );
-}
-
-const LEVEL_META: Record<ContributionLevel, { label: string; tone: BadgeTone }> = {
-  high: { label: '高贡献', tone: 'accent' },
-  medium: { label: '中贡献', tone: 'brand' },
-  low: { label: '起步中', tone: 'neutral' },
-};
-
-export function ContributionLevelBadge({ level }: { level?: ContributionLevel }) {
-  if (!level) return null;
-  const meta = LEVEL_META[level];
-  return (
-    <Badge tone={meta.tone}>
-      <span
-        className={cn(
-          'h-1.5 w-1.5 rounded-full',
-          level === 'high' ? 'bg-accent-400' : level === 'medium' ? 'bg-brand-400' : 'bg-slate-400',
-        )}
-      />
-      {meta.label}
-    </Badge>
   );
 }
 

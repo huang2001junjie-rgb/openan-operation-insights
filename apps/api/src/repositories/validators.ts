@@ -53,6 +53,8 @@ export function isOrganization(value: unknown): value is Organization {
     (value.aliases === undefined || isObject(value.aliases)) &&
     (value.emailDomains === undefined || isStringArray(value.emailDomains)) &&
     isNullableString(value.joinedAt) &&
+    // displayOrder 为 v1.24 新增可选字段（ADR-0016）：缺失合法（向后兼容），存在时必须为有限数字
+    (value.displayOrder === undefined || isNumber(value.displayOrder)) &&
     isNullableString(value.description)
   );
 }

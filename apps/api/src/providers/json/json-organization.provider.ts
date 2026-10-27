@@ -5,18 +5,17 @@ import { ORGANIZATIONS_REPOSITORY } from '../../repositories/repository.tokens';
 import { ListOrganizationsQuery, OrganizationPort } from '../ports/organization.port';
 
 /**
- * `scope=all`（默认）列表的排序权重（数字越小越靠前）。`individual` 为伪组织，恒排末位。
- * `operation`（运营单位）与 `participant` 同级徽章配色，权重紧随其后。
+ * 全站组织列表排序（两个 scope 共用，ADR-0016）：`displayOrder` 升序（运营人工排位，越小越靠前）；
+ * 同值或缺失者排最后，按 `name` 升序（`localeCompare(…, 'zh-Hans-CN')`）兜底，稳定可预测。
  *
- * ⚠️ **首页组织墙不经过本表**：它走 `scope=contributing`，按 `contributionScore` 降序
- * （`useContributingOrganizations` → `organization.service.ts`，见 ADR-0001）。当前前端
- * **无 `scope=all` 调用方**，故调整这里的数字不改变任何现有页面的顺序；改权重前请先确认调用方。
+ * ⚠️ 排序在本 provider 一处完成：`OrganizationService.listOrganizations()` 对 `scope=contributing`
+ * 直接透传本顺序、不再二次排序（原 `TYPE_WEIGHT` 类型梯队与综合贡献分降序均已退役，见 ADR-0016）。
  */
-const TYPE_WEIGHT: Record<Organization['type'], number> = {
-  tsc: 0,
-  participant: 1,
-  operation: 2,
-  individual: 3,
+const byDisplayOrder = (a: Organization, b: Organization): number => {
+  const orderA = a.displayOrder ?? Number.MAX_SAFE_INTEGER;
+  const orderB = b.displayOrder ?? Number.MAX_SAFE_INTEGER;
+  if (orderA !== orderB) return orderA - orderB;
+  return a.name.localeCompare(b.name, 'zh-Hans-CN');
 };
 
 @Injectable()
@@ -41,12 +40,8 @@ export class JsonOrganizationProvider implements OrganizationPort {
       result = result.filter((org) => org.name.toLowerCase().includes(keyword));
     }
 
-    // 默认排序：type 权重（tsc → participant → operation → individual），同权重按 name 升序
-    return result.sort((a, b) => {
-      const weightDiff = TYPE_WEIGHT[a.type] - TYPE_WEIGHT[b.type];
-      if (weightDiff !== 0) return weightDiff;
-      return a.name.localeCompare(b.name, 'zh-Hans-CN');
-    });
+    // 默认排序：displayOrder 展示顺序升序，同值/缺失按 name 升序（ADR-0016）
+    return result.sort(byDisplayOrder);
   }
 
   async getOrganizationById(orgId: string): Promise<Organization | null> {

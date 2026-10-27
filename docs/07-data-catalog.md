@@ -32,12 +32,12 @@ flowchart LR
 
 | 编号 | 数据 | 一句话描述 | 状态 | 采集方式 |
 | --- | --- | --- | --- | --- |
-| H1 | 伙伴单位数 `partnerCount` | 首页卡片指标。**口径已定**：组织档案中 `type !== 'individual'` 者（= TSC 成员单位 + 参与单位 + 运营单位，**含 LFN**，运营 2026-10-26 裁定），现为 `11`，与组织墙实时在榜数一致 | ✅ | 人工维护（目标自动聚合） |
+| H1 | 伙伴单位数 `partnerCount` | 首页卡片指标。**口径已定**：组织档案中 `type !== 'individual'` 者（= TSC 成员单位 + 参与单位 + 运营单位，**含 LFN**，运营 2026-10-26 裁定），现为 `12`（v1.24 新增参与单位 China Unicom `unicom`，ADR-0016），与组织墙实时在榜数一致 | ✅ | 人工维护（目标自动聚合） |
 | H2 | 独立开发者数 `externalDeveloperCount` | 参与过贡献、未归属任何组织的独立开发者人数（**字段名沿用旧称**，对外文案已统一为「独立开发者」） | ✅ | 外部 API 回填 |
 | H3 | 社区峰会场次 `summitCount` | 峰会与全体峰会的累计场次 | ✅ | 人工维护（目标聚合 `summits.json`） |
 | H4 | 应用案例数 `useCaseCount` | 社区沉淀并通过评审的可运行案例数 | ✅ | 人工维护（**缺底层清单**） |
 | H5 | 下一次峰会 `nextSummit` | 尚未结束、`endDate` 最晚的一场峰会 | ➖ | 派生（`home.nextSummitId` → `summits.json`） |
-| H6 | 贡献组织卡片墙 | 全量组织按综合贡献分降序展示，零分显示「暂无贡献」 | ➖ | 派生（组织档案 + GitHub/Confluence 贡献） |
+| H6 | 贡献组织卡片墙 | 全量组织按**展示顺序 `displayOrder`**（运营人工排位，ADR-0016）排列，卡片直出代码贡献量（commits）/ Confluence 贡献量（编辑量）与各维度 top3 贡献者；两项均为 0 显示「暂无贡献」 | ➖ | 派生（组织档案 + GitHub/Confluence 组织级与账号级贡献） |
 
 ### 1.2 社区活跃度 `/activity`
 
@@ -90,7 +90,7 @@ flowchart LR
 **H1 伙伴单位数 `partnerCount`**
 - 状态：✅ **口径已定**（2026-10-26 运营裁定），值已与组织墙收敛；仍为人工维护，自动聚合待补。
 - 来源：`data/home.json` → `data.partnerCount`（`MetricValue`：`value`/`unit`/`delta`/`deltaDirection`）。
-- 归类：`organizations.json` 中 `type !== 'individual'` 的档案数 = **11**（`tsc` ×8 + `participant` ×2 + `operation` ×1），与首页组织墙「共 N 家组织在榜」的实时统计**同源同值**。**含 LFN**（Linux Foundation Networking，`type = 'operation'`）——运营 2026-10-26 裁定其计入组织；同日另裁定其归类由 `tsc` 改为 `operation`，但**口径只排除伪组织 `individual`、与业务类别无关**，故归类变化**不影响**本值仍为 `11`（v1.21）。另一候选口径「仅 `type = 'tsc'`」未采纳（该值现为 8）。
+- 归类：`organizations.json` 中 `type !== 'individual'` 的档案数 = **12**（`tsc` ×8 + `participant` ×3 + `operation` ×1；v1.24 新增参与单位 China Unicom `unicom`，ADR-0016），与首页组织墙「共 N 家组织在榜」的实时统计**同源同值**。**含 LFN**（Linux Foundation Networking，`type = 'operation'`）——运营 2026-10-26 裁定其计入组织；同日另裁定其归类由 `tsc` 改为 `operation`，但**口径只排除伪组织 `individual`、与业务类别无关**，故归类变化不影响计数结论（v1.21 时为 `11`，v1.24 起为 `12`）。另一候选口径「仅 `type = 'tsc'`」未采纳（该值现为 8）。
 - 历史：原定义「`type=partner` 的档案数」已随枚举迁移失效（`partner` 从来不在生效枚举内，见 04 §3.1 与 `validators.ts` 的 `ORGANIZATION_TYPES`）。`home.json` 曾长期手工填 `10`，其口径为「12 条档案 − LFN − 独立开发者」，导致首页**同一屏**上卡片写「伙伴单位 10 家」、组织墙写「共 11 家组织在榜」，两个数字直接打架。2026-10-26 判定为**手工值错、实时统计对**，已将 `value` 改为 `11` 并同步 `updatedAt`；`organizations.json` 未作任何改动。裁定过程与被作废的「移出档案」方案见 `README §9` v1.19，档案侧结论见 §2.2 P1。
 - 未实现需补：① 增加聚合任务把计数自动回写 `home.json.partnerCount.value`——口径已定，**不再有前置阻塞**；② `delta`/`deltaDirection` 需基于历史快照（`data/.snapshots/`）算环比，否则只能人工填（当前 `3`/`up` 为运营手工值，本轮未调整）。
 - ⚠️ **实现 ② 时的硬约束**：历史快照中仍存**已退休**的 `Organization.type` 枚举——`data/.snapshots/20260921-185138` 与 `pre-contributor-rerun` 两份 `organizations.json` 各有 10 处 `partner` / `external` / `community`。这些快照是历史备份，**刻意不改写**（改写等于伪造历史；该目录由 `JsonRepository` 写入、运行时从不回读校验，全库仅 `collector-check.mjs:112` 将其列为「跳过的备份目录」）。因此环比聚合代码**不得**用 `isOrganizationArray` 校验历史快照，否则会因退休枚举触发 `validators.ts` 的启动期 fail-fast。
@@ -123,10 +123,10 @@ flowchart LR
 
 **H6 贡献组织卡片墙**
 - 状态：➖ 派生。
-- 来源：`organizations.json`（全量档案）+ `github-organizations.json`（A1）+ `confluence-organizations.json`（A3）。
-- 口径：展示**全部**组织（含零贡献），按 `contributionScore` 降序；公式与阈值见 §3.3；零分组织渲染为「暂无贡献」。
-- 独立开发者卡片：未归属贡献者以伪组织 `unattributed`（`type=individual`）参与展示，人数取 H2；该伪组织**不计入** H1 伙伴单位数——组织墙「共 N 家组织在榜」按 `type !== 'individual'` 实时统计（`HomePage.tsx:118`）。
-- 未实现需补：计分公式现为固定常量。若需可配置权重或排除机器账号（如 `dependabot`），需把权重与排除名单落为配置项。
+- 来源：`organizations.json`（全量档案，含展示顺序字段 `displayOrder`）+ `github-organizations.json`（A1）+ `confluence-organizations.json`（A3）+ `github-accounts.json`（P1）/ `confluence-accounts.json`（P3）（各维度 top3 聚合，ADR-0016）。
+- 口径（v1.24 修订，ADR-0016）：展示**全部**组织（含零贡献），按运营人工指定的**展示顺序 `displayOrder`** 升序排列，同值/缺失者排最后并按名称升序；卡片直出**代码贡献量**（`github.commits`）与 **Confluence 贡献量**（`confluence.edits` 编辑量）及**各维度 top3 贡献者**（GitHub 按 `commits`、Confluence 按 `edits` 降序，服务端聚合随 `GET /api/organizations?scope=contributing` 一次下发）；两项指标均为 0 的组织渲染为「暂无贡献」。原「综合贡献分」降序、高/中/低活跃徽章与 `computeScore` 已退役（见 §3.3 存档）。
+- 独立开发者卡片：未归属贡献者以伪组织 `unattributed`（`type=individual`）参与展示，人数取 H2，top3 取该桶内前三；该伪组织**不计入** H1 伙伴单位数——组织墙「共 N 家组织在榜」按 `type !== 'individual'` 实时统计（`HomePage.tsx`）。
+- 未实现需补：① `displayOrder` 为人工维护字段，新增档案未填即落末位（按名称升序），排位变更无审计痕迹（依赖 git 历史）；② top3 未排除机器账号（如 `dependabot`），如需排除需落配置名单。
 
 ### 2.2 社区活跃度 `/activity`
 
@@ -240,13 +240,13 @@ flowchart LR
 
 **P1 组织档案**
 - 状态：✅ 已实现（人工维护）。来源：`data/organizations.json`，由 `repositories.module.ts:71` 以**只读仓库**加载——采集器不会写回（`confluence-collector.service.ts:1130`「档案即真相」），故人工编辑不会被下轮采集覆盖。
-- 字段：`orgId`（主键）、`name`、`logoUrl`、`homepageUrl`、`type`、`tags`、`aliases`、`emailDomains`、`joinedAt`、`description`。
+- 字段：`orgId`（主键）、`name`、`logoUrl`、`homepageUrl`、`type`、`tags`、`aliases`、`emailDomains`、`joinedAt`、`displayOrder`（v1.24 新增，展示顺序，见 04 §3.1 与 ADR-0016）、`description`。
 - 归类：`type ∈ {tsc, participant, operation, individual}`——`tsc` = TSC 成员单位、`participant` = 参与单位、`operation` = 运营单位（v1.21 新增，当前仅 `lfn`）、`individual` 仅供伪组织 `unattributed` 使用（哨兵值，非业务类别）。详见 §3.1 与 04 §3.1。`aliases`（多源别名）与 `emailDomains` 是 §3.2 归属判定的核心输入。
-- 当前分布（12 条）：`tsc` ×8 = `cmcc` / `huawei` / `orange` / `zte` / `ais` / `infosys` / `asiainfo` / `personal`；`participant` ×2 = `zain` / `inspur`；`operation` ×1 = `lfn`；`individual` ×1 = `unattributed`。
-- **12 条全部在册，无待移除项**：`lfn`（Linux Foundation Networking）与伪组织 `unattributed` 均**保留**。运营于 2026-10-26 裁定 `lfn` **计入组织**，据此 H1 `partnerCount` 的手工值由 `10` 修正为 **`11`**，与组织墙在榜数收敛。原拟「将 `lfn` 与 `unattributed` 一并**移出组织档案**」的方案**作废**：自然人 `casey-cain` 的 `orgId = "lfn"` 与 2 条认领边继续有效，无需另行指定归属；`unattributed` 撑起的独立开发者瓷砖（`OrganizationWall.tsx:188`）与「另有 N 位独立开发者」文案（`HomePage.tsx:121`）也无需改造。裁定过程见 `README §9` v1.19。
+- 当前分布（13 条）：`tsc` ×8 = `cmcc` / `huawei` / `orange` / `zte` / `ais` / `infosys` / `asiainfo` / `personal`；`participant` ×3 = `zain` / `inspur` / **`unicom`（China Unicom，v1.24 按运营排位名单新增，ADR-0016；`logoUrl` 暂为空、前端首字母色块降级）**；`operation` ×1 = `lfn`；`individual` ×1 = `unattributed`。
+- **档案全部在册，无待移除项**（v1.19 裁定时 12 条；v1.24 起 13 条，含新增 `unicom`）：`lfn`（Linux Foundation Networking）与伪组织 `unattributed` 均**保留**。运营于 2026-10-26 裁定 `lfn` **计入组织**，据此 H1 `partnerCount` 的手工值由 `10` 修正为 **`11`**，与组织墙在榜数收敛。原拟「将 `lfn` 与 `unattributed` 一并**移出组织档案**」的方案**作废**：自然人 `casey-cain` 的 `orgId = "lfn"` 与 2 条认领边继续有效，无需另行指定归属；`unattributed` 撑起的独立开发者瓷砖（`OrganizationWall.tsx:188`）与「另有 N 位独立开发者」文案（`HomePage.tsx:121`）也无需改造。裁定过程见 `README §9` v1.19。
 - **`lfn` 归类变更（v1.21，同日）**：`type` 由 `tsc` 改为新增类别 **`operation`（运营单位）**，即 `lfn` **不再计为 TSC 成员单位**。此变更**不推翻** v1.19 的结论——`partnerCount` 口径是 `type !== 'individual'`，`operation` 同样计入，故仍为 **`11`**；`casey-cain` 的归属、2 条认领边、指派校验（`person.service.ts:257` 仅拒绝 `individual`）与组织花名册（`org-roster.service.ts:44` 同口径）全部不受影响。v1.19 当时以「其 `type` 本就是 `tsc`」作为计入理由，该**理由已被本条取代**（结论不变）。实际影响仅展示层**两处**：徽章文案「TSC 成员单位」→「运营单位」、配色紫 → 中性灰。`TYPE_WEIGHT` 中 `lfn` 的梯队虽由 0 降为 2，但**首页组织墙走 `scope=contributing`（按 `contributionScore` 降序，ADR-0001）不经过该权重表**，且当前前端无 `scope=all` 调用方，故**卡片顺序完全不变**。
 - 已知缺口（登记于 `06`，该文档只保留未解决项）：
-  - **`aliases` 覆盖率为 0**：12 条档案的 `aliases.github` / `aliases.confluence` **全部为空**，归属判定的第一优先级信号完全空转，当前 100% 依赖 `emailDomains` 兜底（11/12 条已配，仅 `unattributed` 为空，符合预期）。**运营决定暂不处理**——该缺口不会静默失真：`confluence-collector.service.ts:879` 每轮采集都会打印告警「`aliases.confluence` 全部为空：本轮全部计数将归入『独立开发者』」。
+  - **`aliases` 覆盖率为 0**：13 条档案的 `aliases.github` / `aliases.confluence` **全部为空**，归属判定的第一优先级信号完全空转，当前 100% 依赖 `emailDomains` 兜底（12/13 条已配，仅 `unattributed` 为空，符合预期；v1.24 新增的 `unicom` 已配 `chinaunicom.cn` / `chinaunicom.com`）。**运营决定暂不处理**——该缺口不会静默失真：`confluence-collector.service.ts:879` 每轮采集都会打印告警「`aliases.confluence` 全部为空：本轮全部计数将归入『独立开发者』」。
 
 **P2 个人贡献者档案**
 - 状态：✅ 已实现（混合实体）。来源：`data/github-accounts.json`。
@@ -302,9 +302,9 @@ flowchart LR
 | `operation` | 运营单位（v1.21 新增；当前仅 `lfn`） | ✅（H1） |
 | `individual` | **伪组织** `unattributed` 专用的哨兵值，非业务类别；不参与任何组织计数 | ❌ |
 
-> 当前档案分布（`data/organizations.json`，12 条）：`tsc` ×8、`participant` ×2、`operation` ×1、`individual` ×1。前端 Badge 文案见 `apps/web/src/components/ui/Badge.tsx` 的 `TYPE_LABEL`（仅 `tsc` 用紫色强调，其余中性灰），卡片墙排序梯队见 `json-organization.provider.ts` 的 `TYPE_WEIGHT`。
-> 前三类为真实组织类别，在**所有计数口径上完全等价**（各处一律写作 `type !== 'individual'`）；差异仅体现在徽章文案、配色与排序。
-> ⚠️ 枚举受 `apps/api/src/repositories/validators.ts` 的 `ORGANIZATION_TYPES` **启动期 fail-fast 校验**：写入表外取值会导致后端拒绝加载**整份**组织档案。**扩展枚举须同步 6 处**（含 `TYPE_LABEL` / `TYPE_WEIGHT` 两个 `Record` 全覆盖映射，漏改即 TS 编译失败），完整清单见 04 §3.1 `type` 行。
+> 当前档案分布（`data/organizations.json`，13 条）：`tsc` ×8、`participant` ×3（v1.24 新增 `unicom`）、`operation` ×1、`individual` ×1。前端 Badge 文案见 `apps/web/src/components/ui/Badge.tsx` 的 `TYPE_LABEL`（仅 `tsc` 用紫色强调，其余中性灰）；**v1.24 起组织类型不再参与排序**——全站按 `displayOrder` 展示顺序排列（ADR-0016，原 `TYPE_WEIGHT` 权重表已删除）。
+> 前三类为真实组织类别，在**所有计数口径上完全等价**（各处一律写作 `type !== 'individual'`）；差异仅体现在徽章文案与配色。
+> ⚠️ 枚举受 `apps/api/src/repositories/validators.ts` 的 `ORGANIZATION_TYPES` **启动期 fail-fast 校验**：写入表外取值会导致后端拒绝加载**整份**组织档案。**扩展枚举须同步 5 处**（含 `TYPE_LABEL` 全覆盖映射，漏改即 TS 编译失败；v1.23 及以前的第 6 处 `TYPE_WEIGHT` 已随 ADR-0016 删除），完整清单见 04 §3.1 `type` 行。
 
 ### 3.2 贡献归属判定（优先级从高到低）
 
@@ -331,11 +331,13 @@ Confluence 归属是**两层**：**采集口径**写入账号级 `confluence-acc
 
 说明：**按「被 @ 或作为页面版本作者」的账号归属**（需求取 `Contacts` 列、议题分享取 `Agenda` 段内 @、编辑取页面版本历史作者），账号到组织的归属不按页面创建者推断、也不逐页继承父页面组织；`requirements` / `topicShares` / `edits` 三个计数**共用同一套账号级归属结果**（同一账号一律落到同一 `effectiveOrgId`）。**采集口径每轮全量重算**（整体替换 `confluence-accounts.json`），**生效归属每请求读时派生**——故**补认领边后活跃页立即生效**（无需重跑采集器），补 `aliases.confluence` 则需重跑采集器。组织级 `confluence-organizations.json` 由账号级求和派生，但**已非读路径来源**（`GET /api/wiki` 读时按 `effectiveOrgId` 求和）。
 
-### 3.3 综合贡献分（H6 卡片墙）
+### 3.3 组织卡片墙指标与排序（H6）
 
-- **公式**：`score = (PR + Issue + 需求 + 议题分享 + 编辑量) + linesChanged / 10000`（协作频次为主，代码量按万行折算，避免体量压倒频次），四舍五入取整。编辑量与 PR / Issue / 需求 / 议题分享同属「行为频次」，**直接计入**（见 ADR-0011）。
-- **等级阈值**：`high ≥ 600`、`medium ≥ 100`、其余 `low`；零分组织同样返回且排末尾。加入编辑量后行为项量级整体抬高，阈值由 `300 / 100`（ADR-0001）**按新量级重标定**为 `600 / 100`：实测组织分非零值为 `[1, 45, 527, 802]`，取 `600 / 100` 后高 / 中 / 低档成员与引入编辑量前**完全一致**（ADR-0011）。
-- **输入**：`github-organizations.json`（GitHub）+ `confluence-organizations.json`（Confluence），均以 `orgId` 关联；两者缺失即视为 0。
+- **排序（v1.24，ADR-0016）**：按人工排位 `displayOrder` 升序（越小越靠前）；同值或缺失者排最后并按 `name` 升序（`localeCompare(…, 'zh-Hans-CN')`）兜底。类型与贡献量均不参与排序，排序在 `json-organization.provider.ts` 一处实现、两个 scope 共用。
+- **代码贡献量**：`github-organizations.json` → `github.commits`（已合并 PR 内提交总数，不含无 PR 直推提交）；缺失视为 `0`。
+- **Confluence 贡献量**：账号级 `confluence.edits` 按 `effectiveOrgId` 求和的读时派生值（页面版本作者条数、含创建那次，ADR-0010 / ADR-0011）；缺失视为 `0`。
+- **各维度 top3**：GitHub 按账号级 `commits` 降序（归属按 `orgId ?? 'unattributed'` 分组）、Confluence 按 `edits` 降序（归属按 `effectiveOrgId` 分组），各取前 3，并列稳定排序；服务端聚合随 `GET /api/organizations?scope=contributing` 一次下发。
+- **综合贡献分（已退役，仅存档）**：v1.23 及以前卡片墙按 `score = (PR + Issue + 需求 + 议题分享 + 编辑量) + linesChanged / 10000` 降序（ADR-0001），等级阈值 `high ≥ 600` / `medium ≥ 100`（ADR-0011 决策 7 重标定）；v1.24 起 `computeScore`、`contributionScore` / `contributionLevel` 字段与高/中/低活跃徽章全部删除（ADR-0016）。
 
 ### 3.4 派生的共同原则
 
@@ -357,7 +359,7 @@ Confluence 归属是**两层**：**采集口径**写入账号级 `confluence-acc
 | 中 | A9 | GitHub 侧归属收敛：让人工认领同样影响 GitHub 展示口径（与 Confluence 对齐），并消除组织级 / 账号级双写 | 需另立 ADR（当前 GitHub 仍为双口径并存） |
 | 中 | P6 | 自动匹配建议（按 GitHub login / 人名相似度推荐认领对象） | P5/P6 数据积累后 |
 | 低 | M3 | 接 Zoom API 自动采集参会，并把参会账号认领到 P5 自然人 | P5 已就绪；依赖 M1 列名规范化 |
-| 低 | H6 | 贡献分权重 / 排除名单（如 `dependabot`）可配置化 | 配置项设计 |
+| 低 | H6 | 卡片墙 top3 机器账号排除名单（如 `dependabot`）可配置化；`displayOrder` 排位变更审计（原「贡献分权重可配置化」已随 ADR-0016 退役作废） | 配置项设计 |
 | 低 | P4 | 「未归属登录名 → 组织」补录流程 | 运营流程 |
 
 ## 5. 维护约定

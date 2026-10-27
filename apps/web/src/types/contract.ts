@@ -9,7 +9,6 @@
  */
 export type OrganizationType = 'tsc' | 'participant' | 'operation' | 'individual';
 export type DeltaDirection = 'up' | 'down' | 'flat';
-export type ContributionLevel = 'high' | 'medium' | 'low';
 
 export interface ApiResponse<T> {
   code: number;
@@ -42,12 +41,33 @@ export interface Organization {
   /** 组织邮箱域名后缀清单（小写），用于按贡献者邮箱域名自动归属 */
   emailDomains?: string[];
   joinedAt?: string;
+  /** 展示顺序（ADR-0016）：运营人工排位，越小越靠前；同值/缺失按 name 升序兜底 */
+  displayOrder?: number;
   description?: string;
 }
 
+/**
+ * 组织卡片的各维度 top 贡献者条目（ADR-0016）：服务端聚合、随 scope=contributing 一次下发。
+ * GitHub 维度取 `Contributor.name` / `avatarUrl`、`value = commits`；
+ * Confluence 维度取 `displayName`、`value = edits`，**无头像字段**（前端首字母色块降级）。
+ */
+export interface OrganizationTopContributor {
+  name: string;
+  avatarUrl?: string;
+  value: number;
+}
+
+/** 组织卡片派生字段（ADR-0016）：原始贡献指标 + 各维度 top3；原 contributionScore/contributionLevel 已退役 */
 export interface OrganizationCard extends Organization {
-  contributionLevel?: ContributionLevel;
-  contributionScore?: number;
+  /** 代码贡献量：已合并 PR 内提交总数（github.commits）；无记录为 0 */
+  commits?: number;
+  /** Confluence 贡献量：编辑量（confluence.edits，读时派生求和）；无记录为 0 */
+  confluenceEdits?: number;
+  /** 各维度 top3：GitHub 按 commits、Confluence 按 edits 降序，并列稳定排序 */
+  topContributors?: {
+    github: OrganizationTopContributor[];
+    confluence: OrganizationTopContributor[];
+  };
 }
 
 export interface GithubMetrics {

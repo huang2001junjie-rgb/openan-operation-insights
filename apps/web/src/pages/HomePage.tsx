@@ -110,7 +110,8 @@ export function HomePage() {
               贡献组织
             </h2>
             <p className="mt-1 text-xs text-slate-400">
-              展示全部在榜组织，按综合贡献分降序排列；分数由代码协作行为、成果文档数量加权得出。
+              展示全部在榜组织，按运营指定的展示顺序排列；卡片直出代码贡献量、Confluence
+              贡献量与各维度 top3 贡献者。
             </p>
           </div>
           {organizations.data ? (
@@ -176,11 +177,15 @@ export function HomePage() {
               { term: '应用案例', def: '年度案例登记表中通过评审的案例数' },
               {
                 term: '贡献组织',
-                def: '全部组织档案按综合贡献分降序排列；0 分组织显示「暂无贡献」',
+                def: '全部组织档案按运营人工排位的展示顺序（displayOrder）升序排列，同值/缺失按名称升序兜底；两项贡献量均为 0 的组织显示「暂无贡献」',
               },
               {
-                term: '综合贡献分',
-                def: '由代码协作行为与成果文档数量加权得出（organization.service.ts 的 computeScore）；权重目前为固定常量，尚未做成配置项',
+                term: '代码贡献量',
+                def: '已合并 PR 内的提交总数（github.commits），按组织聚合；top3 为组织内按提交数降序的前三位贡献者',
+              },
+              {
+                term: 'Confluence 贡献量',
+                def: '编辑量，即作为页面版本作者的版本条数（含创建那一次，ADR-0011）；top3 为组织内按编辑量降序的前三位账号',
               },
             ].map((item) => (
               <div key={item.term} className="rounded-xl border border-white/[0.07] bg-white/[0.02] p-3.5">

@@ -74,11 +74,14 @@ export class ListWikiQueryDto extends TimeRangeQueryDto {
   limit?: number;
 }
 
-/** 账号级 Confluence 明细（ADR-0008）：sortBy 与组织级 wiki 同构，默认按 requirements 排序 */
+/**
+ * 账号级 Confluence 明细（ADR-0008）：默认按 requirements 排序。
+ * sortBy 较组织级 wiki 多一个 `edits`（v1.24，ADR-0016）——与首页组织卡「Confluence 贡献量」及该维度 top3 口径对齐。
+ */
 export class ListConfluenceAccountsQueryDto extends TimeRangeQueryDto {
   @IsOptional()
-  @IsIn(['requirements', 'topicShares'])
-  sortBy?: 'requirements' | 'topicShares';
+  @IsIn(['requirements', 'topicShares', 'edits'])
+  sortBy?: 'requirements' | 'topicShares' | 'edits';
 
   @IsOptional()
   @IsIn(['asc', 'desc'])

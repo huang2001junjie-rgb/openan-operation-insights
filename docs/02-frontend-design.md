@@ -74,7 +74,7 @@ Routes 结构示意（实现时以此为准）：
 | # | 区块 | 组件 | 数据来源 | 字段 |
 | --- | --- | --- | --- | --- |
 | 1 | 核心指标卡区 | `HomeMetricSection` | `GET /api/home/summary` | 见下表 5 张卡片 |
-| 2 | 贡献的组织区块 | `HomeOrganizationsSection` | `GET /api/organizations?scope=contributing` | `orgId, name, logoUrl, homepageUrl, tags[], contributionScore, contributionLevel` |
+| 2 | 贡献的组织区块 | `HomeOrganizationsSection` | `GET /api/organizations?scope=contributing` | `orgId, name, logoUrl, homepageUrl, tags[], displayOrder, commits, confluenceEdits, topContributors{ github[], confluence[] }`（ADR-0016） |
 | 3 | 下一次峰会横幅 | `NextSummitBanner` | `GET /api/home/summary` → `nextSummit` | `name, startDate, endDate, location, websiteUrl, isUpcoming` |
 | 4 | 页脚 | `AppFooter` | `GET /api/home/summary` → `updatedAt` | `updatedAt` |
 
@@ -92,9 +92,9 @@ Routes 结构示意（实现时以此为准）：
 
 - 5 张指标卡在 ≥1280px 时横向等宽排列（`grid-cols-5`），数字使用 40px/600 字重渐变文字，页面加载时执行一次**滚动计数**动画（`requestAnimationFrame` 缓动 800ms，仅首次挂载触发）。
 - 卡片基础形态：`rounded-2xl`（16px）+ `border border-white/60` + 多层柔和阴影 + `bg-white/70 backdrop-blur`，`hover` 时 `-translate-y-0.5` 并加深阴影，`transition-all duration-200`。
-- 贡献组织采用**卡片墙**，Logo 以卡片顶部的**通栏横版横幅（3:1，`object-contain`）**呈现，名称 / 类型徽章 / 贡献等级在横幅下方独立成行；明细表中 Logo 为 3:1 横版（`h-9`）；缺失时降级为首字母色块。
-- 卡片墙展示**全部组织**（不过滤零贡献组织），按综合贡献分降序，同分保持默认顺序；**零分组织**显示「暂无贡献」灰色徽章、贡献分进度条置空，自然居于末尾（ADR-0001）。
-- 卡片墙中 `type = 'individual'` 的伪组织渲染为**独立开发者卡片**：中性色 + 个人图标，标题「独立开发者」，展示**人数**（取 `home/summary` 的 `externalDeveloperCount`）与贡献分，与组织卡片视觉区分。
+- 贡献组织采用**卡片墙**，Logo 以卡片顶部的**通栏横版横幅（3:1，`object-contain`）**呈现（v1.24 保持不变），名称 / 类型徽章在横幅下方独立成行；明细表中 Logo 为 3:1 横版（`h-9`）；缺失时降级为首字母色块。**卡片文字整体放大一档**（标题 `1.05rem`、描述 `text-sm`、指标标签 `text-xs`，ADR-0016）。
+- 卡片墙展示**全部组织**（不过滤零贡献组织），按运营人工指定的**展示顺序 `displayOrder`** 升序排列，同值/缺失按名称升序兜底（ADR-0016，取代 ADR-0001 的贡献分降序）；卡片直出**代码贡献量（commits）**与 **Confluence 贡献量（编辑量）**两个原始指标及**各维度 top3 贡献者**（两栏各 3 行：20px 圆形头像 + 姓名 + 数字，不可点击；Confluence 账号无头像字段，首字母色块降级；维度无人时显示「—」占位）。**两项贡献量均为 0** 的组织显示「暂无贡献」灰色徽章（承接 ADR-0001 呈现意图，判据已改）。
+- 卡片墙中 `type = 'individual'` 的伪组织渲染为**独立开发者卡片**：中性色 + 个人图标，标题「独立开发者」，展示**人数**（取 `home/summary` 的 `externalDeveloperCount`）与两项贡献量、各维度 top3（`unattributed` 桶内前三），与组织卡片视觉区分、指标口径一致。
 - 下一次峰会横幅使用通栏渐变背景（`from-blue-700 via-blue-600 to-cyan-500`），左侧文案右侧 CTA 按钮"查看官网"，整个横幅为可点击区域并在新标签打开官网。
 
 ### 3.3 状态处理

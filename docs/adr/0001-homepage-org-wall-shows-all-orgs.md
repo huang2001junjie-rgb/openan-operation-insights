@@ -1,6 +1,6 @@
 # ADR-0001：首页组织卡片墙展示全部组织并按综合贡献分排序
 
-- **状态**：已接受
+- **状态**：已接受 — **决策 1（按综合贡献分排序）与决策 3（零分呈现判据）被 [ADR-0016](./0016-org-card-display-order-and-raw-metrics.md) 取代**（改为 `displayOrder` 人工排位 + 原始指标直出，「暂无贡献」判据改为两项贡献量均为 0）；「展示全部组织（含零贡献）」「`scope` 参数名不改」两项决策继续有效
 - **日期**：2026-09-21
 - **关联文档**：02 §3.1/3.2、03 §4.1 与请求时序、04 §5.3.2、README §5 术语表
 - **命名说明**：本文保留决策当时的文件名；`contributions.json` / `wiki.json` 已更名为 `github-organizations.json` / `confluence-organizations.json`，对照见 ADR-0008。

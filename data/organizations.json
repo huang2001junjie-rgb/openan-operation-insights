@@ -1,132 +1,212 @@
 {
+  "version": "v0",
   "schemaVersion": 1,
-  "updatedAt": "2026-10-26T00:00:00Z",
+  "updatedAt": "2026-10-27",
   "data": [
     {
       "orgId": "lfn",
       "name": "Linux Foundation Networking",
-      "logoUrl": "/logos/lfn.webp",
-      "homepageUrl": "https://lfnetworking.org/",
+      "logoUrl": "https://raw.githubusercontent.com/Anolis-Community/operation-data/main/assets/logos/lfn.png",
+      "homepageUrl": "",
       "type": "operation",
       "tags": [],
-      "aliases": { "github": "", "confluence": "" },
-      "emailDomains": ["lfnetworking.org", "linuxfoundation.org"],
+      "aliases": {
+        "github": "",
+        "confluence": ""
+      },
+      "emailDomains": [
+        "lfnetworking.org"
+      ],
+      "displayOrder": 120,
       "description": ""
     },
     {
       "orgId": "cmcc",
       "name": "China Mobile",
-      "logoUrl": "/logos/china_mobile.png",
-      "homepageUrl": "https://www.chinamobileltd.com",
+      "logoUrl": "https://raw.githubusercontent.com/Anolis-Community/operation-data/main/assets/logos/cmcc.jpg",
+      "homepageUrl": "https://open-source.chinamobile.com/",
       "type": "tsc",
       "tags": [],
-      "aliases": { "github": "", "confluence": "" },
-      "emailDomains": ["chinamobile.com", "chinamobileltd.com", "cmcc.com"],
-      "joinedAt": "2023-03-01T00:00:00Z",
-      "description": "OpenAN 社区主席"
+      "aliases": {
+        "github": "",
+        "confluence": ""
+      },
+      "emailDomains": [
+        "chinamobile.com"
+      ],
+      "joinedAt": "2020-09-01T00:00:00.000Z",
+      "displayOrder": 10,
+      "description": ""
     },
     {
       "orgId": "huawei",
       "name": "Huawei",
-      "logoUrl": "/logos/huawei.png",
-      "homepageUrl": "https://www.huawei.com",
+      "logoUrl": "https://raw.githubusercontent.com/Anolis-Community/operation-data/main/assets/logos/huawei.png",
+      "homepageUrl": "https://www.huawei.com/",
       "type": "tsc",
       "tags": [],
-      "aliases": { "github": "", "confluence": "" },
-      "emailDomains": ["huawei.com"],
-      "joinedAt": "2023-06-15T00:00:00Z",
-      "description": "OpenAN 社区副主席"
+      "aliases": {
+        "github": "",
+        "confluence": ""
+      },
+      "emailDomains": [
+        "huawei.com"
+      ],
+      "joinedAt": "2020-09-01T00:00:00.000Z",
+      "displayOrder": 20,
+      "description": ""
     },
     {
       "orgId": "orange",
       "name": "Orange",
-      "logoUrl": "/logos/orange.png",
-      "homepageUrl": "https://www.orange.com",
+      "logoUrl": "https://raw.githubusercontent.com/Anolis-Community/operation-data/main/assets/logos/orange.png",
+      "homepageUrl": "https://www.orange.com/en",
       "type": "tsc",
       "tags": [],
-      "aliases": { "github": "", "confluence": "" },
-      "emailDomains": ["orange.com", "orange-business.com"],
-      "joinedAt": "2024-01-20T00:00:00Z",
+      "aliases": {
+        "github": "",
+        "confluence": ""
+      },
+      "emailDomains": [
+        "orange.com"
+      ],
+      "displayOrder": 30,
       "description": ""
     },
     {
       "orgId": "zte",
       "name": "ZTE",
-      "logoUrl": "/logos/zte.webp",
-      "homepageUrl": "https://www.zte.com.cn",
+      "logoUrl": "https://raw.githubusercontent.com/Anolis-Community/operation-data/main/assets/logos/zte.png",
+      "homepageUrl": "https://www.zte.com.cn/",
       "type": "tsc",
       "tags": [],
-      "aliases": { "github": "", "confluence": "" },
-      "emailDomains": ["zte.com.cn", "zte.com"],
-      "joinedAt": "2024-04-08T00:00:00Z",
+      "aliases": {
+        "github": "",
+        "confluence": ""
+      },
+      "emailDomains": [
+        "zte.com.cn"
+      ],
+      "displayOrder": 40,
       "description": ""
     },
     {
       "orgId": "ais",
       "name": "AIS",
-      "logoUrl": "/logos/ais.png",
-      "homepageUrl": "https://www.ais.co.th",
+      "logoUrl": "https://raw.githubusercontent.com/Anolis-Community/operation-data/main/assets/logos/ais.png",
+      "homepageUrl": "https://www.ais.th/",
       "type": "tsc",
       "tags": [],
-      "aliases": { "github": "", "confluence": "" },
-      "emailDomains": ["ais.co.th"],
-      "joinedAt": "2024-09-12T00:00:00Z",
+      "aliases": {
+        "github": "",
+        "confluence": ""
+      },
+      "emailDomains": [
+        "ais.th"
+      ],
+      "displayOrder": 50,
       "description": ""
     },
     {
       "orgId": "infosys",
       "name": "Infosys",
-      "logoUrl": "/logos/infosys.webp",
-      "homepageUrl": "https://www.infosys.com",
+      "logoUrl": "https://raw.githubusercontent.com/Anolis-Community/operation-data/main/assets/logos/infosys.png",
+      "homepageUrl": "https://www.infosys.com/",
       "type": "tsc",
       "tags": [],
-      "aliases": { "github": "", "confluence": "" },
-      "emailDomains": ["infosys.com"],
-      "joinedAt": "2024-10-02T00:00:00Z",
+      "aliases": {
+        "github": "",
+        "confluence": ""
+      },
+      "emailDomains": [
+        "infosys.com"
+      ],
+      "displayOrder": 60,
       "description": ""
     },
     {
       "orgId": "asiainfo",
       "name": "AsiaInfo",
-      "logoUrl": "/logos/asianinfo.png",
-      "homepageUrl": "https://www.asiainfo.com",
+      "logoUrl": "https://raw.githubusercontent.com/Anolis-Community/operation-data/main/assets/logos/asiainfo.png",
+      "homepageUrl": "https://www.asiainfo.com/",
       "type": "tsc",
       "tags": [],
-      "aliases": { "github": "" },
-      "emailDomains": ["asiainfo.com"],
+      "aliases": {
+        "github": "",
+        "confluence": ""
+      },
+      "emailDomains": [
+        "asiainfo.com"
+      ],
+      "displayOrder": 70,
       "description": ""
     },
     {
       "orgId": "personal",
       "name": "Personal",
-      "logoUrl": "/logos/personal.webp",
-      "homepageUrl": "https://www.telecom.com.ar",
+      "logoUrl": "https://raw.githubusercontent.com/Anolis-Community/operation-data/main/assets/logos/personal.png",
+      "homepageUrl": "https://www.personal.com.ar/",
       "type": "tsc",
       "tags": [],
-      "aliases": { "github": "" },
-      "emailDomains": ["telecom.com.ar"],
+      "aliases": {
+        "github": "",
+        "confluence": ""
+      },
+      "emailDomains": [
+        "personal.com.ar"
+      ],
+      "displayOrder": 80,
       "description": ""
     },
     {
       "orgId": "zain",
       "name": "Zain",
-      "logoUrl": "/logos/zain.png",
-      "homepageUrl": "https://www.kw.zain.com/",
+      "logoUrl": "https://raw.githubusercontent.com/Anolis-Community/operation-data/main/assets/logos/zain.jpg",
+      "homepageUrl": "https://kw.zain.com/",
       "type": "participant",
       "tags": [],
-      "aliases": { "github": "" },
-      "emailDomains": ["zain.com", "kw.zain.com"],
+      "aliases": {
+        "github": ""
+      },
+      "emailDomains": [
+        "zain.com",
+        "kw.zain.com"
+      ],
+      "displayOrder": 90,
       "description": ""
     },
     {
       "orgId": "inspur",
       "name": "Inspur",
-      "logoUrl": "/logos/Inspur.png",
-      "homepageUrl": "https://www.inspur.com",
+      "logoUrl": "",
+      "homepageUrl": "https://en.inspur.com/",
       "type": "participant",
       "tags": [],
-      "aliases": { "github": "" },
-      "emailDomains": ["inspur.com"],
+      "aliases": {
+        "github": ""
+      },
+      "emailDomains": [
+        "inspur.com"
+      ],
+      "displayOrder": 100,
+      "description": ""
+    },
+    {
+      "orgId": "unicom",
+      "name": "China Unicom",
+      "logoUrl": "",
+      "homepageUrl": "https://www.chinaunicom.com.cn/",
+      "type": "participant",
+      "tags": [],
+      "aliases": {
+        "github": "",
+        "confluence": ""
+      },
+      "emailDomains": [
+        "chinaunicom.cn",
+        "chinaunicom.com"
+      ],
+      "displayOrder": 110,
       "description": ""
     },
     {
@@ -135,8 +215,16 @@
       "logoUrl": "",
       "homepageUrl": "",
       "type": "individual",
-      "tags": ["独立开发者"],
-      "description": "未归属到任何组织的独立贡献者聚合（伪组织）。"
+      "tags": [
+        "独立开发者"
+      ],
+      "aliases": {
+        "github": "",
+        "confluence": ""
+      },
+      "emailDomains": [],
+      "displayOrder": 130,
+      "description": "未归属到任何组织的独立贡献者聚合（伪组织），用于首页卡片墙与外部开发者计数。"
     }
   ]
 }

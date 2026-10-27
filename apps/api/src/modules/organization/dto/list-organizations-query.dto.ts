@@ -3,7 +3,7 @@ import { OrganizationType } from '../../../contract/entities';
 import { ToTrimmedString } from '../../../common/dto/transforms';
 
 export class ListOrganizationsQueryDto {
-  /** all（默认）| contributing：返回全部组织并附带综合贡献分与等级，按贡献分降序（ADR-0001） */
+  /** all（默认）| contributing：contributing 过滤出有贡献的组织，附带两项贡献量与 top3 贡献者；两种 scope 均按 displayOrder 升序（ADR-0016） */
   @IsOptional()
   @IsIn(['all', 'contributing'])
   scope?: 'all' | 'contributing';
