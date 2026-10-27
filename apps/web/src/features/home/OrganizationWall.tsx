@@ -12,7 +12,8 @@ import type { OrganizationCard, OrganizationTopContributor } from '@/types/contr
  * - 卡片直出代码贡献量（commits）与 Confluence 贡献量（编辑量）两个原始指标；
  * - 每维度 top3 贡献者（两栏各 3 行：20px 头像 + 姓名 + 数字，不可点击）；
  * - 两项贡献量均为 0 的组织显示「暂无贡献」灰色徽章；
- * - 卡片文字整体放大一档（标题 1.05rem、描述 text-sm、指标标签 text-xs）。
+ * - 卡片文字在初版基础上再放大一档（标题 1.2rem、描述 text-base、指标行与 top3 text-sm）；
+ * - 内容顶对齐：贡献面板紧跟徽章/描述区，剩余空白留在底部链接行上方（链接行仍钉底）。
  */
 
 /** 20px 个人圆形头像：avatarUrl 缺失或加载失败时降级为首字母色块（Confluence 账号无头像字段，恒走降级） */
@@ -56,18 +57,18 @@ function TopAvatar({ src, name }: { src?: string; name: string }) {
 function TopColumn({ title, items }: { title: string; items: OrganizationTopContributor[] }) {
   return (
     <div className="min-w-0">
-      <div className="text-[0.66rem] font-medium text-slate-500">{title}</div>
+      <div className="text-[0.75rem] font-medium text-slate-500">{title}</div>
       <ul className="mt-1.5 space-y-1.5">
         {items.length === 0 ? (
-          <li className="flex h-5 items-center text-xs text-slate-600">—</li>
+          <li className="flex h-5 items-center text-sm text-slate-600">—</li>
         ) : (
           items.map((person, index) => (
             <li key={`${person.name}-${index}`} className="flex items-center gap-1.5">
               <TopAvatar src={person.avatarUrl} name={person.name} />
-              <span className="min-w-0 flex-1 truncate text-xs text-slate-300" title={person.name}>
+              <span className="min-w-0 flex-1 truncate text-sm text-slate-300" title={person.name}>
                 {person.name}
               </span>
-              <span className="numeric shrink-0 text-xs font-semibold text-slate-200">
+              <span className="numeric shrink-0 text-sm font-semibold text-slate-200">
                 {formatNumber(person.value)}
               </span>
             </li>
@@ -81,12 +82,12 @@ function TopColumn({ title, items }: { title: string; items: OrganizationTopCont
 /** 指标行：标签 text-xs（放大一档），数字强调；value 缺失显示「—」 */
 function MetricRow({ label, value, unit }: { label: string; value?: number; unit: string }) {
   return (
-    <div className="flex items-center justify-between text-xs">
+    <div className="flex items-center justify-between text-sm">
       <span className="text-slate-400">{label}</span>
       {typeof value === 'number' ? (
         <span className="numeric font-semibold text-slate-200">
           {formatNumber(value)}
-          <span className="ml-1 text-[0.68rem] font-normal text-slate-500">{unit}</span>
+          <span className="ml-1 text-[0.75rem] font-normal text-slate-500">{unit}</span>
         </span>
       ) : (
         <span className="text-slate-500">—</span>
@@ -128,7 +129,7 @@ function OrganizationTile({ org, index }: { org: OrganizationCard; index: number
 
       <div className="mt-4 flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h3 className="truncate text-[1.05rem] font-semibold text-white" title={org.name}>
+          <h3 className="truncate text-[1.2rem] font-semibold text-white" title={org.name}>
             {org.name}
           </h3>
           <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
@@ -139,7 +140,7 @@ function OrganizationTile({ org, index }: { org: OrganizationCard; index: number
       </div>
 
       {org.description ? (
-        <p className="mt-4 line-clamp-2 text-sm leading-relaxed text-slate-400">{org.description}</p>
+        <p className="mt-4 line-clamp-2 text-base leading-relaxed text-slate-400">{org.description}</p>
       ) : null}
 
       {org.tags.length > 0 ? (
@@ -152,29 +153,30 @@ function OrganizationTile({ org, index }: { org: OrganizationCard; index: number
         </div>
       ) : null}
 
-      <div className="mt-auto pt-5">
+      {/* 内容顶对齐：贡献面板紧跟上方信息区，避免矮卡片把空白堆在徽章与指标之间 */}
+      <div className="mt-5">
         <ContributionPanel org={org} />
+      </div>
 
-        <div className="mt-4 flex items-center justify-between">
-          {org.homepageUrl ? (
-            <a
-              href={org.homepageUrl}
-              target="_blank"
-              rel="noreferrer noopener"
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-400 transition hover:text-brand-300"
-            >
-              组织主页
-              <IconExternal width={13} height={13} />
-            </a>
-          ) : (
-            <span className="text-xs text-slate-600">无公开主页</span>
-          )}
+      <div className="mt-auto flex items-center justify-between pt-5">
+        {org.homepageUrl ? (
+          <a
+            href={org.homepageUrl}
+            target="_blank"
+            rel="noreferrer noopener"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-400 transition hover:text-brand-300"
+          >
+            组织主页
+            <IconExternal width={13} height={13} />
+          </a>
+        ) : (
+          <span className="text-sm text-slate-600">无公开主页</span>
+        )}
 
-          <span className="inline-flex items-center gap-1 text-xs font-medium text-brand-300/0 transition-all duration-300 group-hover:text-brand-300">
-            贡献明细
-            <IconArrowRight width={13} height={13} />
-          </span>
-        </div>
+        <span className="inline-flex items-center gap-1 text-sm font-medium text-brand-300/0 transition-all duration-300 group-hover:text-brand-300">
+          贡献明细
+          <IconArrowRight width={13} height={13} />
+        </span>
       </div>
     </article>
   );
@@ -206,7 +208,7 @@ function IndividualTile({
 
       <div className="mt-4 flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h3 className="truncate text-[1.05rem] font-semibold text-white" title={org.name}>
+          <h3 className="truncate text-[1.2rem] font-semibold text-white" title={org.name}>
             {org.name}
           </h3>
           <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
@@ -216,11 +218,12 @@ function IndividualTile({
         {hasNoContribution(org) ? <Badge tone="neutral">暂无贡献</Badge> : null}
       </div>
 
-      <p className="mt-4 line-clamp-2 text-sm leading-relaxed text-slate-400">
+      <p className="mt-4 line-clamp-2 text-base leading-relaxed text-slate-400">
         {org.description ?? '未归属到任何组织的独立贡献者聚合。'}
       </p>
 
-      <div className="mt-auto pt-5">
+      {/* 内容顶对齐：与组织卡一致，贡献面板紧跟上方信息区 */}
+      <div className="mt-5">
         <ContributionPanel
           org={org}
           header={<MetricRow label="独立开发者人数" value={memberCount} unit="人" />}
