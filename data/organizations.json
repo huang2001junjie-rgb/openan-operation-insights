@@ -6,7 +6,7 @@
     {
       "orgId": "lfn",
       "name": "Linux Foundation Networking",
-      "logoUrl": "https://raw.githubusercontent.com/Anolis-Community/operation-data/main/assets/logos/lfn.png",
+      "logoUrl": "/logos/lfn.webp",
       "homepageUrl": "",
       "type": "operation",
       "tags": [],
@@ -23,7 +23,7 @@
     {
       "orgId": "cmcc",
       "name": "China Mobile",
-      "logoUrl": "https://raw.githubusercontent.com/Anolis-Community/operation-data/main/assets/logos/cmcc.jpg",
+      "logoUrl": "/logos/china_mobile.png",
       "homepageUrl": "https://open-source.chinamobile.com/",
       "type": "tsc",
       "tags": [],
@@ -41,7 +41,7 @@
     {
       "orgId": "huawei",
       "name": "Huawei",
-      "logoUrl": "https://raw.githubusercontent.com/Anolis-Community/operation-data/main/assets/logos/huawei.png",
+      "logoUrl": "/logos/huawei.png",
       "homepageUrl": "https://www.huawei.com/",
       "type": "tsc",
       "tags": [],
@@ -59,7 +59,7 @@
     {
       "orgId": "orange",
       "name": "Orange",
-      "logoUrl": "https://raw.githubusercontent.com/Anolis-Community/operation-data/main/assets/logos/orange.png",
+      "logoUrl": "/logos/orange.png",
       "homepageUrl": "https://www.orange.com/en",
       "type": "tsc",
       "tags": [],
@@ -76,7 +76,7 @@
     {
       "orgId": "zte",
       "name": "ZTE",
-      "logoUrl": "https://raw.githubusercontent.com/Anolis-Community/operation-data/main/assets/logos/zte.png",
+      "logoUrl": "/logos/zte.webp",
       "homepageUrl": "https://www.zte.com.cn/",
       "type": "tsc",
       "tags": [],
@@ -93,7 +93,7 @@
     {
       "orgId": "ais",
       "name": "AIS",
-      "logoUrl": "https://raw.githubusercontent.com/Anolis-Community/operation-data/main/assets/logos/ais.png",
+      "logoUrl": "/logos/ais.png",
       "homepageUrl": "https://www.ais.th/",
       "type": "tsc",
       "tags": [],
@@ -110,7 +110,7 @@
     {
       "orgId": "infosys",
       "name": "Infosys",
-      "logoUrl": "https://raw.githubusercontent.com/Anolis-Community/operation-data/main/assets/logos/infosys.png",
+      "logoUrl": "/logos/infosys.webp",
       "homepageUrl": "https://www.infosys.com/",
       "type": "tsc",
       "tags": [],
@@ -127,7 +127,7 @@
     {
       "orgId": "asiainfo",
       "name": "AsiaInfo",
-      "logoUrl": "https://raw.githubusercontent.com/Anolis-Community/operation-data/main/assets/logos/asiainfo.png",
+      "logoUrl": "/logos/asianinfo.png",
       "homepageUrl": "https://www.asiainfo.com/",
       "type": "tsc",
       "tags": [],
@@ -144,7 +144,7 @@
     {
       "orgId": "personal",
       "name": "Personal",
-      "logoUrl": "https://raw.githubusercontent.com/Anolis-Community/operation-data/main/assets/logos/personal.png",
+      "logoUrl": "/logos/personal.webp",
       "homepageUrl": "https://www.personal.com.ar/",
       "type": "tsc",
       "tags": [],
@@ -161,7 +161,7 @@
     {
       "orgId": "zain",
       "name": "Zain",
-      "logoUrl": "https://raw.githubusercontent.com/Anolis-Community/operation-data/main/assets/logos/zain.jpg",
+      "logoUrl": "/logos/zain.png",
       "homepageUrl": "https://kw.zain.com/",
       "type": "participant",
       "tags": [],
@@ -178,7 +178,7 @@
     {
       "orgId": "inspur",
       "name": "Inspur",
-      "logoUrl": "",
+      "logoUrl": "/logos/Inspur.png",
       "homepageUrl": "https://en.inspur.com/",
       "type": "participant",
       "tags": [],
