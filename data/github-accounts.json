@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "updatedAt": "2026-09-30T02:16:02.462Z",
   "data": [
     {
@@ -13,7 +13,15 @@
         "commits": 25,
         "issues": 0,
         "linesChanged": 2387,
-        "repos": 6
+        "repos": 6,
+        "repoIds": [
+          "project-openan/.github",
+          "project-openan/a2a-t-sdk-python",
+          "project-openan/governance",
+          "project-openan/orchestration-center",
+          "project-openan/project-openan.github.io",
+          "project-openan/workflow-engine-sdk-python"
+        ]
       }
     },
     {
@@ -27,7 +35,17 @@
         "commits": 18,
         "issues": 0,
         "linesChanged": 1477,
-        "repos": 8
+        "repos": 8,
+        "repoIds": [
+          "project-openan/.github",
+          "project-openan/a2a-t-sdk-java",
+          "project-openan/a2a-t-sdk-python",
+          "project-openan/docs",
+          "project-openan/governance",
+          "project-openan/orchestration-center",
+          "project-openan/project-openan.github.io",
+          "project-openan/registry-center"
+        ]
       }
     },
     {
@@ -41,7 +59,13 @@
         "commits": 19,
         "issues": 0,
         "linesChanged": 4324,
-        "repos": 4
+        "repos": 4,
+        "repoIds": [
+          "project-openan/.github",
+          "project-openan/a2a-t-sdk-java",
+          "project-openan/a2a-t-sdk-python",
+          "project-openan/orchestration-center"
+        ]
       }
     },
     {
@@ -55,7 +79,11 @@
         "commits": 75,
         "issues": 0,
         "linesChanged": 54762,
-        "repos": 2
+        "repos": 2,
+        "repoIds": [
+          "project-openan/a2a-t-sdk-java",
+          "project-openan/a2a-t-sdk-python"
+        ]
       }
     },
     {
@@ -69,7 +97,10 @@
         "commits": 12,
         "issues": 0,
         "linesChanged": 1306,
-        "repos": 1
+        "repos": 1,
+        "repoIds": [
+          "project-openan/a2a-t-sdk-java"
+        ]
       }
     },
     {
@@ -83,7 +114,10 @@
         "commits": 21,
         "issues": 0,
         "linesChanged": 2642,
-        "repos": 1
+        "repos": 1,
+        "repoIds": [
+          "project-openan/a2a-t-sdk-java"
+        ]
       }
     },
     {
@@ -97,7 +131,11 @@
         "commits": 28,
         "issues": 0,
         "linesChanged": 4661,
-        "repos": 2
+        "repos": 2,
+        "repoIds": [
+          "project-openan/a2a-t-sdk-java",
+          "project-openan/a2a-t-sdk-python"
+        ]
       }
     },
     {
@@ -111,7 +149,10 @@
         "commits": 80,
         "issues": 0,
         "linesChanged": 14214,
-        "repos": 1
+        "repos": 1,
+        "repoIds": [
+          "project-openan/a2a-t-sdk-java"
+        ]
       }
     },
     {
@@ -125,7 +166,10 @@
         "commits": 8,
         "issues": 0,
         "linesChanged": 2722,
-        "repos": 1
+        "repos": 1,
+        "repoIds": [
+          "project-openan/a2a-t-sdk-java"
+        ]
       }
     },
     {
@@ -139,7 +183,13 @@
         "commits": 98,
         "issues": 0,
         "linesChanged": 261708,
-        "repos": 4
+        "repos": 4,
+        "repoIds": [
+          "project-openan/a2a-t-sdk-java",
+          "project-openan/a2a-t-sdk-python",
+          "project-openan/docs",
+          "project-openan/registry-center"
+        ]
       }
     },
     {
@@ -153,7 +203,11 @@
         "commits": 50,
         "issues": 0,
         "linesChanged": 6107,
-        "repos": 2
+        "repos": 2,
+        "repoIds": [
+          "project-openan/a2a-t-sdk-java",
+          "project-openan/a2a-t-sdk-python"
+        ]
       }
     },
     {
@@ -167,7 +221,16 @@
         "commits": 578,
         "issues": 86,
         "linesChanged": 214687,
-        "repos": 7
+        "repos": 7,
+        "repoIds": [
+          "project-openan/a2a-t-sdk-java",
+          "project-openan/a2a-t-sdk-python",
+          "project-openan/docs",
+          "project-openan/orchestration-center",
+          "project-openan/registry-center",
+          "project-openan/workflow-engine-sdk-java",
+          "project-openan/workflow-engine-sdk-python"
+        ]
       }
     },
     {
@@ -181,7 +244,11 @@
         "commits": 17,
         "issues": 0,
         "linesChanged": 10082,
-        "repos": 2
+        "repos": 2,
+        "repoIds": [
+          "project-openan/a2a-t-sdk-java",
+          "project-openan/a2a-t-sdk-python"
+        ]
       }
     },
     {
@@ -195,7 +262,11 @@
         "commits": 111,
         "issues": 0,
         "linesChanged": 223946,
-        "repos": 2
+        "repos": 2,
+        "repoIds": [
+          "project-openan/a2a-t-sdk-java",
+          "project-openan/a2a-t-sdk-python"
+        ]
       }
     },
     {
@@ -209,7 +280,10 @@
         "commits": 18,
         "issues": 0,
         "linesChanged": 2666,
-        "repos": 1
+        "repos": 1,
+        "repoIds": [
+          "project-openan/a2a-t-sdk-java"
+        ]
       }
     },
     {
@@ -223,7 +297,11 @@
         "commits": 12,
         "issues": 0,
         "linesChanged": 48032,
-        "repos": 2
+        "repos": 2,
+        "repoIds": [
+          "project-openan/a2a-t-sdk-java",
+          "project-openan/a2a-t-sdk-python"
+        ]
       }
     },
     {
@@ -237,7 +315,11 @@
         "commits": 0,
         "issues": 8,
         "linesChanged": 0,
-        "repos": 2
+        "repos": 2,
+        "repoIds": [
+          "project-openan/a2a-t-sdk-java",
+          "project-openan/a2a-t-sdk-python"
+        ]
       }
     },
     {
@@ -251,7 +333,10 @@
         "commits": 5,
         "issues": 0,
         "linesChanged": 466,
-        "repos": 1
+        "repos": 1,
+        "repoIds": [
+          "project-openan/docs"
+        ]
       }
     },
     {
@@ -265,7 +350,11 @@
         "commits": 0,
         "issues": 2,
         "linesChanged": 0,
-        "repos": 2
+        "repos": 2,
+        "repoIds": [
+          "project-openan/docs",
+          "project-openan/project-openan.github.io"
+        ]
       }
     },
     {
@@ -279,7 +368,13 @@
         "commits": 15,
         "issues": 9,
         "linesChanged": 4503,
-        "repos": 4
+        "repos": 4,
+        "repoIds": [
+          "project-openan/governance",
+          "project-openan/openan-demo",
+          "project-openan/openan-installation",
+          "project-openan/project-openan.github.io"
+        ]
       }
     },
     {
@@ -293,7 +388,10 @@
         "commits": 0,
         "issues": 1,
         "linesChanged": 0,
-        "repos": 1
+        "repos": 1,
+        "repoIds": [
+          "project-openan/governance"
+        ]
       }
     },
     {
@@ -307,7 +405,11 @@
         "commits": 21,
         "issues": 0,
         "linesChanged": 13714,
-        "repos": 2
+        "repos": 2,
+        "repoIds": [
+          "project-openan/openan-installation",
+          "project-openan/project-openan.github.io"
+        ]
       }
     },
     {
@@ -321,7 +423,12 @@
         "commits": 20,
         "issues": 22,
         "linesChanged": 33419,
-        "repos": 3
+        "repos": 3,
+        "repoIds": [
+          "project-openan/openan-portal",
+          "project-openan/orchestration-center",
+          "project-openan/registry-center"
+        ]
       }
     },
     {
@@ -335,7 +442,10 @@
         "commits": 10,
         "issues": 3,
         "linesChanged": 1397,
-        "repos": 1
+        "repos": 1,
+        "repoIds": [
+          "project-openan/orchestration-center"
+        ]
       }
     },
     {
@@ -349,7 +459,11 @@
         "commits": 3,
         "issues": 0,
         "linesChanged": 1336,
-        "repos": 2
+        "repos": 2,
+        "repoIds": [
+          "project-openan/orchestration-center",
+          "project-openan/registry-center"
+        ]
       }
     },
     {
@@ -363,7 +477,11 @@
         "commits": 3,
         "issues": 3,
         "linesChanged": 1126,
-        "repos": 2
+        "repos": 2,
+        "repoIds": [
+          "project-openan/orchestration-center",
+          "project-openan/registry-center"
+        ]
       }
     },
     {
@@ -377,7 +495,10 @@
         "commits": 29,
         "issues": 0,
         "linesChanged": 5080,
-        "repos": 1
+        "repos": 1,
+        "repoIds": [
+          "project-openan/orchestration-center"
+        ]
       }
     },
     {
@@ -391,7 +512,11 @@
         "commits": 5,
         "issues": 2,
         "linesChanged": 10051,
-        "repos": 2
+        "repos": 2,
+        "repoIds": [
+          "project-openan/orchestration-center",
+          "project-openan/registry-center"
+        ]
       }
     },
     {
@@ -405,7 +530,10 @@
         "commits": 1,
         "issues": 0,
         "linesChanged": 2962,
-        "repos": 1
+        "repos": 1,
+        "repoIds": [
+          "project-openan/registry-center"
+        ]
       }
     },
     {
@@ -419,7 +547,10 @@
         "commits": 2,
         "issues": 0,
         "linesChanged": 2687,
-        "repos": 1
+        "repos": 1,
+        "repoIds": [
+          "project-openan/registry-center"
+        ]
       }
     },
     {
@@ -433,7 +564,10 @@
         "commits": 4,
         "issues": 0,
         "linesChanged": 2173,
-        "repos": 1
+        "repos": 1,
+        "repoIds": [
+          "project-openan/registry-center"
+        ]
       }
     },
     {
@@ -447,7 +581,10 @@
         "commits": 2,
         "issues": 0,
         "linesChanged": 169,
-        "repos": 1
+        "repos": 1,
+        "repoIds": [
+          "project-openan/workflow-engine-sdk-java"
+        ]
       }
     },
     {
@@ -461,7 +598,10 @@
         "commits": 3,
         "issues": 0,
         "linesChanged": 12,
-        "repos": 1
+        "repos": 1,
+        "repoIds": [
+          "project-openan/workflow-engine-sdk-python"
+        ]
       }
     },
     {
@@ -475,7 +615,10 @@
         "commits": 2,
         "issues": 0,
         "linesChanged": 651,
-        "repos": 1
+        "repos": 1,
+        "repoIds": [
+          "project-openan/workflow-engine-sdk-java"
+        ]
       }
     },
     {
@@ -489,7 +632,10 @@
         "commits": 1,
         "issues": 0,
         "linesChanged": 158,
-        "repos": 1
+        "repos": 1,
+        "repoIds": [
+          "project-openan/orchestration-center"
+        ]
       }
     }
   ]

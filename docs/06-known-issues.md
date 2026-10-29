@@ -17,6 +17,36 @@
 
 ## 1. 组织档案 `aliases` 覆盖率为 0（运营决定暂不处理）
 
-12 条档案的 `aliases.github` / `aliases.confluence` **全部为空**，而 `aliases` 是归属判定（`07 §3.2`）的第一优先级信号——该信号当前完全空转，归属 100% 依赖 `emailDomains` 兜底（11/12 条已配，仅伪组织 `unattributed` 为空，符合预期）。
+13 条档案的 `aliases.github` / `aliases.confluence` **全部为空**，而 `aliases` 是归属判定（`07 §3.2`）的第一优先级信号——该信号当前完全空转，归属 100% 依赖 `emailDomains` 兜底（12/13 条已配，仅伪组织 `unattributed` 为空，符合预期；v1.24 新增的 `unicom` 已配 `chinaunicom.cn` / `chinaunicom.com`）。
 
 之所以可安全延后：该缺口**不会静默失真**。`confluence-collector.service.ts:879` 每轮采集都会打印告警「`aliases.confluence` 全部为空：本轮全部计数将归入『独立开发者』」。若日后独立开发者数异常偏高，先查这条告警。
+
+## 2. GitHub 组织级基线快照与账号级派生**漂移无告警**
+
+`data/github-organizations.json` 自 [ADR-0017](./adr/0017-github-effective-attribution-read-time-derivation.md) 起已不被读路径使用，降级为**基线快照**；但它仍由采集器每轮写入，且**没有任何机制比对它与「账号级聚合」的结果**。实测存量漂移（2026-10-28，快照最后写入 2026-09-30）：
+
+| 桶 | 落盘快照 | 账号级按**采集口径**聚合 | 账号级按**生效归属**派生（对外值） |
+| --- | --- | --- | --- |
+| `huawei` | 1057 | 1078（**−21**） | **1086** |
+| `unattributed` | 90 | 69（**+21**） | **36** |
+| `lfn` | 无此桶 | 无此桶 | **25** |
+| `cmcc` / `zte` | 148 / 1 | 148 / 1 | **148 / 1** |
+| 桶数 / commits 合计 | 4 / **1296** | — / **1296** | **13** / **1296** |
+
+影响：**页面数字不受影响**（读路径已切走，`commits` 合计三侧都是 1296），但快照会误导排查——照着它核对会得出「`huawei` 少了 21 / 少了 29」的错误结论，而真实原因分别是①采集口径聚合与落盘快照的历史漂移、②人工认领把账号从 `unattributed` 移到了 `huawei`。
+
+处置建议（ADR-0017 遗留债 2）：采集器每轮比对两者、漂移即 `WARN`；或在合并双写落盘（遗留债 1）时一并消灭该文件。在此之前，核对一律以账号级 + 生效归属为准（`04 §4.3`）。
+
+## 3. 首页「数据更新于 X」与派生指标的新鲜度不同步
+
+`GET /api/home/summary` 的 `updatedAt` 仍取 `home.json` 的**文件**时间，而独立开发者数（H2）自 ADR-0017 起由 `github-accounts.json` + 认领边 + 自然人**读时派生**。运营在身份控制台补认领边后，**数字立刻变、首页时间戳却不动**，页面呈现「数字新、时间旧」。
+
+处置建议（ADR-0017 遗留债 7）：二选一——各指标自带 `updatedAt`，或首页时间戳取各来源的最大值。需先裁定时间戳语义（「数据文件最后写入时间」还是「页面数字最后变化时间」）。
+
+## 4. Confluence 侧读时派生的告警**不对称**（静默）
+
+GitHub 侧派生会记 WARN（未知 `orgId`、同一账号多条认领边），Confluence 侧不会：`JsonWikiProvider` **没有 `Logger`**，`toConfluenceAccountViews()` 返回的 `warnings`（认领冲突）被直接丢弃，`GET /api/wiki` 收到未知 `orgIds` 时也只是静默过滤（对比 `json-contribution.provider.ts:84-90`）。
+
+影响：Confluence 账号被认领到两个自然人、或前端传错 `orgId` 时**无任何痕迹**，只能靠数字对不上倒查。
+
+处置建议：给 `JsonWikiProvider` 加 `Logger`，把 `warnings` 与未知 `orgIds` 按 GitHub 侧同样格式记 WARN（两侧行为对齐，`07 §4` 已登记为待办）。

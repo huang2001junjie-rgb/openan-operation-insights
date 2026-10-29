@@ -83,7 +83,7 @@ Routes 结构示意（实现时以此为准）：
 | 卡片 | 指标键 | 展示字段 | 强调色 | 附属元素 |
 | --- | --- | --- | --- | --- |
 | 伙伴单位数量 | `partnerCount` | `value`、`unit`、`label` | 蓝→青渐变 | 环比角标 `delta`、`deltaDirection` |
-| 独立开发者数量 | `externalDeveloperCount` | 同上 | 蓝→青渐变 | 同上 |
+| 独立开发者数量 | `externalDeveloperCount` | 同上 | 蓝→青渐变 | **无环比角标**（出参不带 `delta` / `deltaDirection`，趋势药丸自动隐藏）：该值自 ADR-0017 起为**读时派生**——生效归属落 `unattributed` 且非机器账号的账号数（现 **7**），不再来自 `home.json` 落盘值（现 **13**） |
 | 参加的峰会 | `summitCount` | 同上 | 蓝→青渐变 | 同上 |
 | 已提供的应用案例 | `useCaseCount` | 同上 | 蓝→青渐变 | 同上 |
 | 下一次峰会 | `nextSummit` | 峰会名 + 倒计时文案 | 青→蓝渐变 | `startDate` 格式化、`daysUntil` |
@@ -94,7 +94,8 @@ Routes 结构示意（实现时以此为准）：
 - 卡片基础形态：`rounded-2xl`（16px）+ `border border-white/60` + 多层柔和阴影 + `bg-white/70 backdrop-blur`，`hover` 时 `-translate-y-0.5` 并加深阴影，`transition-all duration-200`。
 - 贡献组织采用**卡片墙**，Logo 以卡片顶部的**通栏横版横幅（3:1，`object-contain`）**呈现（v1.24 保持不变），名称 / 类型徽章在横幅下方独立成行；明细表中 Logo 为 3:1 横版（`h-9`）；缺失时降级为首字母色块。**卡片文字整体放大一档**（标题 `1.05rem`、描述 `text-sm`、指标标签 `text-xs`，ADR-0016）。
 - 卡片墙展示**全部组织**（不过滤零贡献组织），按运营人工指定的**展示顺序 `displayOrder`** 升序排列，同值/缺失按名称升序兜底（ADR-0016，取代 ADR-0001 的贡献分降序）；卡片直出**代码贡献量（commits）**与 **Confluence 贡献量（编辑量）**两个原始指标及**各维度 top3 贡献者**（两栏各 3 行：20px 圆形头像 + 姓名 + 数字，不可点击；Confluence 账号无头像字段，首字母色块降级；维度无人时显示「—」占位）。**两项贡献量均为 0** 的组织显示「暂无贡献」灰色徽章（承接 ADR-0001 呈现意图，判据已改）。
-- 卡片墙中 `type = 'individual'` 的伪组织渲染为**独立开发者卡片**：中性色 + 个人图标，标题「独立开发者」，展示**人数**（取 `home/summary` 的 `externalDeveloperCount`）与两项贡献量、各维度 top3（`unattributed` 桶内前三），与组织卡片视觉区分、指标口径一致。
+- 卡片墙中 `type = 'individual'` 的伪组织渲染为**独立开发者卡片**：中性色 + 个人图标，标题「独立开发者」，展示**人数**（取 `home/summary` 的 `externalDeveloperCount`）与两项贡献量、各维度 top3（`unattributed` 桶内前三），与组织卡片视觉区分、指标口径一致。⚠️ **人数与 top3 是两个口径**（ADR-0017 决策 5）：人数**排除**机器账号（现 7 人），而该桶的 commits / PR 等**量仍计入**（`dependabot` 的 12 commits 留在 `unattributed` 桶里），top3 也**排除**机器账号——三者不要互相推算。
+- 卡片墙的 GitHub 侧数字（commits 与 top3）自 ADR-0017 起由**账号级 + 认领边读时派生**（生效归属），不再取 `github-organizations.json` 落盘值；`scope=contributing` 与 `scope=all` 现在同源同值。Confluence 侧同构口径见 ADR-0010（生效归属）/ ADR-0011（编辑量）。
 - 下一次峰会横幅使用通栏渐变背景（`from-blue-700 via-blue-600 to-cyan-500`），左侧文案右侧 CTA 按钮"查看官网"，整个横幅为可点击区域并在新标签打开官网。
 
 ### 3.3 状态处理
@@ -127,9 +128,9 @@ Routes 结构示意（实现时以此为准）：
 - **GitHub 视图（`?source=github`，默认）**：`ActivityFilterBar` + `ContributorRankCard`（个人）+ `ContributionCompositionCard`（组织结构分布）+ `ContributionDetailTable`（组织 × GitHub 指标）。
 - **Confluence 视图（`?source=confluence`）**：区块骨架复用，数据取自 `GET /api/wiki`（组织级，生效归属）与 `GET /api/confluence-accounts`（账号级，生效归属）；明细表列改为 Confluence 指标（见下），概览 KPI 与环形图口径随之切换。对应三个区块分别换用 `ConfluenceAccountRankCard`（个人成果排行）、`ConfluenceCompositionCard`（组织贡献分布）、`ConfluenceDetailTable`（贡献明细表格），三者均提供 `需求 / 议题分享 / 编辑` **三维**切换（ADR-0011）。
 
-**GitHub 视图明细表与组织贡献分布共用同一份行数据**（前端按 `orgId` 合并三源：`GET /api/organizations` 组织档案 + `GET /api/contributions` + `GET /api/wiki`）；**个人贡献排行走独立接口** `GET /api/contributor-contributions`（ADR-0004）：
+**GitHub 视图明细表与组织贡献分布共用同一份行数据**（前端按 `orgId` 合并三源：`GET /api/organizations` 组织档案 + `GET /api/contributions` + `GET /api/wiki`）；**个人贡献排行走独立接口** `GET /api/contributor-contributions`（ADR-0004）。⚠️ 两个接口返回的 GitHub 数字**同为读时派生的生效归属值**（ADR-0017）：组织级按 `effectiveOrgId` 聚合账号级原子事实、全覆盖组织档案（13 桶，未命中记 0），个人级追加 `effectiveOrgId` / `orgSource` / `personId`，故「组织级 ≡ 个人级求和」在前端天然成立（`repos` 除外，见下）：
 
-- **明细表**：以组织档案为**底表**，全量组织各占一行；无贡献记录的指标按 0 展示、更新时间与仓库数显示"—"，名称 / Logo / 官网以档案为准（ADR-0002）。档案接口失败时退回两源合并结果。
+- **明细表**：以组织档案为**底表**，全量组织各占一行；无贡献记录的指标按 0 展示、更新时间与仓库数显示"—"，名称 / Logo / 官网以档案为准（ADR-0002）。档案接口失败时退回两源合并结果。「N 个仓库」取 `github.repos`——组织级为桶内账号 `github.repoIds` 的**并集大小**（去重数，**不是**各账号求和；ADR-0017 决策 15），故各组织该列相加会大于采集范围内的仓库总数（13），属预期。
 - **组织贡献分布**：在行数据上按 `github.commits` 计算各组织占比（口径见本节末段，ADR-0013）。
 - **个人贡献排行**：在接口返回的个人数据上按当前指标过滤 `> 0`、降序取 Top 8，零值个人不进入榜单。
 
@@ -145,7 +146,7 @@ Routes 结构示意（实现时以此为准）：
 | 编辑 | `confluence.edits` | number | ✅ | Confluence 来源：页面**版本作者条数**（含建页那一次，不剔除多人共编的大页，ADR-0011） |
 | 更新时间 | `updatedAt` | ISO 8601 | ✅ | 相对时间展示 |
 
-**Confluence 视图明细表**（`?source=confluence`，与组织档案以 `orgId` 关联，全量组织各占一行；归属为**生效归属** `effectiveOrgId`，见 ADR-0010）：
+**Confluence 视图明细表**（`?source=confluence`，与组织档案以 `orgId` 关联，全量组织各占一行；归属为**生效归属** `effectiveOrgId`，认领优先见 ADR-0010、编辑量口径见 ADR-0011）：
 
 | 列 | 字段 | 类型 | 可排序 | 备注 |
 | --- | --- | --- | --- | --- |
@@ -166,7 +167,7 @@ Routes 结构示意（实现时以此为准）：
 
 **环形图口径**（ADR-0013，修订 ADR-0003）：按组织维度统计 `github.commits` 提交数占比，数据复用 `GET /api/contributions`；**每个有非零计数的组织各占一个具名扇区**（不再并入「其他」，无 3% 阈值与扇区数上限），中心显示提交总量；配色取 `CHART_PALETTE`（12 色，超出按序循环）。Confluence 视图（`ConfluenceCompositionCard`）复用同一口径，按所选维度（需求 / 议题分享 / 编辑）统计各组织占比。
 
-**个人排行口径**（ADR-0004）：数据源 `GET /api/contributor-contributions`，仅包含采集到贡献记录的个人（人工维护但无贡献记录的档案不出现）；`orgId` 为空的独立开发者显示为「独立开发者」标签（伪组织 `unattributed`，可被组织筛选单独命中）；组织名由 `GET /api/organizations` 的 `orgId → name` 映射解析；头像取 `avatarUrl`，缺失或加载失败时降级为姓名首字母色块。阶段一时间区间筛选对该接口不生效，卡片底部给出同口径提示与数据更新时间。
+**个人排行口径**（ADR-0004，归属部分由 ADR-0017 修订）：数据源 `GET /api/contributor-contributions`，仅包含采集到贡献记录的个人（人工维护但无贡献记录的档案不出现）；**归属标签一律取生效归属 `effectiveOrgId`**（落盘的 `orgId` 只是采集口径兜底，**不得**用于展示）：`effectiveOrgId === 'unattributed'` 者显示「独立开发者」标签（伪组织，可被组织筛选单独命中）；**机器账号不出现在出参中**（如 `dependabot`，人物口径排除，其代码量仍计入组织级）；组织名由 `GET /api/organizations` 的 `orgId → name` 映射解析（按 `effectiveOrgId` 查）；头像取 `avatarUrl`，缺失或加载失败时降级为姓名首字母色块。阶段一时间区间筛选对该接口不生效，卡片底部给出同口径提示与数据更新时间。
 
 ### 4.3 交互细节
 

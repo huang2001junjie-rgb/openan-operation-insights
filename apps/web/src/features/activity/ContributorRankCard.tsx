@@ -6,7 +6,7 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { IconBolt } from '@/components/icons';
 import { cn } from '@/lib/cn';
 import { formatDateTime, formatNumber, initialsOf } from '@/lib/format';
-import type { ContributorContribution, Organization } from '@/types/contract';
+import type { ContributorContributionView, Organization } from '@/types/contract';
 import { ORG_UNATTRIBUTED, UNATTRIBUTED_LABEL } from './org-display';
 
 type MetricKey = 'pullRequests' | 'commits' | 'issues' | 'linesChanged';
@@ -73,8 +73,8 @@ function ContributorAvatar({
 }
 
 export interface ContributorRankCardProps {
-  contributors?: ContributorContribution[];
-  /** 组织档案：用于把 orgId 解析成组织名，独立开发者（orgId 为空）显示为伪组织名 */
+  contributors?: ContributorContributionView[];
+  /** 组织档案：用于把 `effectiveOrgId` 解析成组织名，独立开发者显示为伪组织名 */
   organizations: Organization[];
   isLoading: boolean;
   isError: boolean;
@@ -147,10 +147,11 @@ export function ContributorRankCard({
         >
           <ol className="space-y-1.5" aria-label="个人贡献排行">
             {ranking.map(({ item, value }, index) => {
-              const orgLabel = item.orgId
-                ? (orgNames.get(item.orgId) ?? item.orgId)
-                : (orgNames.get(ORG_UNATTRIBUTED) ?? UNATTRIBUTED_LABEL);
-              const isIndependent = !item.orgId;
+              // 归属标签一律取**生效归属**（ADR-0017）：采集口径 orgId 已降为兜底，不用于展示
+              const isIndependent = item.effectiveOrgId === ORG_UNATTRIBUTED;
+              const orgLabel = isIndependent
+                ? (orgNames.get(ORG_UNATTRIBUTED) ?? UNATTRIBUTED_LABEL)
+                : (orgNames.get(item.effectiveOrgId) ?? item.effectiveOrgId);
               const ratio = maxValue > 0 ? (value / maxValue) * 100 : 0;
 
               return (
@@ -219,7 +220,8 @@ export function ContributorRankCard({
       </div>
 
       <p className="mt-4 border-t border-white/[0.06] pt-3 text-[0.68rem] leading-relaxed text-slate-500">
-        口径：GitHub 公开协作数据按个人聚合，未归属组织者归入「{UNATTRIBUTED_LABEL}」；阶段一时间区间筛选暂不生效。
+        口径：GitHub 公开协作数据按个人聚合，归属取生效归属（人工认领优先于采集推断），未归属者归入「{UNATTRIBUTED_LABEL}」；
+        机器账号不计入本榜，其代码量仍计入组织级合计。阶段一时间区间筛选暂不生效。
         {updatedAt ? <span className="ml-1">数据更新于 {formatDateTime(updatedAt)}。</span> : null}
       </p>
     </Card>

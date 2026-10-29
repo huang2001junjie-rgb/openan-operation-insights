@@ -51,7 +51,7 @@ flowchart LR
 | `orgName` | 配置表 | 展示名由人工维护 |
 | `logoUrl` | 用户/组织 `avatar_url` | 直接从 API 响应取 |
 | `homepageUrl` | 用户/组织 `html_url` | 同上 |
-| `github.repos` | 参与的仓库去重计数 | 由 PR/Issue 记录中的仓库集合推导 |
+| `github.repos` | 参与的仓库去重计数 | 由 PR/Issue 记录中的仓库集合推导；**账号级同时落清单 `github.repoIds`**（`schemaVersion` 2 起必填，`repos ≡ repoIds.length`），组织级 `repos` 由读时派生取**并集**——去重数不能靠求和得到（ADR-0017 决策 15） |
 | `github.pullRequests` | Search API 或 GraphQL `search` | 仅统计 merged |
 | `github.commits` | PR `commits.totalCount` | **PR 级汇总**；与 merged 口径同源，嵌套查询零额外请求 |
 | `github.issues` | Search API 或 GraphQL | 提出或参与 |
@@ -87,8 +87,8 @@ flowchart TB
   LIST --> BATCH["按仓库分批（每批 ≤ 10 个仓库）"]
   BATCH --> GQL["GraphQL 查询：<br/>PR(merged, additions, deletions, commits, author) + Issue(author)"]
   GQL --> MAP["按 author 归属 → orgId<br/>（登录名 aliases.github → 邮箱域名 emailDomains）"]
-  MAP --> AGG["聚合：sum / count / 去重仓库数"]
-  AGG --> PERSIST["写入 data/github-organizations.json<br/>（原子写）"]
+  MAP --> AGG["聚合：sum / count / 去重仓库集合 repoIds"]
+  AGG --> PERSIST["原子写 data/github-accounts.json（账号级原子事实，读路径的唯一来源）<br/>+ data/github-organizations.json（基线快照，读路径不用）<br/>+ 缺则补伪组织 unattributed 到 organizations.json"]
   PERSIST --> STATE["更新 data/.sync-state.json<br/>（游标、ETag、时间戳）"]
 ```
 
@@ -167,7 +167,7 @@ GITHUB_LOOKBACK_DAYS=3650
 4. 仍未匹配到 → 归类为**独立开发者**（`orgId = "unattributed"` 伪组织），在首页以**独立卡片**展示（人数 + 贡献量），并把未匹配的 `login` 记入 `.sync-state.json` 的 `unattributedLogins[]`，供运营人工补充映射；
 5. 匹配到 → 累加到对应 `orgId`。
 
-> **邮箱信号的两个来源**：`@users.noreply.github.com` 等非组织域名不命中任何 `emailDomains`，自然落入独立开发者；邮箱**仅用于内存判定，不写入任何数据文件**；同一贡献者的全部记录（含其 Issue）共用同一邮箱信号（两遍聚合：先按 `login` 汇总邮箱，再统一归属）；人工在 `github-accounts.json` 中已指定的 `orgId` 不会被自动判定覆盖；多个组织配置相同域名时按档案顺序先到先得并输出 `WARN`。
+> **邮箱信号的两个来源**：`@users.noreply.github.com` 等非组织域名不命中任何 `emailDomains`，自然落入独立开发者；邮箱**仅用于内存判定，不写入任何数据文件**；同一贡献者的全部记录（含其 Issue）共用同一邮箱信号（两遍聚合：先按 `login` 汇总邮箱，再统一归属）；人工在 `github-accounts.json` 中已指定的 `orgId` 不会被自动判定覆盖（⚠️ 但自 ADR-0017 起它只是**采集口径兜底**：该账号一旦被认领到有归属的自然人，对外展示的生效归属以认领边为准）；多个组织配置相同域名时按档案顺序先到先得并输出 `WARN`。
 
 > **这是全流程中最容易出错的一环**。建议在阶段二先导出作者 login 清单，人工确认映射后再进入阶段三。
 
@@ -350,6 +350,8 @@ flowchart LR
 }
 ```
 
+> ⚠️ 上面是**示意**，真实文件还含 `orgRepos` / `personRepos`（仓库全名集合）等增量游标。自 ADR-0017 决策 15 起二者语义分化：`personRepos` 降级为**审计 / 一次性回填来源**——账号级仓库集合改由业务文件 `github.repoIds`（`github-accounts.json` `schemaVersion` **2**）**自持**，增量基线由 `buildContributorSeed` 直接从中恢复，不再读状态文件（故删掉本文件只触发全量采集，**不会**让个人 `repos` 退化）；回填脚本 `npm run backfill:github-repo-ids` 正是读 `personRepos` 把 v1 存量补齐的。`orgRepos` 未变，仍是组织维度增量并集的唯一来源（`github-organizations.json` 只存计数，集合缺失时退化到 `repoFloor`）。
+
 **Confluence：独立文件 `data/.sync-state.confluence.json`（ADR-0009）**
 
 ```json
@@ -399,13 +401,17 @@ flowchart LR
 
 ```bash
 npm run build -w @openan/api
-npm run collect:github:check -w @openan/api # GitHub，期望输出：46/46 通过
+npm run collect:github:check -w @openan/api # GitHub，期望输出：50/50 通过
 npm run collect:wiki:check -w @openan/api   # Confluence，期望输出：全部通过（73 项）
+npm run identity:check -w @openan/api       # 身份 / 认领 / 生效归属，期望输出：50/50 通过
 ```
 
-- 合成种子刻意与仓库 `data/` 解耦：真实 `data/` 会随每次线上采集而变化，若直接作为校验输入，断言将随数据漂移而失效；脚本结尾会逐字节比对，确认真实 `data/` 与种子均未被改动。
+> ⚠️ 期望数字随断言增删而变（ADR-0017 落地后 GitHub 由 46 → **50**、身份由 38 → **50**；Confluence 仍 73）。数字对不上时先看脚本尾部的 FAIL 行，别只改文档。
+
+- 合成种子刻意与仓库 `data/` 解耦：真实 `data/` 会随每次线上采集而变化，若直接作为校验输入，断言将随数据漂移而失效；脚本结尾会逐字节比对，确认真实 `data/` 与种子均未被改动。⚠️ 种子的 `schemaVersion` **必须与 `repositories.module.ts` 的期望值同步**（现 `home.json` 与 `github-accounts.json` 均为 **2**）：不同步**不会让断言变红**，只在启动自检日志里留 WARN「数据结构版本不兼容」，属静默劣化。
 - 固定记录中的 `commitEmail`（PR 首提交作者邮箱）与 `author.email`（账户公开资料邮箱）**仅用于内存归属判定**，脚本会断言其未出现在任何落盘文件中。
 - 覆盖的归属场景：登录名别名精确命中、提交邮箱子域命中（`mail.novasilicon.com` → `novasilicon.com`）、公开资料邮箱兜底、提交邮箱优先于资料邮箱、`@users.noreply.github.com` 不误判。
+- 覆盖的**仓库集合**场景（ADR-0017 决策 15）：全量与增量两条路径都落盘 `github.repoIds`、`repos === repoIds.length`、组织级 `repos` 取**并集**而非求和；`collector-check.mjs` 刻意把种子的 `personRepos` **留空**，以证明增量基线已从业务文件自持恢复；`identity-check.mjs` 的「场景 5 生效归属派生」另断言认领改写归属、全覆盖桶数、`commits` 恒等式、机器账号的量计入桶、独立开发者计数，以及 **v1 信封被拒**（`50001`）。
 
 **Confluence 自检**：固定页面记录（含 `bodies` 覆盖正文口径、`views` 覆盖渲染视图取展示名、`users` 覆盖账号查询兜底）在 `apps/api/scripts/fixtures/confluence-records.sample.json`，空结果反例在 `confluence-records.none.json`；`scripts/confluence-check.mjs` 用 `CONFLUENCE_FIXTURE` 指向它们跑**编译产物**，**73 项断言**覆盖：
 

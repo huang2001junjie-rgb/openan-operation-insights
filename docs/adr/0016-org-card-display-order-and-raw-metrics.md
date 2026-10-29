@@ -1,6 +1,6 @@
 # 决策 0016：首页组织卡片改为「展示顺序」人工排位并直出原始贡献指标 + 各维度 top3（综合贡献分退役）
 
-- 状态：**Accepted — 取代 [ADR-0001](./0001-homepage-org-wall-shows-all-orgs.md) 的决策 1（按综合贡献分排序）与决策 3（零分呈现判据），以及 [ADR-0011](./0011-confluence-edit-count-metric.md) 的决策 7（编辑量计入综合贡献分与阈值重标定）**；ADR-0001 的「展示全部组织」「`scope` 参数名不改」与 ADR-0011 的编辑量口径本身**继续有效**
+- 状态：**Accepted — 取代 [ADR-0001](./0001-homepage-org-wall-shows-all-orgs.md) 的决策 1（按综合贡献分排序）与决策 3（零分呈现判据），以及 [ADR-0011](./0011-confluence-edit-count-metric.md) 的决策 7（编辑量计入综合贡献分与阈值重标定）**；ADR-0001 的「展示全部组织」「`scope` 参数名不改」与 ADR-0011 的编辑量口径本身**继续有效**。**本 ADR 决策 3 的 GitHub 归属分组口径已被 [ADR-0017](./0017-github-effective-attribution-read-time-derivation.md)（2026-10-28）修订**：GitHub 账号亦按 `effectiveOrgId` 分桶，top3 排除机器账号；展示顺序（决策 1）、两项贡献量并列（决策 2）、top3 聚合位置与条目结构（决策 3 其余部分）**继续有效**
 - 日期：2026-10-27
 
 ## 背景
@@ -39,7 +39,7 @@
 
 - **口径**：GitHub 维度按 `commits` 降序、Confluence 维度按 `edits` 降序，剔除 `value = 0` 的条目后各取前 3（与卡片两项贡献量口径一一对应）。并列稳定排序（保持文件原序）。
 - **聚合位置：服务端**。`organization.service.ts` 注入 `CONTRIBUTOR_CONTRIBUTION_PORT` 与 `CONFLUENCE_ACCOUNT_PORT`（`ProvidersModule` 为 `@Global()`，无需改模块导入），各读一次全量账号、按组织分桶取 top3，随 `OrganizationCard` 一次下发——**否决**前端逐组织调 `/api/contributor-contributions` + `/api/confluence-accounts` 的方案（12 组织 × 2 请求 = N+1，且首页无筛选诉求）。
-- **归属分组**：GitHub 账号按 `orgId ?? 'unattributed'`（与 `json-contributor-contribution.provider.ts` 既有分桶口径一致）；Confluence 账号按 `effectiveOrgId`（ADR-0010 读时派生）。独立开发者卡的 top3 即 `unattributed` 桶内前三。
+- **归属分组**：GitHub 账号按 `orgId ?? 'unattributed'`（与 `json-contributor-contribution.provider.ts` 既有分桶口径一致）；Confluence 账号按 `effectiveOrgId`（ADR-0010 读时派生）。独立开发者卡的 top3 即 `unattributed` 桶内前三。（**修订 2026-10-28**：GitHub 侧亦改按 `effectiveOrgId` 分组，与 Confluence 侧同构——见 [ADR-0017](./0017-github-effective-attribution-read-time-derivation.md)。分桶键统一后本条的可见结果随之变化：`lfn` 由 0 commits 变为 25（top3 新增 Casey Cain），独立开发者卡 top3 由「Casey Cain / cnafan / Tingyu Ding」变为「cnafan / tommy / Kuang Mi」，且 top3 排除机器账号）
 - **条目结构** `OrganizationTopContributor = { name, avatarUrl?, value }`：GitHub 取 `Contributor.name` / `avatarUrl`、`value = commits`；Confluence 取 `displayName`、**无头像字段**（`value = edits`），前端一律首字母色块降级。
 - **展示**：卡片内分「代码 / Confluence」两栏，每栏 3 行：20px 圆形头像 + 姓名 + 数字，**不可点击**（首页组织卡不承担跳转，与 ADR-0001 决策 3「仅展示」精神一致）；某维度无人时显示「—」占位行。独立开发者卡同步改造（两项贡献量 + 各自 top3），保持全墙一致。
 - **顺带**：`GET /api/confluence-accounts` 的 `sortBy` 白名单加入 `'edits'`（服务端排序能力与口径对齐；向后兼容，既有取值不变）。
@@ -58,7 +58,7 @@
   - **`partnerCount` 双轨制风险再现**：新增 `unicom` 必须手工同步 `home.json`（已在本决策内完成 11 → 12）；根治仍是 07 §4 待办 H1「自动聚合」。
   - top3 聚合让 `GET /api/organizations?scope=contributing` 多读两个个人级 JSON 文件（数百条量级，单次内存分桶，性能可忽略；但**每次请求都读**，与该接口现状一致，无缓存层）。
   - 排序不再体现类型层级：TSC 成员单位若 `displayOrder` 靠后即显示靠后——这是运营明确要的语义（排位 ≠ 地位）。
-- **同步面**（缺一即文档—代码漂移）：`contract/entities.ts` + 前端 `types/contract.ts`（逐字对齐）、`validators.ts`（`displayOrder` 可选数字）、`json-organization.provider.ts`（删 `TYPE_WEIGHT`、新排序）、`organization.service.ts`（退役评分、聚合 top3）、`activity-query.dto.ts`（`sortBy` 加 `edits`）、`Badge.tsx`（删 `ContributionLevelBadge`）、`OrganizationWall.tsx` / `HomePage.tsx`（重写卡片与文案）、`data/organizations.json`（13 条档案 + `displayOrder`）、`data/home.json`（`partnerCount` 12）；文档 `02` §3、`04` §3.1/§3.4/§4.2/§5.3.2/§5.3.16/§6.1.1/§6.2、`07` §1.1/§2.1/§2.2/§3.1/§3.3/§4、`README` §5 术语表（「贡献的组织」重定义、「运营单位」排序描述修正、「伙伴单位数」11 → 12，新增「展示顺序」「代码贡献量」「Confluence 贡献量」三条）+ §8 版本记录 v1.24。
+- **同步面**（缺一即文档—代码漂移）：`contract/entities.ts` + 前端 `types/contract.ts`（逐字对齐）、`validators.ts`（`displayOrder` 可选数字）、`json-organization.provider.ts`（删 `TYPE_WEIGHT`、新排序）、`organization.service.ts`（退役评分、聚合 top3）、`activity-query.dto.ts`（`sortBy` 加 `edits`）、`Badge.tsx`（删 `ContributionLevelBadge`）、`OrganizationWall.tsx` / `HomePage.tsx`（重写卡片与文案）、`data/organizations.json`（13 条档案 + `displayOrder`）、`data/home.json`（`partnerCount` 12）；文档 `02` §3、`04` §3.1/§3.4/§4.2/§5.3.2/§5.3.16/§6.1.1/§6.2、`07` §1.1/§2.1/§2.2/§3.1/§3.3/§4、`README` §5 术语表（「贡献的组织」重定义、「运营单位」排序描述修正、「伙伴单位数」11 → 12，新增「展示顺序」「代码贡献量」「Confluence 贡献量」三条）+ §9 版本记录 v1.24（版本记录原挂在 README §8 末尾，2026-10-28 提升为独立的 §9）。
 
 ## 备选方案（已否决）
 

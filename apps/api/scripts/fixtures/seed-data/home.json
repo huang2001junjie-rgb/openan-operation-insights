@@ -1,9 +1,8 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "updatedAt": "2026-09-18T09:00:00Z",
   "data": {
     "partnerCount": { "value": 28, "unit": "家", "delta": 3, "deltaDirection": "up" },
-    "externalDeveloperCount": { "value": 412, "unit": "人", "delta": 26, "deltaDirection": "up" },
     "summitCount": { "value": 17, "unit": "场", "delta": 1, "deltaDirection": "up" },
     "useCaseCount": { "value": 63, "unit": "个", "delta": 5, "deltaDirection": "up" },
     "nextSummitId": "openan-summit-2026"

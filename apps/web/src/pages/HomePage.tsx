@@ -171,7 +171,7 @@ export function HomePage() {
               },
               {
                 term: '独立开发者',
-                def: 'github-accounts.json 中 orgId 为空的贡献者数；贡献归入伪组织 unattributed（type=individual）',
+                def: '生效归属为伪组织 unattributed（type=individual）、且非机器账号的 GitHub 贡献者数；生效归属 = 人工认领优先于采集推断，改完即时生效（不落盘、不等采集）',
               },
               { term: '社区峰会', def: 'summits.json 中全部峰会条目数' },
               { term: '应用案例', def: '年度案例登记表中通过评审的案例数' },
@@ -181,7 +181,7 @@ export function HomePage() {
               },
               {
                 term: '代码贡献量',
-                def: '已合并 PR 内的提交总数（github.commits），按组织聚合；top3 为组织内按提交数降序的前三位贡献者',
+                def: '已合并 PR 内的提交总数（github.commits）；组织级由账号级按生效归属求和（读时派生、覆盖全部组织档案，未命中记 0），top3 为组织内按提交数降序的前三位真人贡献者（机器账号不计入人物榜，其提交量仍计入合计）',
               },
               {
                 term: 'Confluence 贡献量',

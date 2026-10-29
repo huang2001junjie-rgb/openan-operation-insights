@@ -4,7 +4,7 @@ import { queryKeys, type ActivityParams } from './query-keys';
 import type {
   ConfluenceAccountView,
   ContributionSummaryData,
-  ContributorContribution,
+  ContributorContributionView,
   Organization,
   OrganizationContribution,
   OrganizationWiki,
@@ -64,12 +64,16 @@ export function useConfluenceAccounts(params: ActivityParams = {}, enabled = tru
   });
 }
 
-/** 个人维度 GitHub 贡献榜：仅返回带采集指标的个人（含独立开发者，见 04 文档 5.3.8） */
+/**
+ * 个人维度 GitHub 贡献榜（含**生效归属**，04 文档 5.3.8 / ADR-0017）：
+ * 仅返回带采集指标的**真人**——机器账号（如 `dependabot`）由 API 排除，
+ * 未归属者即独立开发者（生效归属为伪组织 `unattributed`）。
+ */
 export function useContributorContributions(params: ActivityParams = {}, enabled = true) {
   return useQuery({
     queryKey: queryKeys.contributorContributions(params),
     queryFn: ({ signal }) =>
-      apiGet<ContributorContribution[]>('/contributor-contributions', {
+      apiGet<ContributorContributionView[]>('/contributor-contributions', {
         params: { ...toParams(params), sortBy: 'commits', order: 'desc' },
         signal,
       }),

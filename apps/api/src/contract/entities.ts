@@ -34,7 +34,21 @@ export interface GithubMetrics {
   issues: number;
   /** additions + deletions */
   linesChanged: number;
+  /** 参与仓库数：组织级为**去重数**（并集大小），账号级恒等于 `repoIds.length` */
   repos: number;
+}
+
+/**
+ * 账号级 GitHub 指标（ADR-0017 决策 15）：在共用计数之上额外落盘**仓库清单**。
+ *
+ * 为什么必须落清单：组织级 `repos` 的语义是「参与过的仓库**去重数**」，而组织级自 ADR-0017 起
+ * 由账号级按生效归属**求和**派生——若账号级只存计数，跨账号共用的仓库会被重复计数
+ * （实测 `huawei` 13 → 51，而采集范围内仓库总数只有 13）。有了 `repoIds`，派生层才能取并集大小，
+ * 既保住「组织级 ≡ 账号级派生」的单点归属，又保住去重语义。
+ */
+export interface AccountGithubMetrics extends GithubMetrics {
+  /** 参与过的仓库全名（`owner/repo`）去重升序；`repos` 恒等于其长度 */
+  repoIds: string[];
 }
 
 export interface OrganizationContribution {
@@ -123,12 +137,39 @@ export interface Contributor {
   avatarUrl?: string;
   joinedAt?: string;
   description?: string;
-  /** GitHub 协作指标（ADR-0003）：仅采集到贡献记录的个人才有；人工维护的纯档案可缺失 */
-  github?: GithubMetrics;
+  /**
+   * GitHub 协作指标（ADR-0003）：仅采集到贡献记录的个人才有；人工维护的纯档案可缺失。
+   * 含仓库清单 `repoIds`（ADR-0017 决策 15），供组织级派生取并集还原去重仓库数。
+   */
+  github?: AccountGithubMetrics;
 }
 
 /** GET /api/contributor-contributions 的响应条目：带采集指标的个人贡献（github 恒有值） */
-export type ContributorContribution = Contributor & { github: GithubMetrics };
+export type ContributorContribution = Contributor & { github: AccountGithubMetrics };
+
+/**
+ * GitHub 归属来源三态（ADR-0017）。
+ *
+ * 与 Confluence 的 `orgSource` 不同：账号级档案**不落盘**该字段（`Contributor` 无此字段），
+ * 纯由派生得出——`claim`（认领边）/ `collection`（采集口径 `aliases.github` → `emailDomains`）/
+ * `unattributed`（两者皆无）。
+ */
+export type GithubOrgSource = 'claim' | 'collection' | 'unattributed';
+
+/**
+ * 账号级 GitHub 的**接口出参**（04 §5.3.8 / ADR-0017）：在既有出参上**追加**读时派生的生效归属，向后兼容。
+ *
+ * - `effectiveOrgId = 认领边派生的 Person.orgId ?? orgId ?? 'unattributed'`（人工优先，与 ADR-0010 同构）；
+ * - `personId` 为**读时派生**值（非落盘快照）：GitHub 账号档案上没有 `personId` 字段；
+ * - 落盘的 `orgId` 是**采集口径**，自此降为兜底，不再是对外真相；
+ * - 机器账号（如 `dependabot`）**不出现在本出参中**：人物口径排除，其代码量仍计入组织级求和（决策 5 / 11）。
+ */
+export interface ContributorContributionView extends ContributorContribution {
+  /** 生效归属；未归属时为伪组织 `'unattributed'` */
+  effectiveOrgId: string;
+  orgSource: GithubOrgSource;
+  personId: string | null;
+}
 
 export interface SummitSummary {
   id: string;
@@ -159,24 +200,33 @@ export interface MetricValue {
   deltaDirection?: DeltaDirection;
 }
 
-/** data/home.json 的 data 结构 */
+/**
+ * data/home.json 的 data 结构。
+ *
+ * **不含独立开发者人数**：该指标自 ADR-0017 起为**读时派生**——不落盘、不由采集器回填，
+ * 见 `HomeSummary.externalDeveloperCount`。
+ */
 export interface HomeFileData {
   /** 伙伴单位数：口径 = 组织档案内 `type !== 'individual'` 者（TSC 成员单位 + 参与单位 + 运营单位） */
   partnerCount: MetricValue;
-  /**
-   * 独立开发者数（`github-accounts.json` 中 `orgId` 为空者）。
-   * 字段名沿用旧称「外部开发者」；对外文案已统一为「独立开发者」，
-   * 与 `Badge.tsx` 的 `TYPE_LABEL.individual`、组织墙文案一致。改名会波及
-   * 契约 / 校验 / 采集回填 / `home.json`，收益不抵风险，故保留。
-   */
-  externalDeveloperCount: MetricValue;
   summitCount: MetricValue;
   useCaseCount: MetricValue;
   nextSummitId: string | null;
 }
 
-/** GET /api/home/summary 的响应 data */
+/**
+ * GET /api/home/summary 的响应 data。
+ *
+ * `externalDeveloperCount` 的**出参形状不变**（仍为 `MetricValue`，ADR-0017 决策 8），但值改为
+ * **读时派生**：生效归属为伪组织 `unattributed` 且非机器人的 GitHub 账号数。
+ * 字段名沿用旧称「外部开发者」；对外文案已统一为「独立开发者」，与 `Badge.tsx` 的
+ * `TYPE_LABEL.individual`、组织墙文案一致。改名会波及契约 / 校验 / 前端，收益不抵风险，故保留。
+ *
+ * **不带 `delta` / `deltaDirection`**：环比须基于历史快照（07 §2.2 P1 待办 ②），
+ * 不得由「当前值 − 上次值」伪造。
+ */
 export interface HomeSummary extends Omit<HomeFileData, 'nextSummitId'> {
+  externalDeveloperCount: MetricValue;
   nextSummit: SummitSummary | null;
   updatedAt: string;
 }

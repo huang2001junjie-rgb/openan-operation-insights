@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-10-08T07:24:09.664Z",
+  "updatedAt": "2026-10-28T07:09:21.438Z",
   "data": [
     {
       "claimId": "clm_8f9e7a2d-a75c-496c-af24-cd7057d87834",
@@ -201,14 +201,6 @@
       "accountKey": "22369073",
       "displayName": "chenjinjin",
       "createdAt": "2026-09-29T12:05:24.413Z"
-    },
-    {
-      "claimId": "clm_dae0a01b-94b0-4098-9790-a9362b6833a4",
-      "personId": "jinjin-chen",
-      "source": "github",
-      "accountKey": "23572557",
-      "displayName": "唐志强",
-      "createdAt": "2026-09-29T12:05:59.626Z"
     },
     {
       "claimId": "clm_c36ff9c7-121f-4ffa-b914-b2f981a6666f",

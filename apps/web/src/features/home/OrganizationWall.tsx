@@ -184,8 +184,9 @@ function OrganizationTile({ org, index }: { org: OrganizationCard; index: number
 
 /**
  * 独立开发者卡片（伪组织 unattributed，type='individual'）。
- * 中性色 + 个人图标，与组织卡片视觉区分；人数来自 home/summary 的 externalDeveloperCount，
- * 两项贡献量与 top3 取 unattributed 桶（ADR-0016）。
+ * 中性色 + 个人图标，与组织卡片视觉区分；人数来自 home/summary 的 externalDeveloperCount
+ * （ADR-0017 起为**读时派生**：生效归属 = `unattributed` 且非机器人），
+ * 两项贡献量与 top3 取 unattributed 桶（ADR-0016；top3 已由 API 侧排除机器账号，ADR-0017 决策 5）。
  */
 function IndividualTile({
   org,

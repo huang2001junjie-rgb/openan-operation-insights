@@ -24,6 +24,12 @@ const { CandidateService } = await import(pathTo('modules/identity/candidate.ser
 const { OrgRosterService } = await import(pathTo('modules/identity/org-roster.service.js'));
 const { IdentityAuditService } = await import(pathTo('modules/identity/identity-audit.service.js'));
 const { AdminTokenGuard } = await import(pathTo('common/guards/admin-token.guard.js'));
+const {
+  isBotAccount,
+  isIndependentDeveloper,
+  toContributorViews,
+  deriveOrganizationContributions,
+} = await import(pathTo('common/effective-org.js'));
 
 function pathTo(rel) {
   return new URL(`file://${join(dist, rel).replace(/\\/g, '/')}`).href;
@@ -43,12 +49,12 @@ function check(name, condition, detail = '') {
   }
 }
 
-function envelope(data) {
-  return { schemaVersion: 1, updatedAt: new Date().toISOString(), data };
+function envelope(data, schemaVersion = 1) {
+  return { schemaVersion, updatedAt: new Date().toISOString(), data };
 }
 
-function makeRepo(dir, fileName, isValidData) {
-  return new JsonRepository(join(dir, fileName), { fileName, schemaVersion: 1, isValidData });
+function makeRepo(dir, fileName, isValidData, schemaVersion = 1) {
+  return new JsonRepository(join(dir, fileName), { fileName, schemaVersion, isValidData });
 }
 
 function makeRepos(dir, seed) {
@@ -56,7 +62,8 @@ function makeRepos(dir, seed) {
     persons: makeRepo(dir, 'persons.json', validators.isPersonArray),
     claims: makeRepo(dir, 'identity-claims.json', validators.isIdentityClaimArray),
     organizations: makeRepo(dir, 'organizations.json', validators.isOrganizationArray),
-    contributors: makeRepo(dir, 'github-accounts.json', validators.isContributorArray),
+    // v2：github 指标含仓库清单 repoIds（ADR-0017 决策 15），与生产期望版本一致
+    contributors: makeRepo(dir, 'github-accounts.json', validators.isContributorArray, 2),
     confluenceAccounts: makeRepo(
       dir,
       'confluence-accounts.json',
@@ -89,7 +96,7 @@ function makeDataDir(withSources = true) {
   writeFileSync(join(dir, 'identity-claims.json'), JSON.stringify(envelope([]), null, 2));
   writeFileSync(join(dir, 'organizations.json'), JSON.stringify(envelope(ORGS), null, 2));
   if (withSources) {
-    writeFileSync(join(dir, 'github-accounts.json'), JSON.stringify(envelope(CONTRIBUTORS), null, 2));
+    writeFileSync(join(dir, 'github-accounts.json'), JSON.stringify(envelope(CONTRIBUTORS, 2), null, 2));
     writeFileSync(join(dir, 'confluence-accounts.json'), JSON.stringify(envelope(CONFLUENCE_ACCOUNTS), null, 2));
     writeFileSync(join(dir, 'meetings.json'), JSON.stringify(envelope(MEETINGS), null, 2));
   }
@@ -259,9 +266,153 @@ async function scenarioRoster() {
   );
 }
 
-// ── 场景 5：令牌守卫 ───────────────────────────────────────────────
+// ── 场景 5：生效归属派生（ADR-0017）─────────────────────────────────
+async function scenarioDerivation() {
+  console.log('\n[5] 生效归属派生：认领优先 / 全覆盖 / repos 并集 / bot 处置');
+
+  // 账号级 4 条，刻意让 unattributed 桶的「并集」与「求和」结果不同（2 vs 3），锁死 repos 语义
+  const contributors = [
+    {
+      contributorId: 'chuanyuchen',
+      githubId: 22441124,
+      name: 'Chuanyu Chen',
+      orgId: 'huawei',
+      avatarUrl: 'https://example.com/a.png',
+      github: { pullRequests: 2, commits: 10, issues: 1, linesChanged: 100, repos: 2, repoIds: ['openan/core', 'openan/docs'] },
+    },
+    {
+      contributorId: 'cnafan',
+      githubId: 9312901,
+      name: 'cnafan',
+      orgId: null,
+      github: { pullRequests: 1, commits: 19, issues: 0, linesChanged: 30, repos: 2, repoIds: ['openan/core', 'openan/kernel'] },
+    },
+    {
+      contributorId: 'dep-bot',
+      githubId: 0,
+      name: 'dependabot',
+      orgId: null,
+      github: { pullRequests: 3, commits: 3, issues: 0, linesChanged: 0, repos: 1, repoIds: ['openan/core'] },
+    },
+    {
+      contributorId: 'solo-x',
+      githubId: 777,
+      name: 'Solo X',
+      orgId: 'huawei',
+      github: { pullRequests: 1, commits: 5, issues: 0, linesChanged: 10, repos: 1, repoIds: ['openan/core'] },
+    },
+  ];
+
+  const dir = makeDataDir(false);
+  writeFileSync(join(dir, 'github-accounts.json'), JSON.stringify(envelope(contributors, 2), null, 2));
+
+  // 版本守卫：v1 文件（github 无 repoIds）必须被拒，而不是静默按空集合处理
+  const legacyDir = makeDataDir(false);
+  writeFileSync(
+    join(legacyDir, 'github-accounts.json'),
+    JSON.stringify(
+      envelope([
+        {
+          contributorId: 'legacy',
+          githubId: 1,
+          name: 'Legacy',
+          orgId: null,
+          github: { pullRequests: 1, commits: 1, issues: 0, linesChanged: 1, repos: 1 },
+        },
+      ]),
+      null,
+      2,
+    ),
+  );
+  await expectCode(
+    'v1 账号文件（缺 repoIds）→ 50001',
+    () => makeRepo(legacyDir, 'github-accounts.json', validators.isContributorArray, 2).read(),
+    50001,
+  );
+
+  const repos = makeRepos(dir);
+  repos.dir = dir;
+  const svc = makePersonService(repos);
+  // 归属只能经 updatePerson 设置（createPerson 的入参不含 orgId）
+  const person = await svc.createPerson({ displayName: 'Chuanyu Chen' });
+  await svc.updatePerson(person.personId, { orgId: 'orange' });
+  await svc.createClaim({
+    personId: person.personId,
+    source: 'github',
+    accountKey: '22441124',
+    displayName: 'chuanyuchen',
+  });
+
+  const claims = (await repos.claims.read()).data;
+  const persons = (await repos.persons.read()).data;
+  const { views, warnings } = toContributorViews(contributors, claims, persons);
+  const viewOf = (id) => views.find((view) => view.contributorId === id);
+  check('认领索引无告警（githubId 均能对应到自然人）', warnings.length === 0, warnings.join('; ') || 'empty');
+  const derived = deriveOrganizationContributions(ORGS, views, '2026-10-28T00:00:00Z');
+  const bucketOf = (orgId) => derived.find((item) => item.orgId === orgId)?.github;
+
+  check(
+    '认领改写归属：采集口径 huawei → 生效 orange（claim）',
+    viewOf('chuanyuchen').effectiveOrgId === 'orange' &&
+      viewOf('chuanyuchen').orgSource === 'claim' &&
+      viewOf('chuanyuchen').personId === person.personId,
+    `${viewOf('chuanyuchen').effectiveOrgId}/${viewOf('chuanyuchen').orgSource}`,
+  );
+  check(
+    '未认领账号回落采集口径（collection）',
+    viewOf('solo-x').effectiveOrgId === 'huawei' && viewOf('solo-x').orgSource === 'collection',
+    `${viewOf('solo-x').effectiveOrgId}/${viewOf('solo-x').orgSource}`,
+  );
+  check(
+    '采集未归属 → 伪组织（unattributed）',
+    viewOf('cnafan').effectiveOrgId === 'unattributed' && viewOf('cnafan').orgSource === 'unattributed',
+    viewOf('cnafan').effectiveOrgId,
+  );
+
+  check(
+    '全覆盖：桶数 = 组织档案条数（0 值桶也在）',
+    derived.length === ORGS.length && Boolean(bucketOf('orange')),
+    `buckets=${derived.map((item) => item.orgId).join(',')}`,
+  );
+  const bucketCommits = derived.reduce((sum, item) => sum + item.github.commits, 0);
+  const accountCommits = contributors.reduce((sum, item) => sum + item.github.commits, 0);
+  check(
+    '恒等式：组织级 commits 合计 = 账号级合计',
+    bucketCommits === accountCommits && bucketCommits === 37,
+    `${bucketCommits} vs ${accountCommits}`,
+  );
+
+  check(
+    '组织级 repos 取并集而非求和（unattributed = 2，求和会是 3）',
+    bucketOf('unattributed').repos === 2,
+    `repos=${bucketOf('unattributed').repos}`,
+  );
+  check(
+    '组织级 repos 随认领迁移（orange = 2 / huawei = 1）',
+    bucketOf('orange').repos === 2 && bucketOf('huawei').repos === 1,
+    `orange=${bucketOf('orange').repos} huawei=${bucketOf('huawei').repos}`,
+  );
+
+  check(
+    'bot 的量计入归属桶（unattributed commits = 22）',
+    bucketOf('unattributed').commits === 22,
+    `commits=${bucketOf('unattributed').commits}`,
+  );
+  check(
+    'bot 判定：githubId=0 命中，人类账号不命中',
+    isBotAccount(contributors[2]) && !isBotAccount(contributors[3]),
+    'dep-bot=true / solo-x=false',
+  );
+  check(
+    '独立开发者只数人不含 bot（1 人 = cnafan）',
+    views.filter(isIndependentDeveloper).length === 1 && isIndependentDeveloper(viewOf('cnafan')),
+    `count=${views.filter(isIndependentDeveloper).length}`,
+  );
+}
+
+// ── 场景 6：令牌守卫 ───────────────────────────────────────────────
 function scenarioGuard() {
-  console.log('\n[5] AdminTokenGuard');
+  console.log('\n[6] AdminTokenGuard');
   const ctx = (headers) => ({ switchToHttp: () => ({ getRequest: () => ({ headers }) }) });
 
   const disabled = new AdminTokenGuard({ get: () => '' });
@@ -289,6 +440,7 @@ try {
   await scenarioClaims();
   await scenarioCandidates();
   await scenarioRoster();
+  await scenarioDerivation();
   scenarioGuard();
 } catch (error) {
   failed += 1;

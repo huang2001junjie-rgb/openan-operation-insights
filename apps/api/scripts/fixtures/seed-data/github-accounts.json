@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "updatedAt": "2026-09-18T09:00:00Z",
   "data": [
     {
@@ -24,7 +24,8 @@
         "commits": 9,
         "issues": 2,
         "linesChanged": 300,
-        "repos": 2
+        "repos": 2,
+        "repoIds": ["openan-labs/core", "openan-labs/legacy-a"]
       }
     },
     {
@@ -40,7 +41,14 @@
         "commits": 77,
         "issues": 8,
         "linesChanged": 4200,
-        "repos": 5
+        "repos": 5,
+        "repoIds": [
+          "openan-labs/core",
+          "openan-labs/docs",
+          "openan-labs/kernel",
+          "openan-labs/legacy-a",
+          "openan-labs/legacy-b"
+        ]
       }
     },
     {
@@ -56,7 +64,8 @@
         "commits": 11,
         "issues": 0,
         "linesChanged": 220,
-        "repos": 3
+        "repos": 3,
+        "repoIds": ["openan-labs/core", "openan-labs/legacy-b", "openan-labs/legacy-c"]
       }
     }
   ]

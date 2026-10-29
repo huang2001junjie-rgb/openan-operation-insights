@@ -1,6 +1,6 @@
 import { Logger } from '@nestjs/common';
 import { existsSync } from 'node:fs';
-import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
 import { dirname, join, basename } from 'node:path';
 import { ErrorCode } from '../common/constants/error-code';
 import { DomainException } from '../common/exceptions/domain.exception';
@@ -31,6 +31,8 @@ export class JsonRepository<T> {
   private readonly filePath: string;
   private readonly options: JsonRepositoryOptions<T>;
   private cache: JsonFileEnvelope<T> | null = null;
+  /** 缓存对应的文件 mtime（毫秒）；`null` = 无缓存或 stat 失败 */
+  private cacheMtimeMs: number | null = null;
   /** 每条记录一条写链，保证同一文件的写入串行 */
   private writeChain: Promise<unknown> = Promise.resolve();
   private degraded = false;
@@ -50,13 +52,26 @@ export class JsonRepository<T> {
     return this.degraded;
   }
 
+  /**
+   * 读取（带 **mtime 失效**的内存缓存，ADR-0017 决策 12）。
+   *
+   * 缓存键是文件 mtime：外部进程（独立运行的采集器、运营手工改档案、身份控制台写入）改写文件后，
+   * 下一个请求即读到新值——这是「读时派生 + 改完即生效」的前提。此前缓存**永不失效**且
+   * `invalidate()` 全库零调用，改完认领边必须重启进程才生效。
+   *
+   * **不用 TTL**：TTL 只是把新鲜度重新绑回时间窗，正是本轮要消除的性质。
+   * 缓存的是**原子事实文件**而非派生结果，故派生值永远基于最新输入。
+   */
   async read(): Promise<JsonFileEnvelope<T>> {
-    if (this.cache) {
+    const mtimeMs = await this.statMtimeMs();
+
+    if (this.cache && mtimeMs !== null && mtimeMs === this.cacheMtimeMs) {
       return structuredClone(this.cache);
     }
 
     const envelope = await this.readFromDisk();
     this.cache = envelope;
+    this.cacheMtimeMs = mtimeMs;
     return structuredClone(envelope);
   }
 
@@ -69,6 +84,7 @@ export class JsonRepository<T> {
       };
       await this.writeToDisk(envelope);
       this.cache = envelope;
+      this.cacheMtimeMs = await this.statMtimeMs();
       this.degraded = false;
     });
   }
@@ -84,12 +100,28 @@ export class JsonRepository<T> {
       };
       await this.writeToDisk(envelope);
       this.cache = envelope;
+      this.cacheMtimeMs = await this.statMtimeMs();
       this.degraded = false;
     });
   }
 
+  /** 丢弃缓存（下一次 `read()` 强制重读磁盘） */
   invalidate(): void {
     this.cache = null;
+    this.cacheMtimeMs = null;
+  }
+
+  /**
+   * 取文件 mtime；文件缺失或不可访问时返回 `null`。
+   * 返回 `null` 时**不复用缓存**，转由 `readFromDisk()` 统一抛 `DATA_CORRUPTED` 并置降级位——
+   * 数据文件消失属于必须暴露的故障，不能靠旧缓存悄悄兜住。
+   */
+  private async statMtimeMs(): Promise<number | null> {
+    try {
+      return (await stat(this.filePath)).mtimeMs;
+    } catch {
+      return null;
+    }
   }
 
   /** 把任务追加到写链尾部，前序任务结束后才执行 */

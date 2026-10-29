@@ -1,8 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import {
+  AccountGithubMetrics,
   Contributor,
-  GithubMetrics,
-  HomeFileData,
   Organization,
   OrganizationContribution,
 } from '../../contract/entities';
@@ -10,7 +9,6 @@ import { JsonRepository } from '../../repositories/json-repository';
 import {
   CONTRIBUTIONS_REPOSITORY,
   CONTRIBUTORS_REPOSITORY,
-  HOME_REPOSITORY,
   ORGANIZATIONS_REPOSITORY,
 } from '../../repositories/repository.tokens';
 import { ORG_UNATTRIBUTED, UNATTRIBUTED_DISPLAY_NAME } from '../collector.constants';
@@ -50,7 +48,11 @@ interface MetricsAggregate {
   linesChanged: number;
   /** 已累计的仓库集合（增量模式下与基线求并集） */
   repos: Set<string>;
-  /** 兜底下限：集合不可用（如元信息缺失升级而来）时退化为已入库的仓库数 */
+  /**
+   * 兜底下限：集合不可用（如元信息缺失升级而来）时退化为已入库的仓库数。
+   * 仅**组织维度**需要（`github-organizations.json` 只存计数）；个人维度自 v2 起集合随业务文件
+   * 自持（`github.repoIds`），恒传 0（ADR-0017 决策 15）。
+   */
   repoFloor: number;
 }
 
@@ -84,8 +86,6 @@ export class GithubCollectorService {
     private readonly contributions: JsonRepository<OrganizationContribution[]>,
     @Inject(CONTRIBUTORS_REPOSITORY)
     private readonly contributors: JsonRepository<Contributor[]>,
-    @Inject(HOME_REPOSITORY)
-    private readonly home: JsonRepository<HomeFileData>,
     private readonly syncState: GithubSyncStateStore,
   ) {}
 
@@ -119,7 +119,7 @@ export class GithubCollectorService {
     );
 
     const seed = this.buildSeed(previousState, baseline);
-    const personSeed = this.buildContributorSeed(previousState, contributorBaseline);
+    const personSeed = this.buildContributorSeed(contributorBaseline);
     const { aggregates, personAggregates, authors, unattributedLogins, emailAttributedCount } =
       this.aggregate(fetched.records, aliasIndex, emailDomainIndex, seed, personSeed);
 
@@ -283,15 +283,16 @@ export class GithubCollectorService {
     return seed;
   }
 
-  /** 个人维度增量基线（ADR-0003）：把 github-accounts.json 已入库的 github 指标作为聚合初值 */
-  private buildContributorSeed(
-    previousState: GithubSyncState,
-    baseline: Contributor[] | null,
-  ): Map<string, MetricsAggregate> {
+  /**
+   * 个人维度增量基线（ADR-0003）：把 github-accounts.json 已入库的 github 指标作为聚合初值。
+   *
+   * 不读 `GithubSyncState`：仓库集合自 v2 起随业务文件落盘（`github.repoIds`，ADR-0017 决策 15），
+   * 基线自持 ⇒ 元信息里的 `personRepos` 不再是必需输入（丢失状态文件也不会让个人仓库数退化）。
+   */
+  private buildContributorSeed(baseline: Contributor[] | null): Map<string, MetricsAggregate> {
     const seed = new Map<string, MetricsAggregate>();
     if (!baseline) return seed;
 
-    const repoIndex = previousState.personRepos ?? {};
     baseline.forEach((item) => {
       if (!item.github) return;
       seed.set(item.contributorId, {
@@ -300,8 +301,10 @@ export class GithubCollectorService {
         commits: item.github.commits ?? 0,
         issues: item.github.issues,
         linesChanged: item.github.linesChanged,
-        repos: new Set(repoIndex[item.contributorId] ?? []),
-        repoFloor: item.github.repos,
+        // 仓库集合自 v2 起随业务文件落盘（ADR-0017 决策 15），不再依赖元信息里的 personRepos；
+        // 集合已自持 ⇒ 个人维度无需 repoFloor 兜底（恒 0），repos 严格 = repoIds.length
+        repos: new Set(item.github.repoIds),
+        repoFloor: 0,
       });
     });
     return seed;
@@ -515,23 +518,17 @@ export class GithubCollectorService {
     await this.contributions.write(contributions);
     written.push(this.contributions.label);
 
-    // 独立开发者人数口径：github-accounts.json 中 orgId 为空的条数（见 04 文档 §3.7）
-    const counters = { externalDeveloperCount: 0 };
-    await this.contributors.update((current) => {
-      const merged = this.mergeContributors(current, authors, personAggregates, mode);
-      counters.externalDeveloperCount = merged.filter((item) => !item.orgId).length;
-      return merged;
-    });
+    // 账号级原子事实：orgId 是**采集口径**（aliases.github → emailDomains → null），
+    // 自此只作兜底归属与审计线索；对外展示值一律由 API **读时派生**（ADR-0017 决策 4 / 13）。
+    await this.contributors.update((current) =>
+      this.mergeContributors(current, authors, personAggregates, mode),
+    );
     written.push(this.contributors.label);
 
-    await this.home.update((current) => ({
-      ...current,
-      externalDeveloperCount: {
-        ...current.externalDeveloperCount,
-        value: counters.externalDeveloperCount,
-      },
-    }));
-    written.push(this.home.label);
+    // 独立开发者人数**不再由采集器回填**（ADR-0017 决策 13）：
+    // 该指标已改为 API 读时派生（生效归属为 unattributed 且非机器人的账号数），
+    // `home.json` 亦已移除该字段（schemaVersion 2）。采集器不再持有 HOME_REPOSITORY，
+    // 职责收缩为「只写原子事实 + 基线快照」，不再承担展示口径的计算。
 
     return written;
   }
@@ -577,15 +574,20 @@ export class GithubCollectorService {
     const merged = [...current];
     const index = new Map(merged.map((item, position) => [item.contributorId, position]));
 
-    const metricsOf = (contributorId: string): GithubMetrics | undefined => {
+    const metricsOf = (contributorId: string): AccountGithubMetrics | undefined => {
       const bucket = personAggregates.get(contributorId);
       if (!bucket) return undefined;
+      // 仓库清单落盘（ADR-0017 决策 15）：组织级 repos 是去重数，只能由账号级清单取并集得出。
+      // 账号级 repos 恒等于 repoIds.length（个人维度不再需要 repoFloor 兜底：集合已随业务文件自持，
+      // 增量基线直接从中恢复，不依赖 .sync-state.json 的 personRepos）
+      const repoIds = [...bucket.repos].sort();
       return {
         pullRequests: bucket.pullRequests,
         commits: bucket.commits,
         issues: bucket.issues,
         linesChanged: bucket.linesChanged,
-        repos: Math.max(bucket.repos.size, bucket.repoFloor),
+        repos: repoIds.length,
+        repoIds,
       };
     };
 

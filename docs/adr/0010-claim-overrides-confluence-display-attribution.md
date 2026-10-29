@@ -1,6 +1,6 @@
 # ADR-0010：人工认领覆盖 Confluence 展示口径（生效归属读时派生）
 
-- **状态**：✅ 已接受（2026-09-28）
+- **状态**：✅ 已接受（2026-09-28）— 部分取代 [ADR-0008](./0008-org-person-data-grain-and-attribution.md) 决策 3 在 Confluence 侧的效力；GitHub 侧由 [ADR-0017](./0017-github-effective-attribution-read-time-derivation.md)（2026-10-28）按同构方式收敛，本 ADR 决策 1–6 的语义自此适用于全库，决策 6「GitHub 侧不改动」一句就此失效。
 - **日期**：2026-09-28
 - **关联文档**：04 §1 / §3.11 / §4.10 / §5.2 / §5.3.4 / §5.3.11 / §5.3.16 / §6.2；02 §4 / §7.1 / §8.2；07 §1.2 / §2.2 / §3.2.1 / §4；ADR-0008（决策 3 部分被本 ADR 取代）/ ADR-0009
 - **决策者**：项目负责人（R2-1～R2-7、R3-1～R3-6 逐条拍板）
@@ -77,7 +77,7 @@ ADR-0008 决策 3 让「采集器自动归属（展示口径）」与「人工 `
 
 ### 遗留技术债（登记）
 
-1. GitHub 侧仍是「认领不影响展示」+ 组织级 / 账号级双写，与本 ADR 的 Confluence 处理**不一致**；收敛需另立 ADR。
+1. GitHub 侧仍是「认领不影响展示」+ 组织级 / 账号级双写，与本 ADR 的 Confluence 处理**不一致**；收敛需另立 ADR。（**已结清（2026-10-28）**：[ADR-0017](./0017-github-effective-attribution-read-time-derivation.md) 把 GitHub 侧收敛为同构的生效归属读时派生，`buildGithubClaimIndex` / `resolveGithubEffectiveOrg` / `deriveOrganizationContributions` 与本 ADR 的 Confluence 函数并列；两平台自此共用一套兜底链语义。组织级 / 账号级**落盘**双写结构仍在，转登记为 ADR-0017 遗留债 1。）
 2. `confluence-organizations.json` 降级为快照后，若被误当权威会读到旧口径；已在 04 / 07 标注「非读路径来源」。
 
 ## 备注

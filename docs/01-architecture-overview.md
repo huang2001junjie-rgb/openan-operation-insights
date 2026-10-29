@@ -229,10 +229,15 @@ flowchart TB
 flowchart LR
   S["ActivityService<br/>（业务逻辑）"] -->|依赖| P["ContributionPort<br/>（接口）"]
   P -->|DI Token 绑定| A1["JsonContributionProvider<br/>（唯一实现）"]
-  A1 --> D[("data/github-organizations.json")]
+  A1 --> D[("data/github-accounts.json<br/>账号级原子事实（v2 含 repoIds）")]
+  A1 --> K[("identity-claims.json + persons.json<br/>认领边 → 生效归属")]
+  A1 --> O[("organizations.json<br/>决定桶的全覆盖与顺序")]
   G[("GitHub API")] -->|GraphQL| C["collector/<br/>（独立采集上下文）"]
   C -->|映射后写入，唯一写入方| D
+  C -.->|同轮另写| SN[("github-organizations.json<br/>基线快照，读路径不用")]
 ```
+
+> ⚠️ 图中 `JsonContributionProvider` 的三个输入自 **ADR-0017**（v1.25）起才是这个样子：组织级贡献量不再读 `github-organizations.json`，而是把**账号级原子事实**按**生效归属**（认领边派生的 `Person.orgId` ?? 采集口径 `orgId` ?? `unattributed`）**每请求派生**，并用组织档案决定桶的全覆盖与顺序。端口边界未变——变的只是适配器读了哪几个文件，Service 与前端无感知，这正是本原则的收益。Confluence 侧同构（ADR-0010）。
 
 **收益**：
 
@@ -371,16 +376,22 @@ openan-operation-insights/
 │   ├── 04-data-and-api-contract.md
 │   └── 05-integration-roadmap.md
 │
-├── data/                                  # JSON 种子数据（运行时被后端读取）
+├── data/                                  # JSON 数据（运行时被后端读取；逐文件独立 schemaVersion，不匹配即 fail-fast）
 │   ├── source/                            # 人工维护的源台账（采集器输入，非契约文件）
 │   │   └── meetings.xlsx                  # 例会参会台账（运营手工更新）
-│   ├── home.json                          # 首页指标 + 下一次峰会
+│   ├── home.json                          # 首页指标 + 下一次峰会（v2：不再落 externalDeveloperCount，改读时派生）
 │   ├── organizations.json                 # 组织档案（TSC 成员单位 / 参与单位 / 运营单位 / 独立开发者伪组织）
-│   ├── github-organizations.json          # 组织 × 贡献指标（GitHub 类）
-│   ├── confluence-organizations.json      # 组织 × Confluence 类指标
-│   ├── github-accounts.json               # 个人贡献者档案（GitHub 账号维度）
+│   ├── github-accounts.json               # 个人贡献者档案（GitHub 账号维度）— **读路径的原子事实**（v2：含仓库清单 repoIds）
+│   ├── github-organizations.json          # 组织 × 贡献指标（GitHub 类）— **基线快照**，读路径不用（ADR-0017）
+│   ├── confluence-accounts.json           # Confluence 账号级原子事实（v4，含 orgSource / effectiveOrgId 派生源）
+│   ├── confluence-organizations.json      # 组织 × Confluence 类指标 — 同为**基线快照**（ADR-0010）
+│   ├── persons.json                       # 自然人档案（认领后的归属真相）
+│   ├── identity-claims.json               # 账号 ↔ 自然人**认领边**（生效归属的人工优先来源，ADR-0006/0010/0017）
 │   ├── summits.json                       # 峰会列表 + 详情
-│   └── meetings.json                      # 例会参会矩阵（人 × 日期）
+│   ├── meetings.json                      # 例会参会矩阵（人 × 日期）
+│   ├── .sync-state.json                   # GitHub 采集游标（非契约；personRepos 已降为审计 / 回填来源）
+│   ├── .sync-state.confluence.json        # Confluence 采集游标（ADR-0009，与 GitHub 状态互不干扰）
+│   └── .snapshots/                        # 采集前自动快照（保留最近 7 份，用于回滚）
 │
 ├── apps/
 │   ├── web/                               # React 18 + TS + Vite

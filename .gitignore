@@ -1,17 +1,27 @@
 # 依赖
 node_modules/
+.pnp
+.pnp.js
 
 # 构建产物
 dist/
+dist-ssr/
 build/
+out/
 *.tsbuildinfo
 
-# 测试覆盖率
+# 测试 / 覆盖率
 coverage/
+.nyc_output/
 
 # 日志
 *.log
+logs/
 npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 
 # 环境变量（模板 .env.example 保留入库）
 .env
@@ -22,21 +32,39 @@ npm-debug.log*
 .idea/
 .vscode/*
 !.vscode/extensions.json
+.history/
+*.swp
+*.swo
 
 # 操作系统
 .DS_Store
 Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
 
 # 前端工具缓存
 .vite/
+.turbo/
 .eslintcache
+.stylelintcache
+*.pid
+*.pid.lock
+*.tgz
+
+# 浏览器自动化调试产物
+.playwright-cli/
 
 # AI 助手本地工作目录（任务计划等）
 .codebuddy/
 
 # 采集器运行时状态（游标/配额），按环境而异，不入库
-data/.sync-state.json
+# 覆盖 GitHub 版 .sync-state.json 与 Confluence 版 .sync-state.confluence.json
+data/.sync-state*.json
+# 身份控制台审计流水（每次写操作追加，仓库必脏）
+data/.identity-audit.jsonl
 # 数据快照
 data/.snapshots/
+# 原子写盘的临时文件（JsonRepository / 回填脚本，正常路径下 rename 后即消失）
+data/.*.tmp
 # 手动验证采集器时的临时数据目录（collector-check.mjs 用系统临时目录，不受影响）
 .tmp-collector*/

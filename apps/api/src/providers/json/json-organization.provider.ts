@@ -1,22 +1,17 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Organization } from '../../contract/entities';
+import { byDisplayOrder } from '../../common/org-order';
 import { JsonRepository } from '../../repositories/json-repository';
 import { ORGANIZATIONS_REPOSITORY } from '../../repositories/repository.tokens';
 import { ListOrganizationsQuery, OrganizationPort } from '../ports/organization.port';
 
 /**
- * 全站组织列表排序（两个 scope 共用，ADR-0016）：`displayOrder` 升序（运营人工排位，越小越靠前）；
- * 同值或缺失者排最后，按 `name` 升序（`localeCompare(…, 'zh-Hans-CN')`）兜底，稳定可预测。
+ * 全站组织列表排序（两个 scope 共用，ADR-0016）：见 `common/org-order.ts` 的 `byDisplayOrder`。
  *
  * ⚠️ 排序在本 provider 一处完成：`OrganizationService.listOrganizations()` 对 `scope=contributing`
  * 直接透传本顺序、不再二次排序（原 `TYPE_WEIGHT` 类型梯队与综合贡献分降序均已退役，见 ADR-0016）。
+ * 组织级投影（`json-contribution` / `json-wiki`）复用同一比较器，保证三处顺序一致。
  */
-const byDisplayOrder = (a: Organization, b: Organization): number => {
-  const orderA = a.displayOrder ?? Number.MAX_SAFE_INTEGER;
-  const orderB = b.displayOrder ?? Number.MAX_SAFE_INTEGER;
-  if (orderA !== orderB) return orderA - orderB;
-  return a.name.localeCompare(b.name, 'zh-Hans-CN');
-};
 
 @Injectable()
 export class JsonOrganizationProvider implements OrganizationPort {

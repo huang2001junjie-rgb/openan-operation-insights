@@ -144,6 +144,15 @@ function shortGithub(actual) {
   return `PR ${actual.pullRequests} / 提交 ${actual.commits ?? 0} / Issue ${actual.issues} / 行数 ${actual.linesChanged} / 仓库 ${actual.repos}`;
 }
 
+/** repoIds 不变量的诊断摘要：`id:repos/repoIds.length`，纯档案账号（无指标）标注出来 */
+function repoIdsSummary(githubById) {
+  return [...githubById.entries()]
+    .map(([id, metrics]) =>
+      metrics ? `${id}:${metrics.repos}/${metrics.repoIds?.length ?? '缺 repoIds'}` : `${id}:(无 github)`,
+    )
+    .join(' ');
+}
+
 function stripTimestamps(value) {
   if (Array.isArray(value)) return value.map(stripTimestamps);
   if (value && typeof value === 'object') {
@@ -168,7 +177,12 @@ function totalsOf(map) {
   return totals;
 }
 
-/** 未归属组织数：github-accounts.json 中 orgId 为空的条数（04 文档 §3.7 口径） */
+/**
+ * **采集口径**下未归属账号数：github-accounts.json 中 `orgId` 为空的条数。
+ *
+ * ⚠️ 这不是对外展示口径（ADR-0017）：展示口径是**生效归属**（人工认领优先），由 API 读时派生。
+ * 本函数只用于断言「该计数不再落盘到 home.json」。
+ */
 function externalDeveloperCount(dir) {
   return readJson(join(dir, 'github-accounts.json')).data.filter((item) => !item.orgId).length;
 }
@@ -334,6 +348,18 @@ function main() {
       shortGithub(githubById.get('aria-dev')),
     );
     check(
+      '账号级 repoIds 落盘且 repos 恒等于其长度（ADR-0017 决策 15）',
+      [...githubById.values()]
+        .filter(Boolean)
+        .every((metrics) => Array.isArray(metrics.repoIds) && metrics.repos === metrics.repoIds.length),
+      repoIdsSummary(githubById),
+    );
+    check(
+      '全量模式 repoIds = 本轮命中的仓库去重升序（aria-dev = openan-labs/core）',
+      JSON.stringify(githubById.get('aria-dev')?.repoIds) === JSON.stringify(['openan-labs/core']),
+      JSON.stringify(githubById.get('aria-dev')?.repoIds),
+    );
+    check(
       '全量模式：本轮无记录的 kai-zhou 指标移除、档案保留',
       githubById.get('kai-zhou') === undefined && Boolean(byId.get('kai-zhou')),
       'github 缺失、档案仍在',
@@ -350,16 +376,19 @@ function main() {
       'stdout 命中关键字',
     );
 
+    // 独立开发者人数自此**不由采集器回填**（ADR-0017 决策 13）：改为 API 读时派生，
+    // home.json 已移除该字段并升至 schemaVersion 2。这里断言「采集器根本没碰 home.json」。
     const home = readJson(join(fullDir, 'home.json'));
+    const homeSeed = readJson(join(seedDir, 'home.json'));
     check(
-      'externalDeveloperCount = 2（orgId 为空的贡献者数）',
-      home.data.externalDeveloperCount.value === 2,
-      `value=${home.data.externalDeveloperCount.value}`,
+      '采集器不再写 home.json（内容与合成种子完全一致）',
+      JSON.stringify(home) === JSON.stringify(homeSeed),
+      `schemaVersion=${home.schemaVersion}、data 键=${Object.keys(home.data).join('/')}`,
     );
     check(
-      'home.json 与 github-accounts.json 口径一致',
-      externalDeveloperCount(fullDir) === home.data.externalDeveloperCount.value,
-      `contributors 空 orgId=${externalDeveloperCount(fullDir)}`,
+      'home.json 无 externalDeveloperCount；采集口径未归属账号数 = 2（仅存于账号级，不落首页）',
+      !('externalDeveloperCount' in home.data) && externalDeveloperCount(fullDir) === 2,
+      `orgId 为空的账号数=${externalDeveloperCount(fullDir)}`,
     );
 
     const fixtureEmails = collectFixtureEmails();
@@ -407,7 +436,9 @@ function main() {
       unattributedLogins: ['aria-dev', 'solo-hacker'],
       recordCount: 0,
       orgRepos: {},
-      personRepos: { 'aria-dev': ['openan-labs/legacy-a'] },
+      // 刻意留空：个人仓库集合自 v2 起由业务文件的 github.repoIds 自持（ADR-0017 决策 15），
+      // 元信息缺失也不该让个人仓库数退化（组织维度仍依赖 orgRepos，故另测）
+      personRepos: {},
     });
 
     const output = runCollector(dir, ['--mode=incremental']);
@@ -482,7 +513,7 @@ function main() {
       shortGithub(githubById.get('aria-dev')),
     );
     check(
-      '个人叠加：solo-hacker 基线 5/11/0/220/3 叠加为 6/13/0/260/3（仓库数走兜底下限）',
+      '个人叠加：solo-hacker 基线 5/11/0/220/3 叠加为 6/13/0/260/3（仓库数 = 基线 repoIds ∪ 本轮）',
       sameGithub(githubById.get('solo-hacker'), {
         pullRequests: 6,
         commits: 13,
@@ -514,6 +545,21 @@ function main() {
       }),
       shortGithub(githubById.get('nora-kim')),
     );
+    check(
+      '增量 repoIds = 基线 ∪ 本轮（aria-dev 2 / solo-hacker 3 / kai-zhou 保留 5）',
+      JSON.stringify(githubById.get('aria-dev')?.repoIds) ===
+        JSON.stringify(['openan-labs/core', 'openan-labs/legacy-a']) &&
+        githubById.get('solo-hacker')?.repoIds.length === 3 &&
+        githubById.get('kai-zhou')?.repoIds.length === 5,
+      `aria=${JSON.stringify(githubById.get('aria-dev')?.repoIds)} solo=${githubById.get('solo-hacker')?.repoIds.length} kai=${githubById.get('kai-zhou')?.repoIds.length}`,
+    );
+    check(
+      '增量下 repos 仍恒等于 repoIds.length（个人维度不依赖 personRepos 兜底）',
+      [...githubById.values()]
+        .filter(Boolean)
+        .every((metrics) => Array.isArray(metrics.repoIds) && metrics.repos === metrics.repoIds.length),
+      repoIdsSummary(githubById),
+    );
 
     const totals = totalsOf(map);
     check(
@@ -539,7 +585,7 @@ function main() {
       JSON.stringify(state.orgRepos?.['openan-labs']),
     );
     check(
-      'personRepos 记录个人仓库集合（aria-dev = 基线 ∪ 本轮）',
+      'personRepos 记录个人仓库集合（aria-dev = 基线 repoIds ∪ 本轮，不依赖状态文件）',
       Array.isArray(state.personRepos?.['aria-dev']) &&
         state.personRepos['aria-dev'].includes('openan-labs/legacy-a') &&
         state.personRepos['aria-dev'].includes('openan-labs/core'),

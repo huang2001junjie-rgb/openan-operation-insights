@@ -139,7 +139,12 @@ export function isConfluenceAccountArray(value: unknown): value is ConfluenceAcc
   return Array.isArray(value) && value.every(isConfluenceAccount);
 }
 
-/** 贡献者内嵌的 GitHub 指标（ADR-0003）：整体可选，存在时字段校验与组织贡献一致（commits 兼容缺失） */
+/**
+ * 贡献者内嵌的 GitHub 指标（ADR-0003）：整体可选，存在时字段校验与组织贡献一致（commits 兼容缺失）。
+ *
+ * `repoIds` 为 v2 新增（ADR-0017 决策 15）：组织级 `repos` 是去重数，只能由账号级仓库清单取并集得出，
+ * 故随 `github-accounts.json` 的 schemaVersion 提升为**必填**（不兼容变更，存量数据由回填脚本补齐）。
+ */
 function isGithubMetrics(value: unknown): value is Contributor['github'] {
   if (!isObject(value)) return false;
   return (
@@ -147,7 +152,8 @@ function isGithubMetrics(value: unknown): value is Contributor['github'] {
     (value.commits === undefined || isNumber(value.commits)) &&
     isNumber(value.issues) &&
     isNumber(value.linesChanged) &&
-    isNumber(value.repos)
+    isNumber(value.repos) &&
+    isStringArray(value.repoIds)
   );
 }
 
@@ -224,11 +230,16 @@ export function isMeetingAttendanceMatrix(value: unknown): value is MeetingAtten
   return value.updatedAt === undefined || isString(value.updatedAt);
 }
 
+/**
+ * `home.json` 的 data 校验（schemaVersion 2，ADR-0017）。
+ *
+ * **不校验 `externalDeveloperCount`**：该字段已从落盘结构中移除，独立开发者人数改为读时派生。
+ * 校验器对多余字段一律放行，故历史文件残留该字段不会 fail-fast（残留值也不再被任何读路径使用）。
+ */
 export function isHomeFileData(value: unknown): value is HomeFileData {
   if (!isObject(value)) return false;
   return (
     isMetricValue(value.partnerCount) &&
-    isMetricValue(value.externalDeveloperCount) &&
     isMetricValue(value.summitCount) &&
     isMetricValue(value.useCaseCount) &&
     isNullableString(value.nextSummitId)

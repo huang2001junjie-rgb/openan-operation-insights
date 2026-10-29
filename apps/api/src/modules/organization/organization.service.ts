@@ -67,10 +67,11 @@ export class OrganizationService {
     const contributionByOrg = new Map(contributions.map((item) => [item.orgId, item]));
     const wikiByOrg = new Map(wiki.map((item) => [item.orgId, item]));
 
-    // GitHub 维度 top3 分桶：orgId ?? 'unattributed'（与 json-contributor-contribution.provider 分桶口径一致）
+    // GitHub 维度 top3 分桶：effectiveOrgId（读时派生的生效归属，ADR-0017），与 Confluence 维度同构。
+    // 端口已排除机器账号（人物口径，ADR-0017 决策 5），故此处无需再过滤 bot。
     const githubTopByOrg = new Map<string, OrganizationTopContributor[]>();
     for (const account of githubAccounts) {
-      const orgId = account.orgId ?? 'unattributed';
+      const orgId = account.effectiveOrgId;
       const bucket = githubTopByOrg.get(orgId) ?? [];
       bucket.push({
         name: account.name,

@@ -132,6 +132,8 @@ inactive
 | `confluence-organizations.json` | 12 | `meetings.json` | 1 |
 | `persons.json` | 30 | `identity-claims.json` | 48 |
 
+> ⚠️ 上表是**那次部署时点**的日志快照，此后数据与 `schemaVersion` 均已变动。当前（2026-10-28）实测：`organizations.json` **13**（v1.24 新增 `unicom`）、`identity-claims.json` **47**、`home.json` **`schemaVersion` 2**（v1.25 删除 `externalDeveloperCount`）、`github-accounts.json` **`schemaVersion` 2**（v1.25 新增 `repoIds`，仍 35 条）、`confluence-accounts.json` v4 / 23 条、`confluence-organizations.json` v3 / 12 条、`github-organizations.json` v1 / 4 条（已降级为基线快照，读路径不用）。**部署前必须核对 `schemaVersion` 与代码期望值一致**（`repositories.module.ts`），不一致会在启动自检记 `DATA_CORRUPTED`（`50001`）并把该仓库降级为只读空集。
+
 ### 2.5 实际注册的路由（来自 `RouterExplorer` 日志）
 
 **只读接口（看板全部数据来源）**

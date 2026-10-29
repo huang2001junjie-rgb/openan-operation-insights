@@ -2,7 +2,7 @@ import { Controller, Get, Query } from '@nestjs/common';
 import {
   ConfluenceAccountView,
   ContributionSummaryData,
-  ContributorContribution,
+  ContributorContributionView,
   OrganizationContribution,
   OrganizationWiki,
 } from '../../contract/entities';
@@ -25,11 +25,11 @@ export class ActivityController {
     return this.activityService.listContributions(query);
   }
 
-  /** GET /api/contributor-contributions —— 社区活跃度：个人贡献明细（ADR-0003） */
+  /** GET /api/contributor-contributions —— 社区活跃度：个人贡献明细（ADR-0003；出参含读时派生的生效归属字段，ADR-0017） */
   @Get('contributor-contributions')
   listContributorContributions(
     @Query() query: ListContributorContributionsQueryDto,
-  ): Promise<ContributorContribution[]> {
+  ): Promise<ContributorContributionView[]> {
     return this.activityService.listContributorContributions(query);
   }
 

@@ -28,7 +28,10 @@ export interface GithubSyncState {
   orgRepos: Record<string, string[]>;
   /**
    * 各贡献者已累计的仓库集合（ADR-0003，语义同 orgRepos）。
-   * 旧状态文件缺失该字段时按空集合处理，仓库数退化为已入库的 github.repos 兜底。
+   *
+   * ⚠️ 自 `github-accounts.json` v2 起（ADR-0017 决策 15）账号级仓库清单已随**业务文件**落盘
+   * （`github.repoIds`），增量基线改从业务文件读取，本字段不再是唯一真相；保留写入仅供审计，
+   * 并作为存量数据回填 `repoIds` 的来源（`scripts/backfill-github-repo-ids.mjs`）。
    */
   personRepos?: Record<string, string[]>;
   lastError?: string;

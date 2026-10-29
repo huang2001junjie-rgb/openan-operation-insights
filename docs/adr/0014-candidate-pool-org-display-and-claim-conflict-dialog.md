@@ -3,7 +3,12 @@
 - 日期：2026-10-08
 - 状态：已接受
 - 决策者：项目负责人
-- 关联：ADR-0008（两套归属并存）、ADR-0010（认领优先的 Confluence 生效口径）、ADR-0006（认领目标交互）
+- 关联：ADR-0008（两套归属并存）、ADR-0010（认领优先的 Confluence 生效口径）、ADR-0006（认领目标交互）、[ADR-0017](./0017-github-effective-attribution-read-time-derivation.md)（GitHub 侧同构生效归属）
+
+> **修订（2026-10-28，[ADR-0017](./0017-github-effective-attribution-read-time-derivation.md)）**：本 ADR 的 7 条决策**全部继续有效**，但两处前提变了：
+> - 「**不变**：GitHub 双轨、Confluence 认领优先的既有口径」中的 **GitHub 双轨已终结**——GitHub 侧现在也是「认领优先的生效归属」（`effectiveOrgId`），账号级 `orgId` 降为兜底。故决策 1 的理由「生效口径在认领后会被人工作废」在 GitHub 侧同样成立（此前只在 Confluence 侧成立）。
+> - 决策 2 的口径边界**不变**：`GET /api/identity/candidates` 仍返回**落盘采集口径** `orgId`，不返回 `effectiveOrgId`；`orgSource` 仍**只有 Confluence 侧**有（GitHub 账号级无落盘 `orgSource`，ADR-0017 遗留债 5）——若将来给 GitHub 候选补 `orgSource`，可搭 ADR-0017 决策 15 已跑通的 `schemaVersion` 迁移路径（v2 → v3）。
+> - 决策 3 的冲突判定在 GitHub 侧现在**有实际后果**：认领会立刻改写该账号在首页 / 活跃度页 / 环形图的归属桶（读时派生，下一个请求即生效），不再是「仅影响 Confluence 展示」。
 
 ## 背景
 

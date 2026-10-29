@@ -59,7 +59,7 @@ collector/
 ## 验证
 
 - `npm run build -w @openan/api` 通过。
-- `npm run collect:github:check`（GitHub 链路离线自检）：**46/46 全通过**。
+- `npm run collect:github:check`（GitHub 链路离线自检）：**46/46 全通过**。（⚠️ 本 ADR 落地时点的数字；[ADR-0017](./0017-github-effective-attribution-read-time-derivation.md) 决策 15 追加 `repoIds` 断言后扩容为 **50/50**，Confluence 侧仍 73。数字变化时以脚本尾部输出为准。）
 - `npm run collect:wiki:check`（Confluence 链路离线自检）：**全部通过（73 项）**。
 
 ## 备注

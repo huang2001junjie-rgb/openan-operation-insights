@@ -63,7 +63,8 @@ function makeRepository<T>(
 const repositoryProviders = [
   {
     provide: HOME_REPOSITORY,
-    useFactory: makeRepository<HomeFileData>('home.json', isHomeFileData),
+    // schemaVersion 2（ADR-0017）：移除 externalDeveloperCount，独立开发者人数改为读时派生
+    useFactory: makeRepository<HomeFileData>('home.json', isHomeFileData, 2),
     inject: [ConfigService],
   },
   {
@@ -103,7 +104,9 @@ const repositoryProviders = [
   },
   {
     provide: CONTRIBUTORS_REPOSITORY,
-    useFactory: makeRepository<Contributor[]>('github-accounts.json', isContributorArray),
+    // v2：github 指标新增 repoIds（仓库清单，ADR-0017 决策 15）——组织级 repos 是去重数，
+    // 只能由账号级清单取并集得出；存量数据由 scripts/backfill-github-repo-ids.mjs 离线回填
+    useFactory: makeRepository<Contributor[]>('github-accounts.json', isContributorArray, 2),
     inject: [ConfigService],
   },
   {

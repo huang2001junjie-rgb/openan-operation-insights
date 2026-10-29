@@ -75,7 +75,16 @@ export interface GithubMetrics {
   commits: number;
   issues: number;
   linesChanged: number;
+  /** 参与仓库数：组织级为**去重数**（账号级 repoIds 的并集大小），账号级恒等于 repoIds.length */
   repos: number;
+}
+
+/**
+ * 账号级 GitHub 指标（ADR-0017 决策 15）：额外带仓库清单，供组织级派生取并集还原去重仓库数。
+ * 前端不消费 `repoIds`，此处仅为与 API 契约同构（`github-accounts.json` schemaVersion 2）。
+ */
+export interface AccountGithubMetrics extends GithubMetrics {
+  repoIds: string[];
 }
 
 export interface OrganizationContribution {
@@ -133,11 +142,31 @@ export interface Contributor {
   joinedAt?: string;
   description?: string;
   /** GitHub 协作指标：仅采集到贡献记录的个人才有；人工维护的纯档案可缺失 */
-  github?: GithubMetrics;
+  github?: AccountGithubMetrics;
 }
 
 /** `GET /api/contributor-contributions` 的响应条目：带采集指标的个人贡献（github 恒有值） */
-export type ContributorContribution = Contributor & { github: GithubMetrics };
+export type ContributorContribution = Contributor & { github: AccountGithubMetrics };
+
+/**
+ * GitHub 归属来源三态（ADR-0017）：`claim`（认领边）/ `collection`（采集口径）/ `unattributed`。
+ * 账号级档案**不落盘**该字段，纯由接口读时派生。
+ */
+export type GithubOrgSource = 'claim' | 'collection' | 'unattributed';
+
+/**
+ * `GET /api/contributor-contributions` 的响应条目（ADR-0017）：在既有出参上**追加**读时派生的生效归属。
+ *
+ * - `effectiveOrgId = 认领边派生的 Person.orgId ?? orgId ?? 'unattributed'`（人工优先，与 Confluence 侧同构）；
+ * - 落盘的 `orgId` 是**采集口径**，已降为兜底，**不得**再用于展示归属；
+ * - 机器账号（如 `dependabot`）**不出现在本出参中**（人物口径排除），其代码量仍计入组织级求和。
+ */
+export interface ContributorContributionView extends ContributorContribution {
+  /** 生效归属；未归属时为伪组织 `unattributed` */
+  effectiveOrgId: string;
+  orgSource: GithubOrgSource;
+  personId: string | null;
+}
 
 export interface SummitSummary {
   id: string;
@@ -163,7 +192,11 @@ export interface SummitDetail extends SummitSummary {
 export interface HomeSummary {
   /** 伙伴单位数：口径 = 组织档案内 `type !== 'individual'` 者（TSC 成员单位 + 参与单位 + 运营单位） */
   partnerCount: MetricValue;
-  /** 独立开发者数。字段名沿用旧称「外部开发者」，对外文案已统一为「独立开发者」 */
+  /**
+   * 独立开发者数：生效归属为伪组织 `unattributed` 且非机器人的 GitHub 账号数（ADR-0017，**读时派生**）。
+   * 字段名沿用旧称「外部开发者」，对外文案已统一为「独立开发者」。
+   * **不带 `delta` / `deltaDirection`**（环比须基于历史快照，不得伪造），故趋势药丸自动隐藏。
+   */
   externalDeveloperCount: MetricValue;
   summitCount: MetricValue;
   useCaseCount: MetricValue;

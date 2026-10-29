@@ -11,6 +11,7 @@ import {
   latestAccountUpdatedAt,
   toConfluenceAccountViews,
 } from '../../common/effective-org';
+import { sortOrganizations } from '../../common/org-order';
 import { JsonRepository } from '../../repositories/json-repository';
 import {
   CONFLUENCE_ACCOUNTS_REPOSITORY,
@@ -52,7 +53,13 @@ export class JsonWikiProvider implements WikiPort {
       ]);
 
     const { views } = toConfluenceAccountViews(accounts, claims, persons);
-    const wiki = deriveOrganizationWiki(organizations, views, latestAccountUpdatedAt(accounts));
+    // 组织档案的物理顺序 ≠ displayOrder 顺序（实测 lfn 的 displayOrder=120 却在文件首位），
+    // 故显式排序，与组织列表 / GitHub 组织级投影保持同一展示顺序（ADR-0016 决策 1 / ADR-0017）
+    const wiki = deriveOrganizationWiki(
+      sortOrganizations(organizations),
+      views,
+      latestAccountUpdatedAt(accounts),
+    );
 
     if (!query.orgIds?.length) {
       return wiki;

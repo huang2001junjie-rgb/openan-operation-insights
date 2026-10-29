@@ -2,7 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import {
   ConfluenceAccountView,
   ContributionSummaryData,
-  ContributorContribution,
+  ContributorContributionView,
   OrganizationContribution,
   OrganizationWiki,
 } from '../../contract/entities';
@@ -61,7 +61,7 @@ export class ActivityService {
   /** 个人维度贡献明细（ADR-0003）：仅含带 github 指标的贡献者，默认按 commits 降序 */
   async listContributorContributions(
     query: ListContributorContributionsQueryDto,
-  ): Promise<ContributorContribution[]> {
+  ): Promise<ContributorContributionView[]> {
     query.assertRange();
     const list = await this.contributorContributions.getContributorContributions({
       orgIds: query.orgIds,
