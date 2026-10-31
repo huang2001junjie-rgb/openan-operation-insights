@@ -25,25 +25,25 @@ _Avoid_: 绑定, 关联, 自动匹配, 合并
 **自然人 (Person)**: 跨来源被认定为同一个人的身份根，由不可变的人工分配标识 `personId` 指称（取可读 slug，重名时末尾加数字）；档案存于 `data/persons.json`，含展示名 `displayName` 与归属组织 `orgId`（可空）。一经创建仅可改名与调整归属，删除为不可逆物理删除（仅限误建）。
 _Avoid_: 用户, 账号, contributor
 
-**贡献者 (Contributor)**: **GitHub 账号维度**的个人档案，存于 `data/github-accounts.json`，主键 `contributorId`（≈ GitHub login 小写）、稳定键 `githubId`。是「人工档案（`joinedAt`/`description`）+ 采集回填指标（`github`）」的混合实体，**不是**自然人：多个 Contributor 可认领为同一 Person，一个 Contributor 只对一个 GitHub 账号。与「自然人 (Person)」严格区分，勿混用「用户/成员」指代。
+**贡献者 (Contributor)**: **GitHub 账号维度**的个人档案（**账号档案**），存于 `data/github-accounts.json`，主键 `contributorId`（≈ GitHub login 小写）、稳定键 `githubId`。是「人工档案（`joinedAt`/`description`）+ 采集回填指标（`github`）」的混合实体，但自**事件明细**上线后读路径只取**展示与归属字段**（`name` / `avatarUrl` / `githubId` / 采集口径 `orgId`），其 `github` 指标与 `repoIds` 降级为**基线快照**（对外数字一律由事件派生）。**不是**自然人：多个 Contributor 可认领为同一 Person，一个 Contributor 只对一个 GitHub 账号。与「自然人 (Person)」严格区分，勿混用「用户/成员」指代。⚠️ 有档案但本轮无事件的账号**不进任何出参**；反之事件里有、档案里没有的 login 由派生层用事件 `author` 快照**兜底合成**（不会丢）。
 _Avoid_: 用户, 成员, 自然人
 
-**数据粒度（组织级 / 个人级）**: 同一来源按两种粒度落盘 —— **组织级**（按 `orgId` 聚合，如 `github-organizations.json` / `confluence-organizations.json`）与**个人级**（按**平台账号**，如 `github-accounts.json`；Confluence 侧为 `confluence-accounts.json`）。命名规则 `<source>-<grain>.json`。个人级的**主体是平台账号**（GitHub `githubId` / Confluence `accountId`），自然人归属是由认领边**派生**的结果，故个人级文件用 `accounts` 而非 `persons`。粒度由**读者**决定：组织级服务活跃度页与卡片墙，个人级服务个人排行、候选池与身份控制台；两个来源均按两层设计（见 ADR-0008）。
-_Avoid_: 汇总表/明细表（易与页面混淆）
+**数据粒度（事件级 / 个人级 / 组织级）**: 同一来源按多种粒度落盘 —— **事件级**（一条 = 一个已合并 PR 或一条 Issue，`github-events.json`，**GitHub 侧唯一原子事实**）、**个人级**（按**平台账号**，如 `github-accounts.json`；Confluence 侧为 `confluence-accounts.json`）与**组织级**（按 `orgId` 聚合，如 `github-organizations.json` / `confluence-organizations.json`）。命名规则 `<source>-<grain>.json`。个人级的**主体是平台账号**（GitHub `githubId` / Confluence `accountId`），自然人归属是由认领边**派生**的结果，故个人级文件用 `accounts` 而非 `persons`。粒度由**读者**决定，但**权威只有一层**：GitHub 侧组织级 / 个人级 / 仓库级三段全部由事件级**读时派生**，个人级与组织级落盘文件退为账号档案与基线快照；Confluence 侧无事件级，个人级即原子事实、组织级派生（ADR-0008 / ADR-0010 / ADR-0017）。
+_Avoid_: 汇总表/明细表（易与页面混淆）, 三层都当权威
 
-**原子事实 (Atomic Fact) / 派生投影 (Derived Projection)**: 原子事实是平台原始粒度（GitHub 账号；Confluence 账号 × 维度计数），**删掉后算不回来**（要重跑采集器打外部 API）；派生投影是由原子事实聚合出的层级（组织级计数、候选人池、独立开发者人数），**删掉后能算回来**。原则：**只写原子事实，层级差异尽量用派生表达**，避免同一份数字被双写而悄悄漂移。`github-organizations.json` 组织级与 `github-accounts.json` 个人级的双写已于 ADR-0017 **切断读路径依赖**（对外只认派生值），落盘副本降级为基线快照；彻底合并另立 ADR（ADR-0008 遗留债 2 → ADR-0017 遗留债 1）。
+**原子事实 (Atomic Fact) / 派生投影 (Derived Projection)**: 原子事实是平台**最细的可复算粒度**（GitHub：**事件**——一条已合并 PR 或一条 Issue；Confluence：账号 × 维度计数），**删掉后算不回来**（要重跑采集器打外部 API）；派生投影是由原子事实聚合出的层级（账号级视图、仓库级行、组织级计数、候选人池、独立开发者人数），**删掉后能算回来**。原则：**只写原子事实，层级差异一律用派生表达**，避免同一份数字被双写而悄悄漂移。GitHub 侧已收敛到**单一原子事实** `github-events.json`：账号级（`github-accounts.json` 的 `github` 指标）与组织级（`github-organizations.json`）的双写都已**切断读路径依赖**（对外只认派生值），落盘副本降级为账号档案 / 基线快照；彻底合并另立 ADR（ADR-0008 遗留债 2 → ADR-0017 遗留债 1）。
 _Avoid_: 明细/汇总（措辞过泛）
 
-**读时派生 (Read-time Derivation)**: 派生投影的**计算时机**——在请求处理过程中现算，结果**不落盘**。对立面是**写时派生**（采集 / 写入时算好并落盘，如已废止的 `home.json.externalDeveloperCount`）。读时派生的收益是**改完即生效**：认领 / 解除 / 改 `Person.orgId` 后下一个请求就是新值，不重跑采集器、不重启进程；代价是每请求重算，故需缓存**原子事实文件**（`JsonRepository` 按 mtime 失效，ADR-0017）而非缓存派生结果。派生函数必须是**纯函数**（同输入同输出、无副作用）。两个来源同构：Confluence 见 `deriveOrganizationWiki`（ADR-0010），GitHub 见 `deriveOrganizationContributions`（ADR-0017）。
+**读时派生 (Read-time Derivation)**: 派生投影的**计算时机**——在请求处理过程中现算，结果**不落盘**。对立面是**写时派生**（采集 / 写入时算好并落盘，如已废止的 `home.json.externalDeveloperCount`）。读时派生的收益是**改完即生效**：认领 / 解除 / 改 `Person.orgId` 后下一个请求就是新值，不重跑采集器、不重启进程；代价是每请求重算，故需缓存**原子事实文件**（`JsonRepository` 按 mtime 失效，ADR-0017）而非缓存派生结果。派生函数必须是**纯函数**（同输入同输出、无副作用）。两个来源同构但**跳数不同**：Confluence 一跳（账号级 → 组织级，`deriveOrganizationWiki`，ADR-0010）；GitHub **两跳**（`deriveGithubFromEvents` 事件 → 账号级视图 + 仓库聚合，`deriveOrganizationContributions` 账号级 → 组织级，ADR-0017 + 事件明细收敛）——三段共用**同一次**第一跳，故「组织级 ≡ 账号级 ≡ 仓库级」由函数形状保证。
 _Avoid_: 实时计算（未点明"不落盘"）, 落盘派生值
 
-**全覆盖派生 (Full-coverage Derivation)**: 派生组织级投影时遍历**组织档案全集**，无账号命中的组织**记 0 而非跳过**。这样「组织级之和 ≡ 账号级之和」这条恒等式由**函数形状**保证（而非靠测试或重算时机），于是不会出现「`commits = 0` 但 top3 有人」的自相矛盾。部分覆盖是漂移得以长期存活的根因（`github-organizations.json` 只有 4 桶时，21 commits 的分布漂移无人察觉）。
+**全覆盖派生 (Full-coverage Derivation)**: 派生组织级投影时遍历**组织档案全集**，无账号命中的组织**记 0 而非跳过**。这样「组织级之和 ≡ 账号级之和」这条恒等式由**函数形状**保证（而非靠测试或重算时机），于是不会出现「`commits = 0` 但 top3 有人」的自相矛盾。部分覆盖是漂移得以长期存活的根因（`github-organizations.json` 只有 4 桶时，归属漂移无人察觉；现测快照 `huawei` 1504 vs 派生 1578，其中 29 commits 是真漂移、70 commits 是认领边搬家，详见 `docs/06` §2）。
 _Avoid_: 有值才建桶, 稀疏聚合
 
 **双写 (Dual Write)**: 同一事实存两份（一份原子、一份派生落盘），由**不同写入者在不同时刻**产生，而系统无机制强制一致 → **必然漂移**，且因两份数据常来自不同端口而互不核对。处置原则：切断读路径依赖、落盘副本降级为基线快照，而不是加同步逻辑（同步逻辑只是把漂移点搬家）。
 _Avoid_: 冗余备份（暗示无害）, 缓存
 
-**基线快照 (Baseline Snapshot)**: 采集器**仍写**、但读路径**不再作为对外真相**的落盘副本，只用于采集侧告警与漂移比对（`github-organizations.json`、`confluence-organizations.json`，以及账号档案上的采集口径 `orgId`）。与 `data/.snapshots/**` 的**历史快照**严格区分：后者是某时刻的只读留痕，**刻意不改写**（改写等于伪造历史），故其中仍存的退休枚举不得用于校验当前数据（见 `docs/07` §2.2 P1 硬约束）。
+**基线快照 (Baseline Snapshot)**: 采集器**仍写**、但读路径**不再作为对外真相**的落盘副本，只用于采集侧告警与漂移比对（`github-organizations.json`、`confluence-organizations.json`、`github-accounts.json` 里的 `github` 指标与 `repoIds`，以及账号档案上的采集口径 `orgId`——后者仍**参与**归属判定的第二优先级，故不是纯快照）。与 `data/.snapshots/**` 的**历史快照**严格区分：后者是某时刻的只读留痕，**刻意不改写**（改写等于伪造历史），故其中仍存的退休枚举不得用于校验当前数据（见 `docs/07` §2.2 P1 硬约束）。
 _Avoid_: 权威数据, 缓存, 历史快照
 
 **归属 (Org Assignment)**: 自然人所属的组织，**只存 `Person.orgId` 一处**，是该关系的唯一真相；为空表示未归属（前端归入「独立开发者」）。组织档案 `organizations.json` 上**不存**成员清单。与**账号级自动归属**（采集器按 `aliases` / `emailDomains` 写入平台账号档案的 `orgId`，即**采集口径**）是两套口径而非两套真相：采集口径只回答「采集器看到了什么」，**不再是对外展示值**；两者由「生效归属」仲裁（Confluence 见 ADR-0010，GitHub 见 ADR-0017）。`unattributed` 是伪组织，**不可**被指派为 `Person.orgId`，只能由生效归属兜底产生。
@@ -75,3 +75,18 @@ _Avoid_: 当前用户, 选中的人（用于指代详情对象）
 
 **详情抽屉 (Person Detail Drawer)**: 自然人模式下由行内「详情」按钮单独打开的模态面板，用于改名 / 调整归属 / 解除认领 / 物理删除。开关不影响认领目标（ADR-0006）。
 _Avoid_: 用「选中」兼指打开详情
+
+**时间口径 (Time Basis)**: 一组数字回答的是「**全量**还是**某区间**」——本项目里同名的指标可能落在两种口径上，故**必须成对读出**：说「提交数 1813」而不说口径等于没说。当前分三档：① **全量口径**（不带区间，见下）；② **区间口径**（GitHub 侧，见下）；③ **混合口径**（`GET /api/contributions/summary` 的 `totals`——GitHub 四项跟随区间、Confluence 三项恒全量，出参不携带口径标记）。已知分叉：**首页与组织卡恒为累计（全量口径）**，活跃度页 GitHub 侧可按区间；Confluence 侧（`/api/wiki`、`/api/confluence-accounts`）**恒为全量**（无时间维度明细）。前端必须把口径**写在脸上**：Confluence 视图禁用区间筛选器、GitHub 视图给 Confluence 列打「全历史」角标、组织卡标签带「（累计）」（ADR-0018）。
+_Avoid_: 时间范围（只指入参，不指口径）, 累计/区间（不加限定就说，易与首页的累计混）
+
+**全量口径 (Full-history Basis)**: **不带 `from` / `to`** 时的读法，统计全部事件，是本项目**默认**口径。实现上不是「区间从 -∞ 到 +∞」，而是 `filterEventsByRange` 对 `undefined` **原数组同引用返回**（不遍历、不复制）——「不带区间 ≡ 全量」因此是可被 `===` 断言的实现事实，不只是语义约定（`identity-check` 场景 7 直接断言同一引用）。⚠️ 与 Confluence 侧的「恒为全量」**不同**：前者是**缺省**（给了区间就会切），后者是**不可切**（给了区间也恒不过滤）。
+_Avoid_: 默认区间（那是前端 UI 概念，见下）, 全部时间（那是预设按钮的文案）
+
+**区间口径 (Range Basis)**: 带 `from` / `to` 时只统计**事件时间戳**落在**半开区间** `from <= timestamp < to` 内的事件，是**视图属性**而非事实属性——`github-events.json` **恒存全量**，区间是**读时切片**（唯一谓词 `filterEventsByRange`，在 `deriveGithubFromEvents` 之前切一刀）。日界按 **Asia/Shanghai** 由**前端**翻成时刻（`rangeStartInstant` = 当日零点，`rangeEndInstant` = **次日**零点），后端只比 epoch 毫秒、不解析时区、不认识「日期」。`from > to` → `40002`；`from == to` **合法**（空区间，命中 0）；单侧缺省则该侧无界。**仅 GitHub 侧生效**：组织级 / 账号级 / 仓库级三段共用同一谓词，故恒等式「组织级 ≡ 账号级 ≡ 仓库级求和」在**任意区间**下成立（ADR-0018）。
+_Avoid_: 时间筛选（曾同时指入参、遗留债与视图属性三种东西）, 阶段三（已结清）
+
+**事件时间戳 (Event Timestamp)**: `github-events.json` 每条事件的 `timestamp`——PR 取 `mergedAt`、Issue 取 `createdAt`，ISO 8601 **时刻**。自 `schemaVersion` **2** 起为**必填**：它是区间口径的**唯一**切片依据，可空会让同一份文件在「全量 / 区间」两种读法下给出**两个总量**（恒等式当场破产，且破在默认视图上最难发现）。故缺时间的记录在**采集期整条拒绝**（不落盘、不进聚合）+ `WARN` + `.sync-state.json` 的 `untimedEvents` 累计。真通道结构上产不出这种记录（PR 只查 `states: MERGED` ⇒ `mergedAt` 必存在，Issue 必有 `createdAt`），拒绝是**回归护栏**而非日常路径（ADR-0018 决策 4）。
+_Avoid_: 创建时间（Issue 才是 `createdAt`）, 采集时间（那是文件 `updatedAt` / 游标 `collectedAt`）
+
+**默认区间 (Default Range)**: 前端活跃度页**未做任何选择**时的区间状态——`DEFAULT_FILTERS.from` / `.to` 均为**空串**，即**全量口径**。⚠️ 刻意**不硬编码年份**：此前写死的 `2026-01-01..2026-12-31` 在区间不生效时无害，一旦生效就会在 2027-01-01 让页面**静默变成全 0 空视图**。「本年」等快捷值改由 `RANGE_PRESETS` 预设按钮提供（全部时间 / 本年 / 近 90 天，「本年」按 `new Date().getFullYear()` 现算），选中态由 `activePreset` **反推**而不另存状态（ADR-0018 决策 2）。
+_Avoid_: 初始时间范围, 默认时间（未点明它是"空 ≡ 全量"）

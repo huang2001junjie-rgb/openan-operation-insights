@@ -9,7 +9,8 @@ import type { OrganizationCard, OrganizationTopContributor } from '@/types/contr
 /**
  * 组织卡片墙（ADR-0016）：
  * - 顺序由后端按 displayOrder 排好，前端直接渲染、不做二次排序；
- * - 卡片直出代码贡献量（commits）与 Confluence 贡献量（编辑量）两个原始指标；
+ * - 卡片直出代码贡献量（commits）与 Confluence 贡献量（编辑量）两个原始指标，
+ *   二者恒为**全量口径**（累计），不受活跃度页区间筛选影响（ADR-0018 决策 7）；
  * - 每维度 top3 贡献者（两栏各 3 行：20px 头像 + 姓名 + 数字，不可点击）；
  * - 两项贡献量均为 0 的组织显示「暂无贡献」灰色徽章；
  * - 卡片文字在初版基础上再放大一档（标题 1.2rem、描述 text-base、指标行与 top3 text-sm）；
@@ -102,8 +103,12 @@ function ContributionPanel({ org, header }: { org: OrganizationCard; header?: Re
     <>
       <div className="space-y-2">
         {header}
-        <MetricRow label="代码贡献量" value={org.commits ?? 0} unit="次提交" />
-        <MetricRow label="Confluence 贡献量" value={org.confluenceEdits ?? 0} unit="次编辑" />
+        {/*
+          首页恒为**全量口径**（本页没有区间筛选器，ADR-0018 决策 7）：标签带「累计」二字，
+          免得用户在活跃度页选了区间后拿两页数字互相对不上时无从解释。
+        */}
+        <MetricRow label="代码贡献量（累计）" value={org.commits ?? 0} unit="次提交" />
+        <MetricRow label="Confluence 贡献量（累计）" value={org.confluenceEdits ?? 0} unit="次编辑" />
       </div>
       <div className="mt-4 grid grid-cols-2 gap-3 border-t border-white/[0.06] pt-3.5">
         <TopColumn title="代码 top3" items={org.topContributors?.github ?? []} />

@@ -181,7 +181,7 @@ export function ConfluenceAccountRankCard({
       </div>
 
       <p className="mt-4 border-t border-white/[0.06] pt-3 text-[0.68rem] leading-relaxed text-slate-500">
-        口径：Confluence 成果按账号聚合，归属为生效归属（人工认领优先于采集口径）；未归属账号归入「{UNATTRIBUTED_LABEL}」；阶段一时间区间筛选暂不生效。
+        口径：Confluence 成果按账号聚合，归属为生效归属（人工认领优先于采集口径）；未归属账号归入「{UNATTRIBUTED_LABEL}」；本榜为全历史累计——该侧落盘的是账号级计数、无时间维度明细，区间筛选不生效。
         {updatedAt ? <span className="ml-1">数据更新于 {formatDateTime(updatedAt)}。</span> : null}
       </p>
     </Card>

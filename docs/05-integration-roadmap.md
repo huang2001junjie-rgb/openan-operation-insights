@@ -257,7 +257,15 @@ flowchart LR
 | 限流 | 明确配额（5000/h），需主动管理 | 无公开硬配额，但仍需串行与退避 |
 | 分页 | Cursor / Link 头 | `_links.next` 游标 |
 | 数据形态 | 天然结构化（PR/Issue） | 半结构化，计数藏在**正文结构**（表格列名、段名、层级）中 |
+| **落盘粒度** | **事件级**（`github-events.json`，一条 = 一个已合并 PR / 一条 Issue，各带 `timestamp`） | **账号级累计计数**（`confluence-accounts.json` v4：`requirements` / `topicShares` / `edits`，**无日期字段**） |
+| **时间口径** | **可切区间**（ADR-0018 读时切片，`from` / `to` 生效） | **恒为全量口径**：`from` / `to` 接受但**恒不过滤**（见下方遗留债） |
 | 主要风险 | 限流、作者归属 | **正文结构改版**（列名/段名/层级一变即解析不到）；归属依赖"人 → 组织"档案的完备度 |
+
+> ⚠️ **遗留债：Confluence 事件级事实缺失**（ADR-0018 决策 5 / 遗留债 1，登记于 `07` §4）。
+> 原始抓取的 53 页确实跨 `2026-05-29` ～ `2026-09-22`，但采集器**没有把页级时间落成事实**——ADR-0009 / 0011 的口径是「结构选页 + 正文取数 + 版本作者计数」，时间从来不在其中，落盘的是**账号级累计计数**。
+> 后果：活跃度页的区间筛选**永远**只作用于 GitHub 侧，同一张表里 GitHub 列随区间变、Confluence 列不变。当前处置是让差异**可见**（Confluence 视图禁用筛选器 + GitHub 视图给 Confluence 列打「全历史」角标 + 个人榜卡注明「全历史累计」），**不报错也不隐藏**。
+> 补法：把「需求页 @ / 议题分享 @ / 版本作者」三类事实落成**带时间的事件**（各一条、带页级时间），与 GitHub 侧 `github-events.json` **同构**，之后 Confluence 侧才能参与区间筛选并享受同一套读时派生。
+> 成本：采集器改造 + `confluence-accounts.json` 再升一级 `schemaVersion`（或新增一个事件文件）、`07` §1.2 A3 / A7 与 §2.2 / §2.3 重写、自检 `confluence-check.mjs` 扩容；**需另立 ADR**。开工前须先回答：页级时间取**创建时间**还是**版本时间**（同一账号在多版页面上会被重复计数吗），以及需求页 `Contacts` 列的 @ 该挂哪个时间。
 
 > **前置动作（已完成，结论与原预设不同）**：2026-09-28 已实测目标空间，标签与"所属组织"字段**均未规范化落地** ——
 > 空间内没有任何需求标签，页面级也没有组织字段。采集器因此改为**结构选页 + 正文按人计数**
@@ -401,17 +409,22 @@ flowchart LR
 
 ```bash
 npm run build -w @openan/api
-npm run collect:github:check -w @openan/api # GitHub，期望输出：50/50 通过
+npm run collect:github:check -w @openan/api # GitHub，期望输出：76/76 通过
 npm run collect:wiki:check -w @openan/api   # Confluence，期望输出：全部通过（73 项）
-npm run identity:check -w @openan/api       # 身份 / 认领 / 生效归属，期望输出：50/50 通过
+npm run identity:check -w @openan/api       # 身份 / 认领 / 生效归属 / 区间口径，期望输出：68/68 通过
 ```
 
-> ⚠️ 期望数字随断言增删而变（ADR-0017 落地后 GitHub 由 46 → **50**、身份由 38 → **50**；Confluence 仍 73）。数字对不上时先看脚本尾部的 FAIL 行，别只改文档。
+> ⚠️ 期望数字随断言增删而变（ADR-0017 落地后 GitHub 由 46 → 50、身份由 38 → 50；仓库维度 / 事件明细落地后 GitHub 50 → 63、补 Bot 作者与校验器断言后 63 → 70、身份 50 → 58；**ADR-0018 区间口径落地后 GitHub 70 → `76`（新增场景 [8] 缺时间戳整条拒绝）、身份 58 → `68`（新增场景 [7] 区间口径）**；Confluence 仍 73）。数字对不上时先看脚本尾部的 FAIL 行，别只改文档。
 
-- 合成种子刻意与仓库 `data/` 解耦：真实 `data/` 会随每次线上采集而变化，若直接作为校验输入，断言将随数据漂移而失效；脚本结尾会逐字节比对，确认真实 `data/` 与种子均未被改动。⚠️ 种子的 `schemaVersion` **必须与 `repositories.module.ts` 的期望值同步**（现 `home.json` 与 `github-accounts.json` 均为 **2**）：不同步**不会让断言变红**，只在启动自检日志里留 WARN「数据结构版本不兼容」，属静默劣化。
+- 合成种子刻意与仓库 `data/` 解耦：真实 `data/` 会随每次线上采集而变化，若直接作为校验输入，断言将随数据漂移而失效；脚本结尾会逐字节比对，确认真实 `data/` 与种子均未被改动。⚠️ 种子的 `schemaVersion` **必须与 `repositories.module.ts` 的期望值同步**（现 `home.json`、`github-accounts.json` 与 **`github-events.json`（ADR-0018 起为 2）** 均为 **2**）：不同步**不会让断言变红**，只在启动自检日志里留 WARN「数据结构版本不兼容」，属静默劣化。
 - 固定记录中的 `commitEmail`（PR 首提交作者邮箱）与 `author.email`（账户公开资料邮箱）**仅用于内存归属判定**，脚本会断言其未出现在任何落盘文件中。
 - 覆盖的归属场景：登录名别名精确命中、提交邮箱子域命中（`mail.novasilicon.com` → `novasilicon.com`）、公开资料邮箱兜底、提交邮箱优先于资料邮箱、`@users.noreply.github.com` 不误判。
 - 覆盖的**仓库集合**场景（ADR-0017 决策 15）：全量与增量两条路径都落盘 `github.repoIds`、`repos === repoIds.length`、组织级 `repos` 取**并集**而非求和；`collector-check.mjs` 刻意把种子的 `personRepos` **留空**，以证明增量基线已从业务文件自持恢复；`identity-check.mjs` 的「场景 5 生效归属派生」另断言认领改写归属、全覆盖桶数、`commits` 恒等式、机器账号的量计入桶、独立开发者计数，以及 **v1 信封被拒**（`50001`）。
+- 覆盖的**事件明细**场景（`github-events.json`，GitHub 侧唯一原子事实）：`collector-check.mjs` 断言全量整体替换（9 条）与增量时间窗内落盘（7 条）、幂等键 `kind\|repository\|number` 唯一、重复增量全数跳过、基线残缺可按键补齐、事件字段已剥离 `email` / `commitEmail` / `url`，并给出「事件级 = 组织级 = 账号级」四项合计的恒等式与仓库分桶对照；`identity-check.mjs` 断言由事件派生的组织级与账号级同源（`commits` 恒等式）、`repoIds` 任意组合筛选、账号档案缺失时用事件 `author` 快照兜底。⚠️ 种子的 `seed-data/` **不含** `github-events.json`（首次增量按空基线处理），全量跑一次真实采集后 `data/` 才会生成它。
+- 覆盖的**写读一致性**场景（场景 7）：`collector-check.mjs` 直接 `import` 编译产物里的 `isGithubContributionEventArray`，对全量 / 增量 / Bot 三条路径的落盘事件逐个校验，并带一条**负向对照**（缺键 author 必须被判非法），确保写侧形状与 API 读侧校验器不会静默分叉。该场景由一次线上事故反推而来：`AUTHOR_FIELDS` 把 `databaseId / name / email` 放在 `... on User` 片段内，而 **Bot（dependabot 等 GitHub App）不匹配该片段**，响应中这三键**缺席**（`undefined` 而非 `null`），透传落盘后被 `JSON.stringify` 丢键 → `github-events.json data 结构校验未通过` → **所有** GitHub 派生接口（含首页汇总、组织列表）返回 `50001`。修复落在 `github-graphql.source.ts` 的 `toAuthor()`（边界归一化为 `null`）与 `GithubCollectorService.toEvent()`（逐字段兜底），主 fixture 因**不含 Bot 记录**曾漏掉该缺陷，故场景 7 另造临时 fixture 复刻 Bot 形态。⚠️ 原「隔离性」场景在 ADR-0018 后由 **[8]** 顺延为 **[9]**（编号变更，断言未变）。
+- 覆盖的**缺时间戳整条拒绝**场景（场景 **[8]**，ADR-0018 决策 4）：另造临时 fixture 三条记录（`#910` 有 `timestamp`、`#911` 为 `null`、`#912` 为空串），跑一次全量后断言 ① 只落 **1** 条事件；② 聚合值只吃 timed（`commits` **4** 而非 13、`pullRequests` **1** 而非 3、`issues` **0** 而非 1、`linesChanged` **12** 而非 15）；③ `.sync-state.json` 的 `untimedEvents === 2` 且 `recordCount === 3`（游标记的是**收到**的条数，不是接受的条数）；④ `WARN` 文案含拒绝数、累计数与前 3 条样例（`kind repository#number`）；⑤ 校验器**负向对照**（`timestamp` 为 `null` / 纯日期 / 垃圾串一律拒，`+08:00` 偏移的合法时刻放行）；⑥ 落盘事件整体过 `isGithubContributionEventArray`。作者刻意用组织账号本身（登录名别名直接命中 `openan-labs` 桶），使聚合断言不依赖归属规则。
+- 覆盖的**区间口径**场景（`identity-check.mjs` 场景 **[7]**，ADR-0018，10 项）：① **半开边界**——造 4 条事件夹住 `2026-07-01T16:00:00Z`（北京 7 月 1 日零点）两侧，`15:59:59Z` 不命中、`16:00:00Z` 命中，只中 **#2、#3**；② **无区间 ≡ 全量**——`filterEventsByRange(events, undefined)` 断言**同一引用**（`===`），证明「不带区间 ≡ 全量口径」是实现事实而非语义约定；③ **单侧无界**（只给 `from` ⇒ 上界开放，命中 3）；④ **空区间**（`from == to` 命中 **0**，且不报错）；⑤ `isWithinRange` **三态**（命中 / 早于下界 / 不可解析时间一律 `false`）；⑥ 7 月窗口 `commits` **8** vs 全量 **15**；⑦ **同区间恒等式**——组织级 ≡ 账号级 ≡ 仓库级求和在同一区间下仍成立；⑧ **空区间的桶形状**——3 个 0 值桶且 `views` / `repos` 为空（枚举桶不消失，聚合结果消失）；⑨ 7 月窗口 `repos` 收缩到 `core` + `kernel`（行收缩可观测）；⑩ 校验器正负向对照（`null` / 纯日期 / 垃圾串拒，`+08:00` 通过）。
+> ⚠️ **`collector-check` 的 D1 恒等式比对只在全量口径下成立**：基线快照 `github-organizations.json` 是采集器写死的累计值、不带任何区间，拿它去对区间切片后的事件合计必然「漂移」——那不是数据坏了，是口径错了。区间口径下的同一条恒等式由 `identity-check` 场景 **[7]** ⑦ 覆盖（脚本内已就地加注）。
 
 **Confluence 自检**：固定页面记录（含 `bodies` 覆盖正文口径、`views` 覆盖渲染视图取展示名、`users` 覆盖账号查询兜底）在 `apps/api/scripts/fixtures/confluence-records.sample.json`，空结果反例在 `confluence-records.none.json`；`scripts/confluence-check.mjs` 用 `CONFLUENCE_FIXTURE` 指向它们跑**编译产物**，**73 项断言**覆盖：
 

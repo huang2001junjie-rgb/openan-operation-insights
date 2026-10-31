@@ -221,7 +221,7 @@ export function ContributorRankCard({
 
       <p className="mt-4 border-t border-white/[0.06] pt-3 text-[0.68rem] leading-relaxed text-slate-500">
         口径：GitHub 公开协作数据按个人聚合，归属取生效归属（人工认领优先于采集推断），未归属者归入「{UNATTRIBUTED_LABEL}」；
-        机器账号不计入本榜，其代码量仍计入组织级合计。阶段一时间区间筛选暂不生效。
+        机器账号不计入本榜，其代码量仍计入组织级合计。本榜按当前时间区间统计（PR=mergedAt、Issue=createdAt），未选区间时为全量累计。
         {updatedAt ? <span className="ml-1">数据更新于 {formatDateTime(updatedAt)}。</span> : null}
       </p>
     </Card>

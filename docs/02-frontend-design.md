@@ -96,6 +96,7 @@ Routes 结构示意（实现时以此为准）：
 - 卡片墙展示**全部组织**（不过滤零贡献组织），按运营人工指定的**展示顺序 `displayOrder`** 升序排列，同值/缺失按名称升序兜底（ADR-0016，取代 ADR-0001 的贡献分降序）；卡片直出**代码贡献量（commits）**与 **Confluence 贡献量（编辑量）**两个原始指标及**各维度 top3 贡献者**（两栏各 3 行：20px 圆形头像 + 姓名 + 数字，不可点击；Confluence 账号无头像字段，首字母色块降级；维度无人时显示「—」占位）。**两项贡献量均为 0** 的组织显示「暂无贡献」灰色徽章（承接 ADR-0001 呈现意图，判据已改）。
 - 卡片墙中 `type = 'individual'` 的伪组织渲染为**独立开发者卡片**：中性色 + 个人图标，标题「独立开发者」，展示**人数**（取 `home/summary` 的 `externalDeveloperCount`）与两项贡献量、各维度 top3（`unattributed` 桶内前三），与组织卡片视觉区分、指标口径一致。⚠️ **人数与 top3 是两个口径**（ADR-0017 决策 5）：人数**排除**机器账号（现 7 人），而该桶的 commits / PR 等**量仍计入**（`dependabot` 的 12 commits 留在 `unattributed` 桶里），top3 也**排除**机器账号——三者不要互相推算。
 - 卡片墙的 GitHub 侧数字（commits 与 top3）自 ADR-0017 起由**账号级 + 认领边读时派生**（生效归属），不再取 `github-organizations.json` 落盘值；`scope=contributing` 与 `scope=all` 现在同源同值。Confluence 侧同构口径见 ADR-0010（生效归属）/ ADR-0011（编辑量）。
+- ⚠️ **首页恒为累计（全量口径）**（ADR-0018 决策 7）：首页**没有**时间区间筛选器，5 张指标卡与组织墙的两项贡献量、各维度 top3 **一律不受活跃度页区间影响**。组织卡标签因此带「**（累计）**」二字（`代码贡献量（累计）` / `Confluence 贡献量（累计）`），指标解释文案（`HomePage` 的 `def` 提示）写明「恒为累计值（全量口径）」，并新增术语条目「**时间口径**」说明这条分叉：**首页恒全量，活跃度页 GitHub 侧可按区间**（见 §4.2）。⚠️ 不要因为「首页数字和活跃度页选了区间后的数字对不上」而去给首页加区间——两者口径**刻意不同**，且首页对的是**累计**这一侧。
 - 下一次峰会横幅使用通栏渐变背景（`from-blue-700 via-blue-600 to-cyan-500`），左侧文案右侧 CTA 按钮"查看官网"，整个横幅为可点击区域并在新标签打开官网。
 
 ### 3.3 状态处理
@@ -115,7 +116,7 @@ Routes 结构示意（实现时以此为准）：
 | # | 区块 | 组件 | 说明 |
 | --- | --- | --- | --- |
 | 0 | 活跃来源切换器 | `ActivitySourceSwitcher` | **紧贴 Navbar 下方**的分段控件，切换 GitHub / Confluence 两套口径；状态写入 URL query `?source=github\|confluence`（默认 `github`），可分享、刷新不丢 |
-| 1 | 筛选概览栏 | `ActivityFilterBar` | 时间范围下拉（近 30 天 / 近 90 天 / 近 1 年 / 全部）、组织多选、重置、导出按钮 |
+| 1 | 筛选概览栏 | `ActivityFilters` | **起止日期框 + 三个预设按钮（全部时间 / 本年 / 近 90 天）**、组织多选、仓库多选、重置、导出按钮。⚠️ 区间**默认全空 ≡ 全量口径**（ADR-0018，见 §4.2「时间区间筛选」）；Confluence 视图下整块区间筛选器**禁用**并换成说明文案 |
 | 2 | 个人贡献排行 | `ContributorRankCard` | 头像列表 + 指标切换（合并 PR / 提交数 / Issue / 代码行数），默认按提交数取 Top 8（ADR-0004） |
 | 3 | 组织贡献分布 | `ContributionCompositionCard` | 环形图，按提交数统计各组织占比，**列出全部参与组织**，中心显示提交总量（ADR-0013，修订 ADR-0003） |
 | 4 | 贡献明细表格 | `ContributionDetailTable` | 组织 × 指标矩阵，**全量组织**各占一行，表头排序 |
@@ -127,6 +128,20 @@ Routes 结构示意（实现时以此为准）：
 
 - **GitHub 视图（`?source=github`，默认）**：`ActivityFilterBar` + `ContributorRankCard`（个人）+ `ContributionCompositionCard`（组织结构分布）+ `ContributionDetailTable`（组织 × GitHub 指标）。
 - **Confluence 视图（`?source=confluence`）**：区块骨架复用，数据取自 `GET /api/wiki`（组织级，生效归属）与 `GET /api/confluence-accounts`（账号级，生效归属）；明细表列改为 Confluence 指标（见下），概览 KPI 与环形图口径随之切换。对应三个区块分别换用 `ConfluenceAccountRankCard`（个人成果排行）、`ConfluenceCompositionCard`（组织贡献分布）、`ConfluenceDetailTable`（贡献明细表格），三者均提供 `需求 / 议题分享 / 编辑` **三维**切换（ADR-0011）。
+
+**时间区间筛选（ADR-0018，v1.28 起生效）**：区间是**视图属性**，只切 GitHub 侧；同一页面上两套口径必须**各自说清楚**。
+
+| 项 | 前端行为 |
+| --- | --- |
+| 默认区间 | `DEFAULT_FILTERS.from` / `.to` 均为**空串** ≡ **全量口径**（与激活前逐位相同的数字）。⚠️ 刻意**不硬编码年份**——此前写死的 `2026-01-01..2026-12-31` 一旦生效，2027-01-01 会让页面静默变成全 0 空视图 |
+| 预设 | `RANGE_PRESETS`：**全部时间**（清空两侧）/ **本年**（`new Date().getFullYear()` 现算，不写死）/ **近 90 天**（含今天在内的 90 个整天，下界 = 今天 − 89 天）。选中态由 `activePreset` **反推**（比对当前值是否等于某预设），不另存状态，避免「按钮说近 90 天、输入框是别的日期」的分叉 |
+| 日界翻译 | `lib/format.ts`：`rangeStartInstant(value)` = 该日期在 `+08:00`（`RANGE_TZ_OFFSET`，Asia/Shanghai）的零点；`rangeEndInstant(value)` = **次日**零点。⚠️ 契约是**半开区间** `from <= 事件时间 < to`，翻成当日零点会整天吞掉结束日。后端只比 epoch 毫秒、不解析时区 |
+| 参数分流 | `ActivityPage` 把区间**只**放进 GitHub 侧参数（`rangeParams` / `githubParams`），Confluence 侧的 `params` **不含** `from` / `to`——改区间不会让 Confluence 请求白白 refetch |
+| Confluence 视图 | 区间筛选器**整块禁用**（`rangeDisabled`），换成说明文案「恒为全历史累计：Confluence 侧无时间维度明细」。⚠️ **不报错、不隐藏数据**——摆一个不生效的日期框等于对用户撒谎，而报错/隐藏列会毁掉跨来源对比 |
+| GitHub 视图的 Confluence 列 | 明细表三个 Confluence 列表头打**「全历史」角标**（`rangeActive && column.allTime`，带 `title` 解释），脚注按 `rangeActive` 分支说明混合口径 |
+| 仓库维度表 | `RepoContributionTable` **必须跟随区间**（`useRepoContributions({ from, to })`，query key 含两者）：它与组织表、个人榜同源于事件，只让两段切片会让「组织级 ≡ 账号级 ≡ 仓库级求和」在同一页面上对不上 |
+| 失效的仓库筛选 | 区间收紧后仓库表行数变少，已勾选但区间内无活动的仓库**保留为候选项**并标注「`<owner>` · 区间内无活动」（`repoOptions` 追加 stale 项），页面给琥珀色提示「已选仓库在当前区间内无活动」（`staleRepoIds`）。⚠️ 若让候选项跟着行数消失，勾选状态就成了看不见的幽灵（表里没这行、筛选却还在生效） |
+| 两个个人榜卡 | `ContributorRankCard` 底部：「按当前区间统计」；`ConfluenceAccountRankCard` 底部：「本榜为全历史累计——该侧落盘的是账号级计数、无时间维度明细，区间筛选不生效」。⚠️ 两榜口径**不同**，不可直接横向比数 |
 
 **GitHub 视图明细表与组织贡献分布共用同一份行数据**（前端按 `orgId` 合并三源：`GET /api/organizations` 组织档案 + `GET /api/contributions` + `GET /api/wiki`）；**个人贡献排行走独立接口** `GET /api/contributor-contributions`（ADR-0004）。⚠️ 两个接口返回的 GitHub 数字**同为读时派生的生效归属值**（ADR-0017）：组织级按 `effectiveOrgId` 聚合账号级原子事实、全覆盖组织档案（13 桶，未命中记 0），个人级追加 `effectiveOrgId` / `orgSource` / `personId`，故「组织级 ≡ 个人级求和」在前端天然成立（`repos` 除外，见下）：
 
@@ -141,9 +156,9 @@ Routes 结构示意（实现时以此为准）：
 | PR 数量 | `github.pullRequests` | number | ✅ | 已合并 PR |
 | Issue 数量 | `github.issues` | number | ✅ | — |
 | 代码量 | `github.linesChanged` | number | ✅ | additions + deletions，千分位展示 |
-| 需求 | `confluence.requirements` | number | ✅ | Confluence 来源：需求页 `Contacts` 列的 @ 提及数 |
-| 议题分享 | `confluence.topicShares` | number | ✅ | Confluence 来源：会议纪要 `Agenda` 段内 @ 数（段落与表格行都算，按期去重） |
-| 编辑 | `confluence.edits` | number | ✅ | Confluence 来源：页面**版本作者条数**（含建页那一次，不剔除多人共编的大页，ADR-0011） |
+| 需求 | `confluence.requirements` | number | ✅ | Confluence 来源：需求页 `Contacts` 列的 @ 提及数。⚠️ **恒为全历史**（`allTime` 列）：区间生效时表头显示「全历史」角标 |
+| 议题分享 | `confluence.topicShares` | number | ✅ | Confluence 来源：会议纪要 `Agenda` 段内 @ 数（段落与表格行都算，按期去重）。⚠️ 同上，恒为全历史 |
+| 编辑 | `confluence.edits` | number | ✅ | Confluence 来源：页面**版本作者条数**（含建页那一次，不剔除多人共编的大页，ADR-0011）。⚠️ 同上，恒为全历史 |
 | 更新时间 | `updatedAt` | ISO 8601 | ✅ | 相对时间展示 |
 
 **Confluence 视图明细表**（`?source=confluence`，与组织档案以 `orgId` 关联，全量组织各占一行；归属为**生效归属** `effectiveOrgId`，认领优先见 ADR-0010、编辑量口径见 ADR-0011）：
@@ -167,12 +182,13 @@ Routes 结构示意（实现时以此为准）：
 
 **环形图口径**（ADR-0013，修订 ADR-0003）：按组织维度统计 `github.commits` 提交数占比，数据复用 `GET /api/contributions`；**每个有非零计数的组织各占一个具名扇区**（不再并入「其他」，无 3% 阈值与扇区数上限），中心显示提交总量；配色取 `CHART_PALETTE`（12 色，超出按序循环）。Confluence 视图（`ConfluenceCompositionCard`）复用同一口径，按所选维度（需求 / 议题分享 / 编辑）统计各组织占比。
 
-**个人排行口径**（ADR-0004，归属部分由 ADR-0017 修订）：数据源 `GET /api/contributor-contributions`，仅包含采集到贡献记录的个人（人工维护但无贡献记录的档案不出现）；**归属标签一律取生效归属 `effectiveOrgId`**（落盘的 `orgId` 只是采集口径兜底，**不得**用于展示）：`effectiveOrgId === 'unattributed'` 者显示「独立开发者」标签（伪组织，可被组织筛选单独命中）；**机器账号不出现在出参中**（如 `dependabot`，人物口径排除，其代码量仍计入组织级）；组织名由 `GET /api/organizations` 的 `orgId → name` 映射解析（按 `effectiveOrgId` 查）；头像取 `avatarUrl`，缺失或加载失败时降级为姓名首字母色块。阶段一时间区间筛选对该接口不生效，卡片底部给出同口径提示与数据更新时间。
+**个人排行口径**（ADR-0004，归属部分由 ADR-0017 修订）：数据源 `GET /api/contributor-contributions`，仅包含采集到贡献记录的个人（人工维护但无贡献记录的档案不出现）；**归属标签一律取生效归属 `effectiveOrgId`**（落盘的 `orgId` 只是采集口径兜底，**不得**用于展示）：`effectiveOrgId === 'unattributed'` 者显示「独立开发者」标签（伪组织，可被组织筛选单独命中）；**机器账号不出现在出参中**（如 `dependabot`，人物口径排除，其代码量仍计入组织级）；组织名由 `GET /api/organizations` 的 `orgId → name` 映射解析（按 `effectiveOrgId` 查）；头像取 `avatarUrl`，缺失或加载失败时降级为姓名首字母色块。⚠️ 时间区间筛选**已对该接口生效**（ADR-0018）：`from` / `to` 参与读时切片，区间内无事件的账号**整行不出参**（榜单是枚举、不是桶），故区间收紧时榜单会变短；卡片底部据此给出「按当前区间统计」提示与数据更新时间。
 
 ### 4.3 交互细节
 
-- **来源切换**：`ActivitySourceSwitcher` 切换时改写 URL query `?source=`（`github` 为默认值，可省略；`confluence` 显式写入），并用 `replace` 语义避免污染浏览器历史；切换仅改变渲染的数据源与列，**筛选条件（`from`/`to`/`orgIds`）保留**在 query 中。切换时旧视图数据经 `keepPreviousData` 保留，避免闪空。
-- 筛选变更时更新 TanStack Query 的 `queryKey`（含 `from`/`to`/`orgIds`），自动触发重新请求；旧数据通过 `placeholderData: keepPreviousData` 保留，避免图表闪空。
+- **来源切换**：`ActivitySourceSwitcher` 切换时改写 URL query `?source=`（`github` 为默认值，可省略；`confluence` 显式写入），并用 `replace` 语义避免污染浏览器历史；切换仅改变渲染的数据源与列，**筛选条件（`from`/`to`/`orgIds`/`repoIds`）保留**在 query 中。⚠️ 切到 Confluence 视图时区间筛选器**禁用**（该侧恒为全历史），但 `from` / `to` **仍留在 query 里**——切回 GitHub 视图即恢复原区间，不静默清掉用户的选择。切换时旧视图数据经 `keepPreviousData` 保留，避免闪空。
+- 筛选变更时更新 TanStack Query 的 `queryKey`（含 `from`/`to`/`orgIds`/`repoIds`），自动触发重新请求；旧数据通过 `placeholderData: keepPreviousData` 保留，避免图表闪空。⚠️ **区间只进 GitHub 侧的请求**（`queryKeys.contributions` / `contributorContributions` / `repoContributions` / `contributionSummary`）：Confluence 侧的 `wiki` / `confluenceAccounts` 虽然 key 形状上含 `from` / `to`，但 `ActivityPage` 传给它们的是**不含区间的 `params`**（见 §8.2），故改一次日期不会让这两个恒为全历史的请求白白 refetch。
+- **区间预设与日界**：三个预设按钮（全部时间 / 本年 / 近 90 天）直接改写 `from` / `to` 的日期串；日期串到 ISO **时刻**的翻译统一走 `rangeStartInstant` / `rangeEndInstant`（`+08:00`，结束日取**次日**零点），页面上任何一处需要区间都不得自行拼时间字符串——半开区间的正确性依赖这一个出口（ADR-0018 决策 3）。
 - 表格列排序为**前端排序**（数据量小），点击表头切换 `asc → desc → 无` 三态，排序图标使用 `lucide-react` 的 `ArrowUpDown` / `ArrowUp` / `ArrowDown`。
 - 小屏（<768px）时表格转为卡片列表，每个组织一张卡，指标以键值对展示。
 - 导出按钮本期调用 `console` 级别的占位实现（在 UI 上标注"即将支持"），后续接后端导出接口。
@@ -364,13 +380,18 @@ flowchart TB
 
 | Hook | 方法 | 端点 | queryKey |
 | --- | --- | --- | --- |
-| `useHomeSummary()` | GET | `/api/home/summary` | `['home','summary']` |
-| `useOrganizations(params?)` | GET | `/api/organizations` | `['organizations', params]` |
-| `useContributions(params)` | GET | `/api/contributions` | `['contributions', { from, to, orgIds }]` |
-| `useWiki(params)` | GET | `/api/wiki` | `['wiki', { from, to, orgIds }]` |
-| `useConfluenceAccounts(params)` | GET | `/api/confluence-accounts` | `['confluence-accounts', { from, to, orgIds, sortBy, order, limit }]` |
-| `useSummits(params?)` | GET | `/api/summits` | `['summits', { year, includeDetail }]` |
+| `useHomeSummary()` | GET | `/api/home/summary` | `['home','summary']`（⚠️ **恒不含区间**：首页恒为累计） |
+| `useOrganizationOptions()` | GET | `/api/organizations` | `['organizations', { scope, type, keyword }]`（⚠️ 恒不含区间） |
+| `useContributions(params)` | GET | `/api/contributions` | `['contributions', { orgIds, repoIds, from, to }]` |
+| `useContributionSummary(params)` | GET | `/api/contributions/summary` | `['contributions','summary', { orgIds, repoIds, from, to }]`（⚠️ 出参 `totals` 为**混合口径**） |
+| `useContributorContributions(params)` | GET | `/api/contributor-contributions` | `['contributors','contributions', { orgIds, repoIds, from, to }]` |
+| `useRepoContributions({ from, to })` | GET | `/api/repo-contributions` | `['repo-contributions', { from, to }]`（⚠️ **刻意不含** `orgIds`/`repoIds`：行指标不随筛选变化；但**必须含区间**，否则同页两套口径） |
+| `useWiki(params)` | GET | `/api/wiki` | `['wiki', { orgIds, from, to }]` |
+| `useConfluenceAccounts(params)` | GET | `/api/confluence-accounts` | `['confluence-accounts', { orgIds, from, to }]` |
+| `useSummits(params?)` | GET | `/api/summits` | `['summits', { year, includeDetail, page, pageSize }]` |
 | `useMeetingAttendance()` | GET | `/api/meetings` | `['meetings']` |
+
+⚠️ **区间的参数分流**（ADR-0018 决策 5）：`wiki` / `confluenceAccounts` 的 query key **形状上**含 `from` / `to`，但 `ActivityPage` 传给它们的是**不含区间的 `params`**（GitHub 侧另用 `githubParams` / `rangeParams`）——该侧恒为全历史，故 key 里的区间恒为空串，改日期**不会**触发这两个请求 refetch。
 
 ### 8.3 queryKey 与缓存策略
 

@@ -8,10 +8,12 @@ import type {
   Organization,
   OrganizationContribution,
   OrganizationWiki,
+  RepoContribution,
 } from '@/types/contract';
 
 const toParams = (params: ActivityParams) => ({
   orgIds: params.orgIds,
+  repoIds: params.repoIds,
   from: params.from,
   to: params.to,
 });
@@ -91,6 +93,28 @@ export function useContributionSummary(params: ActivityParams = {}, enabled = tr
         signal,
       }),
     placeholderData: (previous) => previous,
+    enabled,
+  });
+}
+
+/**
+ * 仓库维度贡献明细（D1：由 github-events.json 读时派生），默认按 commits 降序。
+ *
+ * - **不接受 repoIds**：选仓库只是挑行，由前端客户端过滤（`filterRepoRows`）；
+ * - **接受 from/to**（ADR-0018 决策 6）：与组织级 / 账号级同区间，恒等式「仓库级求和 ≡ 组织级」
+ *   才成立；区间内无事件的仓库不出行，故筛选候选随区间收缩（已选但区间内无活动的仓库
+ *   由页面标为「区间内无活动」，不静默消失）。
+ */
+export function useRepoContributions(params: Pick<ActivityParams, 'from' | 'to'> = {}, enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.repoContributions(params),
+    queryFn: ({ signal }) =>
+      apiGet<RepoContribution[]>('/repo-contributions', {
+        params: { sortBy: 'commits', order: 'desc', from: params.from, to: params.to },
+        signal,
+      }),
+    placeholderData: (previous) => previous,
+    staleTime: 10 * 60_000,
     enabled,
   });
 }

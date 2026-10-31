@@ -21,6 +21,7 @@
     "collect:wiki:check": "node scripts/confluence-check.mjs",
     "collect:meetings": "ts-node -r tsconfig-paths/register scripts/import-meetings.ts",
     "backfill:github-repo-ids": "node scripts/backfill-github-repo-ids.mjs",
+    "migrate:github-events-v2": "node scripts/bump-github-events-schema.mjs",
     "identity:check": "node scripts/identity-check.mjs",
     "smoke": "node scripts/smoke.mjs"
   },

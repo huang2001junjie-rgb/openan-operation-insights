@@ -49,13 +49,14 @@ flowchart TB
 
 | 模块 | 控制器 | 服务 | 依赖的端口 | 说明 |
 | --- | --- | --- | --- | --- |
-| `HomeModule` | `HomeController` | `HomeService` | `HOME_METRIC_PORT`、`ORGANIZATION_PORT`、`SUMMIT_PORT` | 聚合首页指标、下次峰会、贡献组织概览 |
-| `OrganizationModule` | `OrganizationController` | `OrganizationService` | `ORGANIZATION_PORT`、`CONTRIBUTION_PORT` | 组织档案与筛选 |
-| `ActivityModule` | `ActivityController` | `ActivityService` | `CONTRIBUTION_PORT`、`WIKI_PORT` | 贡献明细、成果洞察、贡献聚合 |
+| `HomeModule` | `HomeController` | `HomeService` | `HOME_METRIC_PORT`、`SUMMIT_PORT`、`CONTRIBUTOR_CONTRIBUTION_PORT` | 聚合首页指标、下次峰会；**独立开发者数**由账号级端口派生（`isIndependentDeveloper`），不注入组织端口 |
+| `OrganizationModule` | `OrganizationController` | `OrganizationService` | `ORGANIZATION_PORT`、`CONTRIBUTION_PORT`、`CONTRIBUTOR_CONTRIBUTION_PORT`、`WIKI_PORT`、`CONFLUENCE_ACCOUNT_PORT` | 组织档案与筛选；`scope=contributing` 需同时取 GitHub 组织级 + 账号级 top3 + Confluence 两维度 |
+| `ActivityModule` | `ActivityController` | `ActivityService` | `CONTRIBUTION_PORT`、`CONTRIBUTOR_CONTRIBUTION_PORT`、`REPO_CONTRIBUTION_PORT`、`WIKI_PORT`、`CONFLUENCE_ACCOUNT_PORT` | 贡献明细、成果洞察、贡献聚合、**仓库维度**；通用排序 / `limit` 在此层（`repo-contributions` 除外，见 4.1） |
+| `IdentityModule` | `IdentityController` 等 | `PersonService` / `CandidateService` / `OrgRosterService` / `IdentityAuditService` | —（**直接注入仓储**，不经端口） | 身份控制台：自然人 / 认领边 / 候选人 / 花名册 / 审计 |
 | `SummitModule` | `SummitController` | `SummitService` | `SUMMIT_PORT` | 峰会列表、时间线、详情 |
 | `MeetingModule` | `MeetingController` | `MeetingService` | `MEETING_ATTENDANCE_PORT` | 例会参会矩阵（**纯透传**，无口径计算） |
-| `ProvidersModule` | — | — | — | 集中声明所有端口 Token → 适配器类的绑定；当前六个端口**恒为 JSON 实现**，采集不经此切换（见 2.3 节） |
-| `RepositoriesModule` | — | — | — | 提供 `JsonRepository<T>` 实例（按文件名注入） |
+| `ProvidersModule` | — | — | — | 集中声明所有端口 Token → 适配器类的绑定；当前**九个**端口**恒为 JSON 实现**，采集不经此切换（见 2.3 节） |
+| `RepositoriesModule` | — | — | — | 提供 `JsonRepository<T>` 实例（按文件名注入）+ 启动自检（缺文件 WARN、校验失败 ERROR） |
 | `CommonModule` | — | — | — | 全局响应拦截器、异常过滤器、错误码枚举 |
 
 > **设计意图**：把"端口 → 适配器"的绑定集中到 `ProvidersModule`，使业务模块（Home / Activity / Summit）只依赖端口、对数据来源无感知。
@@ -75,20 +76,28 @@ apps/api/src/
 │   ├── interceptors/response.interceptor.ts
 │   ├── filters/all-exceptions.filter.ts
 │   ├── constants/error-code.ts
-│   └── dto/api-response.dto.ts
+│   ├── dto/api-response.dto.ts
+│   ├── effective-org.ts             # ★ 生效归属纯函数：认领边索引 / effectiveOrgId / isBotAccount / 组织级投影
+│   ├── github-event-derivation.ts   # ★ 事件 → 账号级派生（第一跳）：账号视图 + 仓库聚合 + 认领告警
+│   └── org-order.ts                 # 组织档案按 displayOrder 排序（派生层不二次排序）
 ├── repositories/
-│   ├── json-repository.ts           # 泛型仓储：读缓存 + 原子写 + 串行队列
-│   └── repositories.module.ts
+│   ├── json-repository.ts           # 泛型仓储：读缓存（mtime 失效）+ 整文件级 fail-fast 校验 + 原子写 + 串行队列
+│   ├── repository.tokens.ts         # 各数据文件的注入 Token（含 GITHUB_EVENTS_REPOSITORY）
+│   ├── validators.ts                # 实体级 + 数组级校验函数（写读同一套，见 04 §3.12）
+│   └── repositories.module.ts       # 装配 + 启动自检（缺文件 WARN、其余失败 ERROR）
 ├── providers/
-│   ├── ports/                       # ★ 端口接口定义（纯接口，无实现）
+│   ├── ports/                       # ★ 端口接口定义（纯接口，无实现；现 9 个）
 │   │   ├── home-metric.port.ts
 │   │   ├── organization.port.ts
-│   │   ├── contribution.port.ts
+│   │   ├── contribution.port.ts             # 组织级（事件两跳派生的第二跳）
+│   │   ├── contributor-contribution.port.ts # 账号级（第一跳产物）
+│   │   ├── repo-contribution.port.ts        # 仓库级（第一跳的 repos 聚合，不落盘）
 │   │   ├── wiki.port.ts
+│   │   ├── confluence-account.port.ts
 │   │   ├── summit.port.ts
 │   │   └── meeting-attendance.port.ts
 │   ├── tokens.ts                    # 所有 DI Token 常量
-│   ├── json/                        # 当前唯一实现（读 data/*.json）
+│   ├── json/                        # 当前唯一实现（读 data/*.json；GitHub 三段共用一次派生）
 │   └── providers.module.ts          # 端口 → 适配器绑定（换存储 / 直连上游时才动）
 ├── collector/                       # ★ 采集器：独立 Nest 上下文，不启动 HTTP 服务
 │   ├── collector.module.ts          # 采集上下文装配，与 AppModule 解耦
@@ -96,11 +105,11 @@ apps/api/src/
 │   ├── collector.constants.ts       # 跨来源共享常量（伪组织、翻页上限、请求间隔）
 │   ├── github/                      # GitHub 管线
 │   │   ├── github-main.ts           # CLI 入口（--mode=auto|incremental|full、--dry-run）
-│   │   ├── github-collector.service.ts   # 记录按 orgId 归并后写入 github-organizations.json
+│   │   ├── github-collector.service.ts   # 写三份：github-events.json（事件明细，唯一原子事实）+ github-accounts.json（账号档案 + 指标快照）+ github-organizations.json（基线快照）
 │   │   ├── github-source.port.ts         # GithubSource 抽象与记录类型
-│   │   ├── github-graphql.source.ts      # 真实实现（原生 fetch 调 GitHub GraphQL）
+│   │   ├── github-graphql.source.ts      # 真实实现（原生 fetch 调 GitHub GraphQL）；★ toAuthor() 在此归一作者字段（Bot 缺键 → null，三条构造路径共用）
 │   │   ├── github-fixture.source.ts      # 离线实现（GITHUB_FIXTURE，无 token 自检用）
-│   │   ├── github-sync-state.store.ts    # data/.sync-state.json 游标读写
+│   │   ├── github-sync-state.store.ts    # data/.sync-state.json 游标 + orgRepos/personRepos 集合读写
 │   │   └── github.constants.ts           # GitHub 专属常量（搜索上限、页大小、配额下限）
 │   └── confluence/                  # Confluence 管线
 │       ├── confluence-main.ts            # CLI 入口（--mode=full、--report-only、--snapshot）
@@ -157,8 +166,10 @@ export interface Organization {
   name: string;           // 展示名
   logoUrl: string;        // 对应 GitHub avatar_url
   homepageUrl: string;    // 对应 GitHub html_url
-  type: 'partner' | 'external' | 'community' | 'individual'; // individual = 独立开发者伪组织
+  type: 'tsc' | 'participant' | 'operation' | 'individual'; // individual = 独立开发者伪组织（ADR-0016，详见 04 §3.2）
+  displayOrder?: number;  // 组织墙展示序（ADR-0016；缺省落末位、按名称升序）
   tags: string[];         // 如 ['伙伴单位','芯片']
+  emailDomains?: string[]; // 采集口径归属的第二级信号（第一级是 aliases）
   aliases?: Record<string, string>; // { github: 'xxx', confluence: 'yyy' }
 }
 
@@ -168,17 +179,20 @@ export interface OrganizationPort {
 }
 ```
 
-> `scope` 是 HTTP 接口层参数（`GET /api/organizations`），由 `OrganizationService` 组合贡献数据实现（`contributing` = 全量组织 + 贡献分 + 降序，见 ADR-0001），不属于 Port 的查询条件。
+> `scope` 是 HTTP 接口层参数（`GET /api/organizations`），由 `OrganizationService` 组合贡献数据实现（`contributing` = 全量组织 + 贡献指标，**桶序按档案 `displayOrder`**，见 ADR-0016；ADR-0001 的「贡献分降序」已废弃），不属于 Port 的查询条件。
 
 ```ts
 // providers/ports/contribution.port.ts
 export interface ContributionQuery {
   orgIds?: string[];
-  from?: string;  // ISO 8601
-  to?: string;    // ISO 8601
+  /** 按仓库筛选（任意组合，`owner/repo` 全名）；缺省/空 ≡ 全选。指标在筛选范围内重算 */
+  repoIds?: string[];
+  /** ISO 8601 时刻，半开区间 `from <= timestamp < to`（ADR-0018）；缺省即全量口径 */
+  from?: string;
+  to?: string;
 }
 
-/** GitHub 维度贡献（字段对齐真实 API 语义，避免二次返工） */
+/** GitHub 维度贡献（由事件明细两跳派生，不落盘；字段定义见 04 §3.4） */
 export interface OrganizationContribution {
   orgId: string;
   orgName: string;
@@ -186,16 +200,47 @@ export interface OrganizationContribution {
   homepageUrl: string;
   github: {
     pullRequests: number; // 已合并 PR 数
+    commits: number;      // PR 内提交数之和
     issues: number;       // Issue 数
     linesChanged: number; // additions + deletions 汇总
-    repos: number;        // 参与仓库数
+    repos: number;        // 参与仓库数（事件的 repository 并集大小，**唯一非求和字段**）
   };
-  updatedAt: string;
+  updatedAt: string;      // 事件文件 github-events.json 的信封时间戳
 }
 
 export interface ContributionPort {
   getContributions(q: ContributionQuery): Promise<OrganizationContribution[]>;
 }
+```
+
+> **GitHub 三段共用一次派生**（事件明细收敛后）：`deriveGithubFromEvents`（`common/github-event-derivation.ts`）一次遍历事件产出 `views`（账号级）、`contributors`（排 bot）、`repos`（仓库聚合）、`viewByLogin`；组织级再由 `deriveOrganizationContributions`（`common/effective-org.ts`）按 `effectiveOrgId` 求和 ⇒ 「组织级 ≡ 账号级 ≡ 仓库级」由函数形状保证。三个 Port 各自只取自己那段：
+>
+> ⚠️ **区间切片在派生之前**（ADR-0018）：三个 GitHub provider 都先用**唯一谓词** `filterEventsByRange(events, toTimeRangeFilter(from, to))`（`common/time-range.ts` + `common/github-event-derivation.ts`）切一刀再调 `deriveGithubFromEvents`。谓词对 `undefined` **原数组同引用返回**（缺省 ≡ 全量口径），半开判定 `from <= timestamp < to`，不可解析的时间一律 `false`。三段共用同一把刀 ⇒ 恒等式在**任意区间**下依然成立。⚠️ **不要在 provider 里另写 `events.filter(...)`**：双写会让恒等式在两个实现之间悄悄分叉，而这类分叉**不会让任何测试变红**。Confluence 两个 provider 则**接受但恒不过滤**（该侧无时间维度明细）。
+
+```ts
+// providers/ports/contributor-contribution.port.ts —— 账号级（GET /api/contributor-contributions）
+export interface ContributorContributionQuery {
+  orgIds?: string[];    // 按 effectiveOrgId 匹配（认领优先）
+  repoIds?: string[];   // 事件先按 repository 过滤再聚合 ⇒ repos ≡ repoIds.length
+  from?: string; to?: string; // ISO 8601 时刻；半开区间生效（ADR-0018），缺省 ≡ 全量口径
+}
+export interface ContributorContributionPort {
+  getContributorContributions(q: ContributorContributionQuery): Promise<ContributorContributionView[]>;
+}
+// 人物口径：机器账号不在返回结果中（isBotAccount 三信号），但其量仍计入组织级求和。
+
+// providers/ports/repo-contribution.port.ts —— 仓库级（GET /api/repo-contributions，**不落盘**）
+export interface RepoContributionQuery {
+  from?: string; to?: string; // ISO 8601 时刻；半开区间**必须**生效（ADR-0018 决策 6）：与组织级 / 账号级同源于事件，只让两段切片会让恒等式对不上
+  sortBy?: 'pullRequests' | 'commits' | 'issues' | 'linesChanged' | 'contributors' | 'orgs';
+  order?: 'asc' | 'desc';
+  limit?: number;
+}
+export interface RepoContributionPort {
+  getRepoContributions(q: RepoContributionQuery): Promise<RepoContribution[]>;
+}
+// ⚠️ 排序与 limit 在 **Provider 内**完成（排序字段跨 github.* 与顶层 contributors/orgs，Service 的通用排序不适用）；
+// ⚠️ 不接受 repoIds：行指标不随筛选变化（选仓库只是挑行），前端客户端过滤。
 ```
 
 ### 4.2 Confluence 洞察端口
@@ -382,14 +427,19 @@ export interface JsonRepository<T> {
 
 ### 5.2 文件划分与用途
 
-| 文件 | 承载实体 | 写入频率 | 规模预估 |
-| --- | --- | --- | --- |
-| `data/home.json` | `HomeSummary`（首页指标 + `nextSummitId`） | 极低 | 1 条记录 |
-| `data/organizations.json` | `Organization[]` | 低 | 数十条 |
-| `data/github-organizations.json` | `OrganizationContribution[]` | 低（阶段三为定时采集） | 数十条 |
-| `data/confluence-organizations.json` | `OrganizationWiki[]` | 低 | 数十条 |
-| `data/summits.json` | `SummitDetail[]` | 极低 | 十余条 |
-| `data/meetings.json` | `MeetingAttendanceMatrix` | 极低（运营手动触发导入） | 1 个矩阵（约数十行 × 数十列） |
+| 文件 | 承载实体 | 写入频率 | 规模预估 | 读路径 |
+| --- | --- | --- | --- | --- |
+| `data/home.json` | `HomeSummary`（首页指标 + `nextSummitId`；**无** `externalDeveloperCount`） | 极低 | 1 条记录 | ✅ `HOME_METRIC_PORT` |
+| `data/organizations.json` | `Organization[]` | 低 | 数十条（现 13） | ✅ `ORGANIZATION_PORT` + 派生的桶全集 |
+| **`data/github-events.json`** | `GithubContributionEvent[]`（事件明细，**GitHub 侧唯一原子事实**；`schemaVersion` **1**） | 每轮采集追加 / 全量替换 | 现 798 条（618 PR + 180 Issue），随时间线性增长 | ✅ 账号级 / 组织级 / 仓库级三段全部派生自它 |
+| `data/github-accounts.json` | `GithubAccount[]`（**账号档案**：展示名 / 头像 / `githubId` / 采集口径 `orgId` + 指标快照） | 低 | 数十条（现 40） | 🟡 只取展示与归属字段；`github` 指标与 `repoIds` 是**基线快照**（见 06 §2） |
+| `data/github-organizations.json` | `OrganizationContribution[]`（**基线快照**） | 低（阶段三为定时采集） | 现 4 桶 | ⛔ **接口不读**（ADR-0017 后读路径改事件派生） |
+| `data/confluence-accounts.json` | `ConfluenceAccount[]` | 低 | 现 23 条 | ✅ `WIKI_PORT` / `CONFLUENCE_ACCOUNT_PORT` 派生源 |
+| `data/confluence-organizations.json` | `OrganizationWiki[]`（**基线快照**） | 低 | 现 1 桶 | ⛔ **接口不读**（ADR-0010 后改账号级派生） |
+| `data/persons.json` / `identity-claims.json` | 自然人档案 / 认领边 | 中（身份控制台可写） | 现 29 / 46 条 | ✅ 生效归属的第一优先级（`buildGithubClaimIndex`） |
+| `data/summits.json` | `SummitDetail[]` | 极低 | 十余条 | ✅ `SUMMIT_PORT` |
+| `data/meetings.json` | `MeetingAttendanceMatrix` | 极低（运营手动触发导入） | 1 个矩阵（约数十行 × 数十列） | ✅ `MEETING_ATTENDANCE_PORT` |
+| `data/.sync-state.json` | 采集游标 + `unattributedLogins` + `orgRepos` / `personRepos` 集合 | 每轮采集 | 1 条 | ⛔ 采集器内部状态，接口不读 |
 
 > **命名规则（ADR-0008）**：数据文件名统一为 `<source>-<grain>.json`，`source ∈ {github, confluence}`、`grain ∈ {organizations, accounts}`。个人级用 `accounts`（**平台账号**层，GitHub `githubId` / Confluence `accountId`），与自然人档案 `persons.json` 区分层级。
 
@@ -564,6 +614,7 @@ export class ListSummitsQueryDto {
 | 级别 | `error`（影响功能）、`warn`（可降级）、`log`（关键流程）、`debug`（开发期细节，生产关闭） |
 | 请求日志 | 记录 `method`、`path`、`status`、`durationMs`；**不记录**请求体全文与查询串完整值（避免敏感信息） |
 | 数据访问 | 记录文件名与记录条数，如 `loaded github-organizations.json (23 records)`，**不 dump 内容** |
+| 启动自检（`RepositoriesModule`） | 逐个 `read()` 十一个业务 JSON 文件：全部通过 → `log` 一行清单；有失败 → `warn` 汇总（降级只读，不阻断启动）。⚠️ **分级**：`github-events.json` **文件缺失**属预期状态（首次采集前必然缺失）→ 只 `warn` 并提示「请先运行 `npm run collect:github:full -w @openan/api`」；其余失败（结构 / `schemaVersion` 不符）→ `error` 单条 + `warn` 汇总。对应接口在缺失时返回 `50001`（宁可暴露，不静默为 0） |
 | 外部调用（`collector/`） | 记录目标资源标识与状态码（如 `GET /repos/openan/x/pulls → 200`），**严禁**记录 Token、Authorization 头、完整响应体 |
 | 异常日志 | 未预期异常记录完整堆栈与请求上下文（路径、参数键名），不回传客户端 |
 | 禁止项 | 任何凭据、个人身份信息、完整数据文件内容 |
@@ -627,21 +678,35 @@ sequenceDiagram
   participant S as HomeService
   participant P as HomeMetricPort
   participant A as JsonHomeMetricProvider
+  participant CC as ContributorContributionPort
+  participant J as JsonContributorContributionProvider
+  participant D as deriveGithubFromEvents
   participant R as JsonRepository
   participant F as data/home.json
+  participant E as data/github-events.json
 
   W->>C: GET /api/home/summary
   C->>C: ValidationPipe（无参数，直接通过）
   C->>S: getHomeSummary()
-  par 并发获取两块数据
+  par 并发获取三块数据
     S->>P: getHomeSummary()
     P->>A: getHomeSummary()
     A->>R: read()
-    R->>F: 读取（首次）/ 命中缓存（后续）
+    R->>F: 读取（首次）/ 命中缓存（mtime 未变）
     F-->>R: JSON
-    R-->>A: HomeSummary
+    R-->>A: HomeFileData（schemaVersion 2，无 externalDeveloperCount）
   and
     S->>P: getNextSummit()
+  and
+    S->>CC: getContributorContributions({})
+    CC->>J: getContributorContributions({})
+    J->>R: read() 事件 + 账号档案 + 认领边 + 自然人
+    R->>E: 读取 / 命中缓存
+    E-->>R: 798 条事件（缺文件或校验失败 ⇒ 抛 DATA_CORRUPTED）
+    J->>D: 派生（事件 → 账号级视图，第一跳）
+    D-->>J: views / contributors / repos
+    J-->>CC: ContributorContributionView[]（已排 bot）
+    CC-->>S: isIndependentDeveloper 计数 ⇒ externalDeveloperCount（读时派生）
   end
   S->>S: 组装（合并 nextSummit、附加 updatedAt）
   S-->>C: HomeSummaryDto
@@ -649,7 +714,7 @@ sequenceDiagram
   Note over C,W: ResponseInterceptor 完成包装
 ```
 
-**要点**：Service 内部使用 `Promise.all` 并发获取相互独立的数据块，避免串行等待；任一数据块缺失时降级为 `null`/空数组而非整体失败（首页指标缺失则整块隐藏，不影响其他区块）。
+**要点**：Service 内部使用 `Promise.all` 并发获取相互独立的数据块，避免串行等待；任一数据块缺失时降级为 `null`/空数组而非整体失败（首页指标缺失则整块隐藏，不影响其他区块）。⚠️ **例外**：`github-events.json` 缺失或结构非法**不降级**——`JsonRepository` 的整文件级 fail-fast 会抛 `DATA_CORRUPTED`（`50001`），首页直接进错误态；这是刻意选择（宁可暴露，不静默把独立开发者数报成 0），代价与开放风险见 `06 §5`。
 
 ---
 
@@ -659,12 +724,16 @@ sequenceDiagram
 | --- | --- | --- |
 | Provider 适配器（JSON） | 单元测试 + 临时目录 fixture | 文件缺失、schema 版本不匹配、字段类型错误 |
 | JsonRepository | 单元测试 | 原子写是否正确替换、并发 `update` 是否丢失更新、缓存是否失效 |
-| Service | 单元测试（注入内存版 Port） | 口径计算（如 `linesChanged` 汇总）、空数据处理、日期区间过滤、排序稳定性 |
+| Service | 单元测试（注入内存版 Port） | 口径计算（如 `linesChanged` 汇总）、空数据处理、`assertRange`（`from > to` → `40002`；`from == to` **合法** = 空区间）、排序稳定性 |
+| **区间口径切片**（ADR-0018） | 离线自检 `identity-check.mjs` 场景 **[7]**（10 项） | 半开边界（`15:59:59Z` 不命中 / `16:00:00Z` 命中）、**无区间 ≡ 同引用**（`===`）、单侧无界、空区间命中 0、`isWithinRange` 三态（不可解析一律 `false`）、**同区间恒等式**（组织级 ≡ 账号级 ≡ 仓库级）、空区间的桶形状（枚举桶记 0 不消失）、窗口收紧后 `repos` 行收缩、校验器正负向 |
 | 例会矩阵透传 | 单元测试 | `attendance.length !== columns.length` 时抛 `DATA_CORRUPTED`；返回结果保持原序、不被加工 |
 | Controller | e2e 测试（`supertest`） | 参数校验拒绝未知字段、错误码正确、响应信封结构 |
 | 契约一致性 | 类型级校验 | Service 返回类型与 04 文档契约字段逐项对齐（Code Review 清单） |
+| **离线自检脚本**（`apps/api/scripts/`，无需网络 / 无需 token；先 `npm run build -w @openan/api`） | `npm run collect:github:check -w @openan/api`（`collector-check.mjs`，**76** 断言）、`identity:check`（`identity-check.mjs`，**68**）、`collect:wiki:check`（**73**） | 以 `GITHUB_FIXTURE` 跑通采集 → 落盘 → 读路径全链路；⭐ 关键约束是**写读一致性**：脚本直接 `import` 编译产物 `dist/repositories/validators.js` 的 `isGithubContributionEventArray` 校验**落盘结果**（而不是只查字段形状），否则「采集侧写出、读侧拒收」这类缺陷会静默通过——场景 **[7] Bot / 无作者** 即为此而加（临时 fixture + **负向对照**），场景 **[8] 缺时间戳整条拒绝**（ADR-0018）同为此类：另造三条记录的 fixture（有 ts / `null` / 空串），断言只落 1 条事件、聚合只吃 timed、游标 `untimedEvents === 2` 且 `recordCount === 3`、`WARN` 含累计数与样例。⚠️ 脚本内的 **D1 恒等式比对只在全量口径下成立**（基线快照 `github-organizations.json` 不带区间）；区间口径下的恒等式归 `identity-check` 场景 **[7]** |
 
 **测试替身约定**：`InMemoryContributionProvider` 等内存实现放在 `test/` 下，**不得**进入 `providers/` 目录，避免与生产适配器混淆。
+
+> ⚠️ **fixture 覆盖 ≠ 真实数据覆盖**：主 fixture 若没有某种形态（如 Bot 作者），自检全绿也拦不住线上事故——2026-10-30 的 `50001` 全量故障正是 63 条断言全绿时发生的（3 条 `dependabot` 事件丢键）。新增采集字段 / 作者形态时，**必须同步补 fixture 场景**。
 
 ---
 
@@ -681,4 +750,4 @@ sequenceDiagram
 - [ ] `ValidationPipe` 开启 `whitelist` + `forbidNonWhitelisted` + `transform`
 - [ ] JSON 写入使用临时文件 + `rename` 原子替换，且按文件串行
 - [ ] 日志中不含任何凭据与完整数据内容
-- [ ] 启动期校验 `DATA_DIR` 存在且七个 JSON 文件结构合法
+- [ ] 启动期校验 `DATA_DIR` 存在且**十一个**业务 JSON 文件结构合法（含 `github-events.json`）；缺文件按分级日志（事件文件缺失 → WARN + 下一步提示，其余 → ERROR），且**不阻断启动**（降级只读，由接口返回 `50001`）

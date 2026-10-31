@@ -1,49 +1,50 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import {
   Contributor,
-  ContributorContribution,
+  GithubContributionEvent,
   IdentityClaim,
   Organization,
   OrganizationContribution,
   Person,
 } from '../../contract/entities';
+import { deriveOrganizationContributions } from '../../common/effective-org';
 import {
-  buildGithubClaimIndex,
-  deriveOrganizationContributions,
-  resolveGithubEffectiveOrg,
-} from '../../common/effective-org';
+  deriveGithubFromEvents,
+  filterEventsByRange,
+} from '../../common/github-event-derivation';
 import { sortOrganizations } from '../../common/org-order';
+import { toTimeRangeFilter } from '../../common/time-range';
 import { JsonRepository } from '../../repositories/json-repository';
 import {
   CONTRIBUTORS_REPOSITORY,
+  GITHUB_EVENTS_REPOSITORY,
   IDENTITY_CLAIMS_REPOSITORY,
   ORGANIZATIONS_REPOSITORY,
   PERSONS_REPOSITORY,
 } from '../../repositories/repository.tokens';
 import { ContributionPort, ContributionQuery } from '../ports/contribution.port';
 
-const hasMetrics = (item: Contributor): item is ContributorContribution => Boolean(item.github);
-
 /**
- * 组织级 GitHub 读实现（ADR-0017）：**读时派生**，不读 `github-organizations.json`。
+ * 组织级 GitHub 读实现（ADR-0017 → **D1 收敛**）：**读时派生**。
  *
- * 读账号级原子事实 + 身份认领边 + 自然人档案 + 组织档案 → 按**生效归属**（人工认领优先）求和，
- * **覆盖组织档案全部组织**（含伪组织 `unattributed`），未命中记 0。于是
- * 「组织级 = 账号级按生效归属求和」在结构上恒成立，且补认领边 / 改归属后**下一请求即生效**。
+ * 原子事实自 `github-accounts.json` 的账号级汇总**下沉为 `github-events.json` 的事件级明细**：
+ * 事件 → 账号级视图（生效归属解析：认领边优先）→ 组织级投影，与个人排行 / 仓库维度**同源**，
+ * 「组织级 ≡ 账号级 ≡ 仓库级求和」由函数形状保证。`github-accounts.json` 降级为**账号档案**
+ * （姓名/头像/githubId/采集口径 orgId），其 `github` 指标字段不再参与任何读路径；
+ * `github-organizations.json` 维持基线快照（漂移告警 / 审计用）。
  *
- * 与 `JsonWikiProvider`（Confluence 侧，ADR-0010）同构，两平台自此共用一套归属语义。
- *
- * 落盘的 `github-organizations.json` 仍由采集器写入，但已降级为**基线快照**（漂移告警 / 审计用）：
- * 它只有 4 个桶（部分覆盖），与账号级聚合实测差 21 commits（`huawei` −21 / `unattributed` +21），
- * 正是本轮要消除的双写漂移，读路径不再依赖。
- *
- * `updatedAt` 取账号级**文件**的时间戳（`github-accounts.json` 记录级无 `updatedAt` 字段）。
+ * - `repoIds`：仓库组合筛选（缺省/空 ≡ 全选），组织级数字在筛选范围内重算；
+ * - `from/to`：**区间口径**（ADR-0018）——按事件 `timestamp` 做 `from <= ts < to` 半开过滤，
+ *   缺省即**全量口径**；全覆盖派生不变，区间内无事件的组织仍出 0 值行；
+ * - `updatedAt` 取**事件文件**的时间戳（唯一原子事实的落盘时间，与区间无关）。
  */
 @Injectable()
 export class JsonContributionProvider implements ContributionPort {
   private readonly logger = new Logger(JsonContributionProvider.name);
 
   constructor(
+    @Inject(GITHUB_EVENTS_REPOSITORY)
+    private readonly events: JsonRepository<GithubContributionEvent[]>,
     @Inject(CONTRIBUTORS_REPOSITORY)
     private readonly accounts: JsonRepository<Contributor[]>,
     @Inject(IDENTITY_CLAIMS_REPOSITORY)
@@ -55,27 +56,36 @@ export class JsonContributionProvider implements ContributionPort {
   ) {}
 
   async getContributions(query: ContributionQuery): Promise<OrganizationContribution[]> {
-    const [{ data: accounts, updatedAt }, { data: claims }, { data: persons }, { data: organizations }] =
+    const [{ data: events, updatedAt }, { data: accounts }, { data: claims }, { data: persons }, { data: organizations }] =
       await Promise.all([
+        this.events.read(),
         this.accounts.read(),
         this.claims.read(),
         this.persons.read(),
         this.organizations.read(),
       ]);
 
-    if (query.from || query.to) {
-      // 阶段一本地数据无时间维度明细，接受参数但返回全量（见 04 文档 5.3.3）
-      this.logger.debug('阶段一忽略 from/to 过滤，返回全量贡献数据');
-    }
+    // 区间口径（ADR-0018）：在进入派生**之前**切一刀，与账号级 / 仓库级共用同一谓词，
+    // 于是「组织级 ≡ 账号级 ≡ 仓库级求和」在同一区间下继续由函数形状保证
+    const range = toTimeRangeFilter(query.from, query.to);
 
-    const { index, warnings } = buildGithubClaimIndex(claims, persons);
-    for (const warning of warnings) {
+    // 量口径**不排除**机器人：其 commits / PRs 仍计入生效归属桶，保证求和恒等式（决策 11）
+    const derivation = deriveGithubFromEvents({
+      events: filterEventsByRange(events, range),
+      accounts,
+      claims,
+      persons,
+      repoFilter: query.repoIds?.length ? new Set(query.repoIds) : null,
+    });
+    for (const warning of derivation.warnings) {
       this.logger.warn(warning);
     }
 
-    // 量口径**不排除**机器人：其 commits / PRs 仍计入生效归属桶，保证求和恒等式与历史快照可比（决策 11）
-    const views = accounts.filter(hasMetrics).map((account) => resolveGithubEffectiveOrg(account, index));
-    const contributions = deriveOrganizationContributions(sortOrganizations(organizations), views, updatedAt);
+    const contributions = deriveOrganizationContributions(
+      sortOrganizations(organizations),
+      derivation.views,
+      updatedAt,
+    );
 
     if (!query.orgIds?.length) {
       return contributions;

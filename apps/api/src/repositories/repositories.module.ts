@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import {
   ConfluenceAccount,
   Contributor,
+  GithubContributionEvent,
   HomeFileData,
   IdentityClaim,
   MeetingAttendanceMatrix,
@@ -18,6 +19,7 @@ import {
   CONFLUENCE_ACCOUNTS_REPOSITORY,
   CONTRIBUTIONS_REPOSITORY,
   CONTRIBUTORS_REPOSITORY,
+  GITHUB_EVENTS_REPOSITORY,
   HOME_REPOSITORY,
   IDENTITY_CLAIMS_REPOSITORY,
   WIKI_REPOSITORY,
@@ -30,6 +32,7 @@ import {
   isConfluenceAccountArray,
   isContributionArray,
   isContributorArray,
+  isGithubContributionEventArray,
   isHomeFileData,
   isIdentityClaimArray,
   isWikiArray,
@@ -110,6 +113,21 @@ const repositoryProviders = [
     inject: [ConfigService],
   },
   {
+    provide: GITHUB_EVENTS_REPOSITORY,
+    // GitHub 侧唯一原子事实（事件级明细）：组织/账号/仓库级数字全部读时派生；
+    // github-accounts.json 自此降级为账号档案（姓名/头像/githubId/采集口径 orgId），
+    // github-organizations.json 维持基线快照（漂移告警/审计）
+    // v2：timestamp 由 `string | null` 收紧为**必填**（ADR-0018 决策 4）——它是区间口径唯一的
+    // 切片依据，缺时间的事件在采集期即被拒绝不落盘；存量数据零 null，由
+    // scripts/bump-github-events-schema.mjs 一次性提升信封版本（无需重跑采集）
+    useFactory: makeRepository<GithubContributionEvent[]>(
+      'github-events.json',
+      isGithubContributionEventArray,
+      2,
+    ),
+    inject: [ConfigService],
+  },
+  {
     provide: SUMMITS_REPOSITORY,
     useFactory: makeRepository<SummitDetail[]>('summits.json', isSummitDetailArray),
     inject: [ConfigService],
@@ -153,6 +171,8 @@ export class DataBootstrapService implements OnApplicationBootstrap {
     @Inject(CONFLUENCE_ACCOUNTS_REPOSITORY)
     private readonly confluenceAccounts: JsonRepository<ConfluenceAccount[]>,
     @Inject(CONTRIBUTORS_REPOSITORY) private readonly contributors: JsonRepository<Contributor[]>,
+    @Inject(GITHUB_EVENTS_REPOSITORY)
+    private readonly githubEvents: JsonRepository<GithubContributionEvent[]>,
     @Inject(SUMMITS_REPOSITORY) private readonly summits: JsonRepository<SummitDetail[]>,
     @Inject(MEETINGS_REPOSITORY)
     private readonly meetings: JsonRepository<MeetingAttendanceMatrix>,
@@ -169,11 +189,18 @@ export class DataBootstrapService implements OnApplicationBootstrap {
       this.wiki,
       this.confluenceAccounts,
       this.contributors,
+      // github-events.json 首次上线前可能缺失（需跑一次 collect:github:full）：
+      // 自检只 WARN 不阻断启动，GitHub 侧接口在缺失时返回 50001（宁可暴露，不静默为 0）
+      this.githubEvents,
       this.summits,
       this.meetings,
       this.persons,
       this.identityClaims,
     ] as const;
+
+    // github-events.json 在跑过首次 collect:github:full 之前**必然**缺失，属预期状态而非故障：
+    // 降为 WARN 并给出下一步动作，避免每次启动 / 每次采集都打一条刺眼的 ERROR
+    const pendingCollect = new Set<string>([this.githubEvents.label]);
 
     const results = await Promise.all(
       repositories.map(async (repo) => {
@@ -181,7 +208,15 @@ export class DataBootstrapService implements OnApplicationBootstrap {
           await repo.read();
           return { label: repo.label, ok: true };
         } catch (error) {
-          this.logger.error(`启动自检失败：${repo.label} → ${(error as Error).message}`);
+          const message = (error as Error).message;
+          if (pendingCollect.has(repo.label) && message.includes('数据文件缺失')) {
+            this.logger.warn(
+              `${repo.label} 尚未生成（GitHub 侧接口将返回 50001）：` +
+                '请先运行 npm run collect:github:full -w @openan/api 采集一次',
+            );
+          } else {
+            this.logger.error(`启动自检失败：${repo.label} → ${message}`);
+          }
           return { label: repo.label, ok: false };
         }
       }),
@@ -206,6 +241,7 @@ export class DataBootstrapService implements OnApplicationBootstrap {
     WIKI_REPOSITORY,
     CONFLUENCE_ACCOUNTS_REPOSITORY,
     CONTRIBUTORS_REPOSITORY,
+    GITHUB_EVENTS_REPOSITORY,
     SUMMITS_REPOSITORY,
     MEETINGS_REPOSITORY,
     PERSONS_REPOSITORY,

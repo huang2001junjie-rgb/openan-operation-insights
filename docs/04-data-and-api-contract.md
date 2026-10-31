@@ -11,9 +11,10 @@
 | --- | --- | --- | --- |
 | `data/home.json` | `JsonFileEnvelope<HomeFileData>` | 首页**三项人工指标** + 下一次峰会引用（独立开发者人数已改为读时派生，不再落盘，ADR-0017） | 1 |
 | `data/organizations.json` | `JsonFileEnvelope<Organization[]>` | 组织档案（TSC 成员单位 / 参与单位 / 运营单位 / 独立开发者伪组织）；**同时是组织级派生投影的桶清单** | 数十 |
-| `data/github-organizations.json` | `JsonFileEnvelope<OrganizationContribution[]>` | GitHub 维度贡献（采集器仍写，但**已降级为基线快照**，读路径不依赖，ADR-0017） | 数十 |
+| `data/github-organizations.json` | `JsonFileEnvelope<OrganizationContribution[]>` | GitHub 维度贡献（采集器仍写，但**已降级为基线快照**，读路径不依赖，ADR-0017）；组织级数字改由 `github-events.json` 按生效归属派生（见 3.2 / 3.12） | 数十 |
+| `data/github-events.json` | `JsonFileEnvelope<GithubContributionEvent[]>` | GitHub **事件级明细**（已合并 PR / Issue，每仓每号一条）——GitHub 侧**唯一原子事实**；组织级 / 账号级 / 仓库级的一切数字都由它读时派生（见 3.12） | 数百～数千 |
 | `data/confluence-organizations.json` | `JsonFileEnvelope<OrganizationWiki[]>` | wiki 维度贡献（Confluence） | 数十 |
-| `data/github-accounts.json` | `JsonFileEnvelope<Contributor[]>` | 个人贡献者档案（GitHub 账号维度） | 数百 |
+| `data/github-accounts.json` | `JsonFileEnvelope<Contributor[]>` | 个人贡献者**账号档案**（GitHub 账号维度：姓名 / 头像 / `githubId` / 采集口径 `orgId`）；⚠️ 其 `github` 指标已降级为**基线快照**，读路径不再消费（见 3.7） | 数百 |
 | `data/confluence-accounts.json` | `JsonFileEnvelope<ConfluenceAccount[]>` | Confluence 账号级事实（账号 × 三个维度：需求 / 议题分享 / 编辑；组织级的求和来源，ADR-0010） | 数十～数百 |
 | `data/summits.json` | `JsonFileEnvelope<SummitDetail[]>` | 峰会时间线与详情 | 十余 |
 | `data/meetings.json` | `JsonFileEnvelope<MeetingAttendanceMatrix>` | 例会参会矩阵（人 × 日期） | 1 |
@@ -49,12 +50,16 @@
 > | `home.json` | **2** | v2 删除 `externalDeveloperCount`，独立开发者人数改读时派生（ADR-0017） |
 > | `confluence-organizations.json` | **3** | v2 `bestPractices → topicShares`（ADR-0009）；v3 新增 `edits`（ADR-0011） |
 > | `confluence-accounts.json` | **4** | v3 新增 `orgSource`（ADR-0010）；v4 新增 `edits`（ADR-0011） |
-> | `github-accounts.json` | **2** | v2 在 `github` 下新增**必填** `repoIds`（仓库清单，ADR-0017 决策 15）：组织级 `repos` 是去重数，只能由账号级清单取并集得出 |
+> | `github-accounts.json` | **2** | v2 在 `github` 下新增**必填** `repoIds`（仓库清单，ADR-0017 决策 15）：组织级 `repos` 是去重数，只能由账号级清单取并集得出。⚠️ 事件明细上线后该文件的 `github` 指标已不参与读路径（降级为基线快照，见 3.7），但版本号仍为 **2** |
+> | `github-events.json` | **2** | v1 新文件（GitHub 侧**唯一原子事实**，见 3.12）；**v2** 把 `timestamp` 由 `string \| null` 升为**必填 `string`**——它是区间口径的唯一切片依据，可空会让同一份文件在「全量 / 区间」两种读法下给出两个总量（ADR-0018 决策 4）。存量数据用 `npm run migrate:github-events-v2` 抬信封版本（**只改信封、记录逐条不动**）。⚠️ 它**刻意不在** `seed-data/` 里：首次 `collect:github:full` 之前磁盘上不存在，属预期状态而非故障，启动自检只 WARN（见下方 ⚠️ 段） |
 > | 其余（`organizations` / `github-organizations` / `summits` / `meetings` / `persons` / `identity-claims`） | **1** | 未发生不兼容变更 |
 >
 > ⚠️ 提升版本必须**同批原子切换**：`entities.ts`（落盘类型）+ `validators.ts`（结构校验）+ `repositories.module.ts`（期望值）+ `data/*.json`（信封）+ `apps/api/scripts/fixtures/seed-data/*.json`（离线自检的合成种子）。
 >
-> ⚠️ 若新版本的字段值**无法凭空写出**（如 `repoIds` 需要历史仓库集合），存量数据要配一次性迁移脚本：`npm run backfill:github-repo-ids`（`apps/api/scripts/backfill-github-repo-ids.mjs`，默认 dry-run，加 `--write` 落盘）。它从采集器元信息 `data/.sync-state.json` 的 `personRepos` 取集合——该集合与业务文件的 `github.repos` 计数同源，故**无需重跑采集器**；脚本幂等，任一账号解析不出集合即以退出码 1 拒绝写盘（此时应改跑增量采集重建集合）。回填后采集器的个人增量基线也改从业务文件的 `repoIds` 自持，不再依赖 `personRepos`（该字段降级为审计/回填来源）。漏改**不会**让进程起不来——`DataBootstrapService.onApplicationBootstrap()` 对每个仓库 `try/catch` 读一遍，失败只记 `启动自检失败：<file> → …` 并 WARN「数据自检未通过（降级只读）」，随后由具体接口返回 `50001`（API 与采集器 CLI 都 `imports: [RepositoriesModule]`，故自检两边都会跑）。正因如此，**漏改种子文件不会让 `npm run collect:*:check` 的断言直接变红**，只在自检日志里留痕——属容易被忽略的静默劣化，改版本时须逐项核对。
+> ⚠️ 若新版本的字段值**无法凭空写出**（如 `repoIds` 需要历史仓库集合），存量数据要配一次性迁移脚本：`npm run backfill:github-repo-ids`（`apps/api/scripts/backfill-github-repo-ids.mjs`，默认 dry-run，加 `--write` 落盘）。它从采集器元信息 `data/.sync-state.json` 的 `personRepos` 取集合——该集合与业务文件的 `github.repos` 计数同源，故**无需重跑采集器**；脚本幂等，任一账号解析不出集合即以退出码 1 拒绝写盘（此时应改跑增量采集重建集合）。回填后采集器的个人增量基线也改从业务文件的 `repoIds` 自持，不再依赖 `personRepos`（该字段降级为审计/回填来源）。⚠️ 若新版本**只收紧既有字段的必填性、不改值**（如 `github-events.json` v2 的 `timestamp`），迁移脚本可以只抬信封：`npm run migrate:github-events-v2`（`apps/api/scripts/bump-github-events-schema.mjs`，默认 dry-run，加 `--write` 落盘）——它**不校验也不改写记录**，故存量数据里若真有缺失值，抬版本后 `JsonRepository` 会以 `50001` fail-fast，届时重跑 `collect:github:full` 重建事件文件（采集期会整条拒绝缺时间的记录，见 3.12）。漏改**不会**让进程起不来——`DataBootstrapService.onApplicationBootstrap()` 对每个仓库 `try/catch` 读一遍，失败**不阻断启动**，随后 WARN「数据自检未通过（降级只读）」并由具体接口返回 `50001`（API 与采集器 CLI 都 `imports: [RepositoriesModule]`，故自检两边都会跑）。失败日志分两档：
+>
+> - **`github-events.json` 因「文件缺失」失败** → WARN「`github-events.json 尚未生成（GitHub 侧接口将返回 50001）：请先运行 npm run collect:github:full -w @openan/api 采集一次`」。这是首次采集前的**预期状态**，打 ERROR 会在每次启动 / 每次采集都留一条刺眼噪声，故降档并附下一步动作；
+> - **其余一切失败**（含 `github-events.json` 的**结构校验不通过**，即「文件在但内容非法」）→ ERROR `启动自检失败：<file> → …`。结构损坏是真故障，不降档。正因如此，**漏改种子文件不会让 `npm run collect:*:check` 的断言直接变红**，只在自检日志里留痕——属容易被忽略的静默劣化，改版本时须逐项核对。
 
 ### 1.2 数据关联关系
 
@@ -218,13 +223,23 @@ erDiagram
 > - `commits` 采用 **PR 级汇总**：逐条累加已合并 PR 的 `commits.totalCount`（PR 内提交总数），**不含未经 PR 直接推送到分支的提交**。理由：与 `pullRequests` / `linesChanged` 同源同一批已合并 PR，口径一致，且 `totalCount` 与 `additions` / `deletions` 在同一层嵌套查询获取，**不产生任何额外请求**；若统计仓库全部提交则须逐仓库翻页遍历提交历史，配额与耗时不可接受。
 > - 统计范围限定为 OpenAN 组织下的仓库，且通过 `GITHUB_REPOS` 白名单可进一步收窄。
 >
-> **派生投影（ADR-0017）**：本实体**不再由读路径消费落盘值**。`GET /api/contributions` 与组织卡「代码贡献量」均为读时派生——账号级 `Contributor.github`（见 3.7）按**生效归属 `effectiveOrgId`** 求和，**覆盖组织档案全部组织**（含伪组织 `unattributed`），未命中记 0。于是
+> **派生投影（ADR-0017 → 事件明细收敛）**：本实体**不再由读路径消费落盘值**。`GET /api/contributions` 与组织卡「代码贡献量」均为读时派生——**GitHub 侧唯一原子事实是事件明细 `github-events.json`**（见 3.12），派生分两跳：
 >
-> > 组织级各项 ≡ 账号级按生效归属求和
+> ```
+> 事件明细 → 账号级投影（生效归属解析：认领边优先，仓库可筛选）→ 组织级求和
+> ```
 >
-> 由**函数形状**保证（`common/effective-org.ts` 的 `deriveOrganizationContributions`），不依赖任何重算时机；`updatedAt` 取 `github-accounts.json` 的**文件**时间戳（账号级记录无该字段）。落盘的 `github-organizations.json` 降级为**基线快照**（采集器仍写，用于漂移审计），读路径不再依赖，理由见 4.3。
+> 第一跳 `deriveGithubFromEvents`（`common/github-event-derivation.ts`）；第二跳仍是 ADR-0017 的 `deriveOrganizationContributions`（`common/effective-org.ts`），按**生效归属 `effectiveOrgId`** 求和，**覆盖组织档案全部组织**（含伪组织 `unattributed`），未命中记 0。于是
 >
-> **`repos` 是恒等式的唯一例外**（ADR-0017 决策 15）：它的语义是「参与过的仓库**去重数**」，直接求和会把跨账号共用的仓库重复计数（实测 `huawei` 求和得 51，而采集范围内仓库总数只有 13）。故账号级 v2 起落盘 `repoIds`（仓库全名清单，见 3.7），派生层取**并集大小**：组织级 `repos` = |∪ 该桶内所有账号的 `repoIds`|。修复后与落盘基线在归属未变的桶上完全一致（实测 `huawei` 13、`cmcc` 3、`zte` 1），归属变了的桶按生效归属重新并集（`lfn` 6、`unattributed` 8）。
+> > 组织级各项 ≡ 账号级按生效归属求和 ≡ 仓库级同范围求和
+>
+> 由**函数形状**保证（三段共用同一个 `deriveGithubFromEvents`），不依赖任何重算时机；`updatedAt` 取 **`github-events.json`** 的**文件**时间戳（唯一原子事实的落盘时间）。落盘的 `github-organizations.json` 与 `github-accounts.json` 的 `github` 指标双双降级为**基线快照**（采集器仍写，用于漂移审计与人工核对），读路径不再依赖，理由见 4.3 / 3.7。
+>
+> **`repos` 是恒等式的唯一例外**（ADR-0017 决策 15）：它的语义是「参与过的仓库**去重数**」，直接求和会把跨账号共用的仓库重复计数（实测 `huawei` 求和得 51，而采集范围内仓库总数只有 13）。故派生层取**并集大小**：组织级 `repos` = |∪ 该桶内所有账号出现过的仓库|。
+>
+> 事件明细上线后，这个并集的来源从账号级 `repoIds` 清单**换成事件自带的 `repository` 字段**（`deriveGithubFromEvents` 遍历时逐账号累积仓库集合，`mergeRepoIds` 取并集）——事件本身就是「谁在哪个仓库做过什么」，去重语义天然成立。账号级 `repoIds`（v2 落盘，见 3.7）随之降级为**基线快照**：采集器仍写、仍可用于离线核对与回填，但不再参与任何读路径。⚠️ 接口的 `repoIds` **入参**（仓库组合筛选，缺省 ≡ 全选，见 5.3.3 / 5.3.17）与该落盘字段**同名不同义**：入参是筛选条件，落盘字段是历史清单。
+>
+> 修复后与落盘基线在归属未变的桶上完全一致（2026-10-30 全量实测 `huawei` 13、`cmcc` 3、`zte` 1；`huawei` 的 13 = 采集范围内**全部**仓库），归属变了的桶按生效归属重新并集（`lfn` 6、`unattributed` **9**；落盘基线的 `unattributed` 为 12，因 6 个账号已被认领走）。
 >
 > **组织归属判定（采集口径，按优先级从高到低，结果写入 `github-accounts.json` 的 `orgId`）**：
 > 1. **登录名别名**：`Organization.aliases.github` 与贡献者 login（小写）精确匹配；
@@ -345,12 +360,12 @@ erDiagram
 | `avatarUrl` | string | ❌ | GitHub 头像；为空时前端降级为首字母色块 |
 | `joinedAt` | string | ❌ | 首次参与社区贡献的时间，用于"新增贡献者"类统计 |
 | `description` | string | ❌ | 一句话简介，用于卡片悬浮提示 |
-| `github` | object | ❌ | GitHub 协作指标（`pullRequests`/`commits`/`issues`/`linesChanged`/`repos`，结构见 3.2）**+ `repoIds`**（v2 新增，见下）；**由采集器按轮回填**，人工维护的纯档案可能缺失该字段 |
-| `github.repoIds` | string[] | ✅（当 `github` 存在时） | 参与过的仓库全名（`owner/repo`）**去重升序**清单（ADR-0017 决策 15）。`github.repos` 恒等于其长度。存在意义：组织级 `repos` 的语义是**去重仓库数**，而组织级由账号级求和派生——只存计数会让跨账号共用的仓库被重复计数（实测 `huawei` 曾算出 51，而采集范围内仓库总数只有 13）；有了清单，派生层才能取**并集大小**。个人维度的增量基线也自此持仓库集合，不再依赖采集器元信息 `.sync-state.json` 的 `personRepos` |
+| `github` | object | ❌ | ⚠️ **基线快照，读路径不消费**（事件明细上线后降级）。GitHub 协作指标（`pullRequests`/`commits`/`issues`/`linesChanged`/`repos`，结构见 3.2）**+ `repoIds`**（v2 新增，见下）；仍**由采集器按轮回填**（full 模式重算，增量在既有指标上叠加），供离线核对与回填脚本使用，人工维护的纯档案可能缺失该字段 |
+| `github.repoIds` | string[] | ✅（当 `github` 存在时） | ⚠️ 同上，**读路径不消费**（组织级 `repos` 的去重并集现由事件自带的 `repository` 字段得出，见 3.2）。参与过的仓库全名（`owner/repo`）**去重升序**清单（ADR-0017 决策 15），`github.repos` 恒等于其长度。历史用途：组织级由账号级求和派生时，只存计数会让跨账号共用的仓库被重复计数（实测 `huawei` 曾算出 51，而采集范围内仓库总数只有 13），故落清单以便派生层取**并集大小**。个人维度的增量基线也自此持仓库集合，不再依赖采集器元信息 `.sync-state.json` 的 `personRepos` |
 
-> **定位说明**：本实体是「人工维护档案 + 采集回填指标」的混合实体。`joinedAt`、`description` 等字段由运营维护，`github` 指标由 GitHub 采集器以 `githubId` 归并个人 PR / Issue / 提交后写入（full 模式重算，增量模式在既有指标上叠加）。**本实体是 GitHub 侧唯一的账号级原子事实**：组织级投影（3.2）与首页独立开发者人数（3.4）均由它读时派生。
+> **定位说明（⚠️ 事件明细上线后已变更）**：本实体是「人工维护档案 + 采集回填指标」的混合实体，`joinedAt`、`description` 等字段由运营维护，`github` 指标由 GitHub 采集器以 `githubId` 归并个人 PR / Issue / 提交后写入。**它不再是 GitHub 侧的原子事实**——原子事实已下沉为事件级明细 `github-events.json`（见 3.12），本实体降级为**账号档案**：读路径只取它的展示与归属字段（`name` / `avatarUrl` / `githubId` / 采集口径 `orgId` / `joinedAt` / `description`），`github` 指标一律由事件**读时派生**。档案缺失的账号由事件 `author` 快照兜底合成（`name` 回落 login，`avatarUrl` 回落空串），故新增贡献者不必等运营补档案。
 >
-> 只读接口为 `GET /api/contributor-contributions`（见 5.3.8），出参是 `ContributorContributionView` = 本实体（且 `github` 恒有值）**追加**读时派生的 `effectiveOrgId` / `orgSource` / `personId`；这三个派生字段与 bot 标记**一律不落盘**（`isBotAccount` 是读时纯函数）。落盘结构本身在 ADR-0017 决策 15 中升到 **v2**：`github` 下新增必填 `repoIds`（仓库清单，用途见上表），存量数据由 `npm run backfill:github-repo-ids` 一次性回填。派生规则见 3.2 的生效归属公式。
+> 只读接口为 `GET /api/contributor-contributions`（见 5.3.8），出参是 `ContributorContributionView` = 账号档案字段 + **事件派生**的 `github`（且恒有值）**追加**读时派生的 `effectiveOrgId` / `orgSource` / `personId`；这三个派生字段与 bot 标记**一律不落盘**（`isBotAccount` 是读时纯函数）。落盘结构本身在 ADR-0017 决策 15 中升到 **v2**：`github` 下新增必填 `repoIds`（用途见上表），存量数据由 `npm run backfill:github-repo-ids` 一次性回填；事件明细上线**没有**再提升该文件版本（只是让 `github` 退出读路径），故期望值仍为 **2**。派生规则见 3.2 的生效归属公式。
 >
 > **独立开发者人数不再写回 `home.json`**（该字段已删，见 3.6），改为 `HomeService` 注入同一端口按 `isIndependentDeveloper` 计数——口径只有一处定义，且改认领边后下一个请求即变。
 
@@ -442,6 +457,36 @@ erDiagram
 - `requirements` / `topicShares` 统计的是**账号被 @ 的次数 / 期数**，不是页面数；`edits` 统计的是**版本作者条数**，同样不是页面数（一页被同一人编辑多次即计多条）。选页口径见 ADR-0009，与组织级完全同源（见 07 §3.2.1）。
 - `orgId` 是**采集器自动归属**的结果（`aliases.confluence` → 空间兜底 → 伪组织 `unattributed`），**只作落盘兜底与审计**；对外**生效归属**为读时派生的 `effectiveOrgId = 认领边派生的 Person.orgId ?? orgId ?? 'unattributed'`（人工认领优先，见 ADR-0010）。本实体已**不含**认领边裁决，`personId` 仅为落盘快照，接口以读时派生为准。
 - **不变式**：`OrganizationWiki.confluence`（3.3）的 `requirements` / `topicShares` / `edits` 分别恒等于本实体对应字段按 **`effectiveOrgId`** 求和（含伪组织 `unattributed`）——`GET /api/wiki` 读时派生，不读 `confluence-organizations.json`，从构造上消除双写与时机漂移。
+
+### 3.12 `GithubContributionEvent`（GitHub 事件级明细，**唯一原子事实**）
+
+> ⚠️ 本实体**取代**「账号级汇总是 GitHub 侧原子事实」的旧定位：一条事件 = 一个**已合并** PR 或一条 Issue，落盘在 `data/github-events.json`（`schemaVersion` = **2**，ADR-0018 决策 4 由 1 抬升——唯一变化是 `timestamp` 由可空升为必填；存量数据用 `npm run migrate:github-events-v2` 抬信封版本，记录逐条不动）。组织级（3.2）、账号级（3.7 出参 / 5.3.8）、仓库级（5.3.17）三段数字**全部由它读时派生**，恒等式「组织级 ≡ 账号级按生效归属求和 ≡ 仓库级同范围求和」由函数形状保证（`common/github-event-derivation.ts` 的 `deriveGithubFromEvents` 单点定义，三处共用）。⚠️ 本文件**恒存全量**：区间口径是**读时切片**（`filterEventsByRange`，ADR-0018 决策 1），事件本身不带任何区间属性。
+
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| `kind` | `'pullRequest' \| 'issue'` | ✅ | 事件类型。`pullRequest` 只收**已合并**的 PR（open / closed-unmerged 不落盘），`linesChanged` / `commitCount` 仅此类有意义 |
+| `repository` | string | ✅ | 仓库全名 `owner/repo`。**仓库维度筛选与 `repos` 去重的唯一来源**（组织级 / 账号级 `repos` = 桶内事件的 `repository` 并集大小） |
+| `number` | number | ✅ | PR / Issue 编号，幂等键的一部分 |
+| `author` | object \| null | ✅ | 作者**展示与归属快照**（字段见下）。已注销账号（GitHub 返回空 author）为 **`null`**：其量进不了人物口径，只进仓库级 |
+| `author.login` | string | ✅ | **小写** login；账号级分组键，与 `github-accounts.json` 的 `contributorId` 同源 |
+| `author.githubId` | number \| null | ✅ | GitHub 数字账号 ID，**认领边匹配键**。⚠️ Bot（GitHub App）没有该值 → `null`（不是缺键，见下方 ⚠️） |
+| `author.name` | string \| null | ✅ | 展示名。⚠️ Bot / 未设置 profile name 者为 `null`，出参回落 `login` |
+| `author.avatarUrl` | string | ✅ | 头像 URL，缺失为 `''`。是 `isBotAccount` 三信号之一（GitHub App 头像走 `avatars.githubusercontent.com/in/` 路径，人类是 `/u/`） |
+| `linesChanged` | number | ✅ | **PR 级** `additions + deletions`（口径同 3.2，不做文件类型过滤）；`issue` 为 `0` |
+| `timestamp` | string | ✅ | **事件时间戳**：PR 取 `mergedAt`，Issue 取 `createdAt`（ISO 8601 **时刻**，须匹配 `ISO_INSTANT_PATTERN` 且可被 `Date.parse` 解析）。⚠️ 自 ADR-0018 起为**必填且不可空**——它是区间口径的唯一切片依据（`from <= timestamp < to`，见 5.3.3）。缺时间的记录在**采集期整条拒绝**：不落盘、不进聚合，记 `WARN` 并把累计数写进 `.sync-state.json` 的 `untimedEvents`（见下方 ⚠️） |
+| `commitCount` | number | ✅ | PR 内提交数（`commits.totalCount`，口径同 3.2）；`issue` 为 `0` |
+
+> **幂等键** = `kind + repository + number`（每仓每号一条）。**full 模式整体替换**；**增量模式按键跳过已存在的事件**，故 ⚠️ **增量修不了已落盘的坏记录**——一旦某个事件的结构写坏了，只能重跑 `collect:github:full` 覆盖，或离线修文件。
+>
+> **⚠️ 缺 `timestamp` 的记录在采集期整条拒绝**（ADR-0018 决策 4）。`GithubCollectorService.splitByTimestamp()` 把本轮记录分成 timed / untimed，`persistEvents()` 与聚合**都只吃 timed**。理由：一个 `timestamp` 缺失的事件在**区间口径**下只能被丢弃（`isWithinRange` 对不可解析时间返回 `false`），却在**全量口径**下会被计入——同一份文件两种读法给出两个总量，恒等式当场破产，且破在**默认视图**上最难发现。真通道结构上产不出这种记录（PR 只查 `states: MERGED` ⇒ `mergedAt` 必存在，Issue 必有 `createdAt`），故拒绝是**回归护栏**而非日常路径；护栏必须**响**：一条 `WARN` 给出本轮拒绝数 + `.sync-state.json` 的 `untimedEvents` **累计数** + 前 3 条样例（`kind repository#number`），`logSummary` 输出「本轮接受 N / M 条」，CLI 同样打印。守卫见 05 文档 §5.4 场景 8。
+>
+> **⚠️ 敏感字段一律剥离**：采集管道内部的 `GithubContributionRecord` 带 `author.email` / `commitEmail` / `author.url`，**仅用于采集时**的组织归属判定（邮箱域名命中 `Organization.emailDomains`，见 3.2 归属判定），**不落盘**。落盘事件里不得出现任何邮箱；`validators.ts` 对多余字段放行，故这条约束靠采集器 `toEvent()` 的字段裁剪保证（离线自检有专项断言）。
+>
+> **⚠️ 键必须齐全：缺失字段落 `null`，绝不允许「省略键」**（曾致线上故障）。GitHub GraphQL 的 `AUTHOR_FIELDS` 把 `databaseId` / `name` / `email` 放在 `... on User` 内联片段里，而 **Bot（`dependabot` 等 GitHub App）不匹配该片段**，响应中这三个键**根本不存在**（运行时 `undefined`，不是 `null`）。原样透传时 `JSON.stringify` 会**丢键**，落盘文件随即被 `isGithubContributionEvent` 判为非法——而校验是**整文件级**的 fail-fast，一个坏事件就让**所有** GitHub 派生接口（首页汇总 / 组织列表 / 个人排行 / 仓库维度）连带返回 `50001`。修复落在两处：**采集源边界** `GithubGraphqlSource.toAuthor()`（`githubId/name/email → null`、`avatarUrl/url → ''`、login 缺失 → `author: null`；search 与逐仓库 PR / Issue **三条**构造路径全部走它），以及**落盘层** `GithubCollectorService.toEvent()`（逐字段 `?? null` 兜底，保证形状不依赖上游）。守卫见 05 文档 §5.4 场景 7（离线自检直接 import 编译产物的校验器逐条校验，并带「缺键必须被判非法」的负向对照）。
+>
+> **写读必须同源**：`JsonRepository` fail-fast（`50001`，不静默降级、不静默为 0），所以改本实体字段时，`contract/entities.ts`（类型）+ `repositories/validators.ts`（校验器）+ 采集器 `toEvent()`（写侧）+ `scripts/collector-check.mjs`（断言）+ 本文档须**同批**改动。
+>
+> ⚠️ 本文件**刻意不在** `apps/api/scripts/fixtures/seed-data/` 中：离线自检由自造 fixture 驱动，真实磁盘上它在首次 `collect:github:full` 之前**不存在**（启动自检只 WARN 不阻断，见 §1.1）。
 
 ---
 
@@ -542,9 +587,9 @@ erDiagram
 
 > **已降级为基线快照（ADR-0017）**：本文件仍由 GitHub 采集器按轮整体重写，但**读路径不再依赖**——`GET /api/contributions` 与组织卡「代码贡献量」改为按**生效归属**读时派生（见 3.2 / 5.3.3），与 `confluence-organizations.json` 的状态对齐（ADR-0010 遗留债 2 的处置方式）。
 >
-> 落盘值与派生值**会有差异**，且差异不代表数据损坏：① 落盘按**采集口径**分桶、派生按**生效归属**分桶（人工认领可改写归属）；② 落盘为**部分覆盖**（只有采集到贡献的组织才有条目），派生为**全覆盖**（组织档案内每个 `orgId` 恒有一行，未命中记 0）。实测本仓库存量数据：落盘只有 **4** 个桶、派生 **13** 个；`commits` **合计两边都是 1296**（认领只改分桶、不改总量），但按桶看 `huawei` 1057 → **1086**（+29）、`unattributed` 90 → **36**（−54）、`lfn` 无条目 → **25**（+25，新桶）、`cmcc` 148 与 `zte` 1 不变——`+29 +25 = 54` 正好抵掉 `unattributed` 的减少，这正是本轮要消除的双写漂移。**切勿把本文件当权威**；比对用途与漂移告警待办见 ADR-0017 遗留债 2。
+> 落盘值与派生值**会有差异**，且差异不代表数据损坏：① 落盘按**采集口径**分桶、派生按**生效归属**分桶（人工认领可改写归属）；② 落盘为**部分覆盖**（只有采集到贡献的组织才有条目），派生为**全覆盖**（组织档案内每个 `orgId` 恒有一行，未命中记 0）。实测本仓库存量数据（2026-10-30 全量，798 条事件）：落盘只有 **4** 个桶、派生 **13** 个；`commits` **合计两边都是 1813**（归属只改分桶、不改总量），但按桶看 `huawei` 1504 → **1578**（+74）、`unattributed` 157 → **58**（−99）、`lfn` 无条目 → **25**（+25，新桶）、`cmcc` 148 与 `zte` 4 不变。+74 / +25 可拆成两类：**认领边搬家 70**（`unattributed → huawei` 45 = `wangyanlin1996` 40 + `eiedty` 5；`unattributed → lfn` 25 = `wrathwolf`）与**快照自身归属解析与账号档案不一致 29**（`huang2001junjie-rgb`：快照记 `unattributed`、档案 `orgId` 为 `huawei`）。前者是设计使然（生效归属**就该**盖过采集口径），后者才是需要告警的真漂移——这也是漂移告警必须能区分两类的原因（否则长期噪音化）。**切勿把本文件当权威**；比对用途与漂移告警待办见 ADR-0017 遗留债 2。
 >
-> ⚠️ **`repos` 是唯一不能求和的字段**：它的语义是「参与过的仓库**去重数**」，账号级只存计数时派生层无法还原并集，求和会把跨账号共用的仓库重复计数——`huawei` 曾算出 **51**，而采集范围内仓库总数只有 13（前端「N 个仓库」一列随之失真）。已于 ADR-0017 决策 15 修复：`github-accounts.json` 升 **v2**、`github` 下新增必填 `repoIds`（仓库全名清单，存量数据由 `npm run backfill:github-repo-ids` 从采集器元信息 `personRepos` 一次性回填，无需重跑采集器），派生层改取**并集大小**。修复后实测与落盘基线在归属未变的桶上完全一致：`huawei` **13**、`cmcc` **3**、`zte` **1**；归属变了的桶按生效归属重新并集：`lfn` **6**、`unattributed` **8**（落盘 11，因 5 个账号被认领走）。
+> ⚠️ **`repos` 是唯一不能求和的字段**：它的语义是「参与过的仓库**去重数**」，账号级只存计数时派生层无法还原并集，求和会把跨账号共用的仓库重复计数——`huawei` 曾算出 **51**，而采集范围内仓库总数只有 13（前端「N 个仓库」一列随之失真）。已于 ADR-0017 决策 15 修复：`github-accounts.json` 升 **v2**、`github` 下新增必填 `repoIds`（仓库全名清单，存量数据由 `npm run backfill:github-repo-ids` 从采集器元信息 `personRepos` 一次性回填，无需重跑采集器），派生层改取**并集大小**。修复后实测与落盘基线在归属未变的桶上完全一致：`huawei` **13**、`cmcc` **3**、`zte` **1**；归属变了的桶按生效归属重新并集：`lfn` **6**（落盘无该桶）、`unattributed` **9**（落盘 **12**，因 6 个账号被认领走）。
 
 ```json
 {
@@ -879,6 +924,66 @@ erDiagram
 
 > 说明：**初始文件为 `"data": []`**，由 Confluence 采集器（`npm run collect:wiki`）全量重算后整体替换（与 `confluence-organizations.json` 同轮写入，先写账号级、再写组织级）。`schemaVersion` 已升至 **4**：v3 新增 `orgSource`（ADR-0010），v4 在 `confluence` 下新增 `edits`（ADR-0011）。`orgId` / `personId` 为 `null` 表示该账号尚未归属 / 尚未认领；`orgSource` 标明采集口径归属的来源。`requirements` / `topicShares` 均为该账号被 @ 的次数 / 期数（见 ADR-0009），`edits` 为其页面版本作者条数（见 ADR-0011）——上例即一个**只编辑、从未被 @** 的账号。**组织级 `confluence-organizations.json` 由本表求和派生（采集器写入、退化为基线快照）；接口对外一律按 `effectiveOrgId` 读时派生（见 ADR-0010）。**
 
+### 4.11 `data/github-events.json`
+
+> ⚠️ 与其它文件不同，本文件**没有「初始空文件」形态**：它不在 `seed-data/` 里，首次 `npm run collect:github:full -w @openan/api` 之前磁盘上**不存在**（启动自检只 WARN，GitHub 侧接口返回 `50001`，见 §1.1 / 3.12）。
+
+```json
+{
+  "schemaVersion": 2,
+  "updatedAt": "2026-10-30T07:45:20.198Z",
+  "data": [
+    {
+      "kind": "pullRequest",
+      "repository": "openanolis/cloud-kernel",
+      "number": 5311,
+      "author": {
+        "login": "chuanyuchen",
+        "githubId": 33269553,
+        "name": "Chuanyu Chen",
+        "avatarUrl": "https://avatars.githubusercontent.com/u/33269553?v=4"
+      },
+      "linesChanged": 182,
+      "timestamp": "2026-09-16T02:11:57Z",
+      "commitCount": 3
+    },
+    {
+      "kind": "pullRequest",
+      "repository": "openanolis/openanolis.github.io",
+      "number": 104,
+      "author": {
+        "login": "dependabot",
+        "githubId": null,
+        "name": null,
+        "avatarUrl": "https://avatars.githubusercontent.com/in/29110?v=4"
+      },
+      "linesChanged": 4,
+      "timestamp": "2026-09-17T06:40:12Z",
+      "commitCount": 1
+    },
+    {
+      "kind": "issue",
+      "repository": "openanolis/cloud-kernel",
+      "number": 4802,
+      "author": null,
+      "linesChanged": 0,
+      "timestamp": "2026-08-30T09:04:33Z",
+      "commitCount": 0
+    }
+  ]
+}
+```
+
+> 说明：三条样例正好覆盖 author 的**三种合法形态**——
+>
+> 1. **普通人类账号**：四键齐全（`login` / `githubId` / `name` / `avatarUrl`）；
+> 2. **Bot（GitHub App，如 `dependabot`）**：`githubId` 与 `name` 为 **`null`**（键必须存在！见 3.12 的 ⚠️），`avatarUrl` 走 `/in/` 路径——这是 `isBotAccount` 的判定信号之一，故其量**计入**组织桶但**不进**人物口径；
+> 3. **已注销账号**：`author` 整体为 **`null`**，事件仍落盘（仓库级计数照常，人物口径自然缺席）。
+>
+> ⚠️ **`timestamp` 恒有值**（v2 起必填，见 §1.1 / 3.12）：它是区间口径的唯一切片依据，缺时间的记录在**采集期整条拒绝**，压根进不了这个文件。本文件**恒存全量原子事实**——区间筛选是读时切片（`filterEventsByRange`），事件本身不带任何区间属性（ADR-0018 决策 1）。
+>
+> 采集器由 `npm run collect:github:full`（整体替换）/ `collect:github:incremental`（按 `kind + repository + number` 幂等键追加）写入；`updatedAt` 是**文件**时间戳，组织级投影的 `updatedAt` 直接取它（见 3.2）。**邮箱与 `author.url` 不落盘**（仅用于采集时归属判定），故 `author` 恒为上述四键。
+
 ---
 
 ## 5. REST 接口契约
@@ -893,7 +998,7 @@ erDiagram
 | 鉴权 | **仅写接口**需要：请求头 `X-Admin-Token: <令牌>`，令牌取自环境变量 `ADMIN_TOKEN`。读接口不鉴权。未配置 `ADMIN_TOKEN` 时所有写接口整体禁用并返回 `40301` |
 | 内容类型 | 响应 `application/json; charset=utf-8` |
 | 响应信封 | 统一 `{ code, message, data }`，`code = 0` 表示成功 |
-| 时间格式 | 请求与响应中的时间均为 ISO 8601 UTC 字符串 |
+| 时间格式 | **响应**中的时间均为 ISO 8601 UTC 字符串。**请求**中的 `from` / `to` 是 ISO 8601 **时刻**（可带 `Z` 或 `±HH:MM` 偏移，后端一律解析成 epoch 毫秒后比较）：日期框的「一天」由**前端**按 `Asia/Shanghai` 翻成时刻（`rangeStartInstant` / `rangeEndInstant`），后端不解析时区、不认识「日期」（ADR-0018 决策 3，见 5.3.3） |
 | 分页 | 仅 `GET /api/summits` 预留分页参数，其余接口数据量小、一次性返回 |
 | 排序 | 由后端给出业务默认排序（见各接口说明），前端可再对已获取数据做本地排序 |
 | 未知参数 | 返回 `40001`（`forbidNonWhitelisted`），避免拼写错误被静默忽略 |
@@ -923,8 +1028,9 @@ erDiagram
 | 17 | POST | `/api/identity/claims` | 认领来源账号 | 身份匹配控制台 |
 | 18 | DELETE | `/api/identity/claims/:claimId` | 解除认领（账号回池） | 身份匹配控制台 |
 | 19 | GET | `/api/confluence-accounts` | 账号级 Confluence 贡献（个人维度，生效口径，ADR-0010） | 服务端候选池取数源 + Confluence 视图账号榜 |
+| 20 | GET | `/api/repo-contributions` | **仓库维度** GitHub 贡献（按仓库并列，量 / 人数 / 组织数由事件明细派生） | 仓库视角贡献榜（新增，见 5.3.17） |
 
-> 第 10～13 项为**只读**（不鉴权，但响应为 `no-store`，见 5.1 缓存头）；第 14～18 项为**写接口**，统一位于 `/api/identity/*`，需要 `X-Admin-Token`（见 5.1 与 5.3.14）。第 19 项为普通只读接口（缓存策略同 5.1 看板接口），已由 Confluence 视图账号榜直接调用（`useConfluenceAccounts` → `ConfluenceAccountRankCard`），其数据同时由 `CandidateService` 在服务端直接读取（见 5.3.11）。第 4、19 两项均按**生效归属 `effectiveOrgId`** 读时派生（人工认领优先，ADR-0010）。
+> 第 10～13 项为**只读**（不鉴权，但响应为 `no-store`，见 5.1 缓存头）；第 14～18 项为**写接口**，统一位于 `/api/identity/*`，需要 `X-Admin-Token`（见 5.1 与 5.3.14）。第 19 项为普通只读接口（缓存策略同 5.1 看板接口），已由 Confluence 视图账号榜直接调用（`useConfluenceAccounts` → `ConfluenceAccountRankCard`），其数据同时由 `CandidateService` 在服务端直接读取（见 5.3.11）。第 4、19 两项均按**生效归属 `effectiveOrgId`** 读时派生（人工认领优先，ADR-0010）。第 3、8、20 三项同属 **GitHub 事件明细派生族**（原子事实 `github-events.json`，见 3.12），三段数字恒等；它们与第 1 项的 `externalDeveloperCount` 一样，在事件文件缺失 / 结构非法时一并返回 `50001`。
 
 ### 5.3 接口详细定义
 
@@ -963,7 +1069,7 @@ erDiagram
 }
 ```
 
-**失败场景**：`50001`（`home.json` 结构损坏，**或 `schemaVersion` ≠ 2** —— 遗留的 v1 文件会在此 fail-fast，而非静默返回旧的 `externalDeveloperCount`）。派生 `externalDeveloperCount` 还依赖 `github-accounts.json` / `identity-claims.json` / `persons.json`，三者任一损坏同样报 `50001`。
+**失败场景**：`50001`（`home.json` 结构损坏，**或 `schemaVersion` ≠ 2** —— 遗留的 v1 文件会在此 fail-fast，而非静默返回旧的 `externalDeveloperCount`）。派生 `externalDeveloperCount` 还依赖 **`github-events.json`**（唯一原子事实，见 3.12）/ `github-accounts.json`（档案）/ `identity-claims.json` / `persons.json`，四者任一**缺失或损坏**同样报 `50001`——⚠️ 这意味着首次 `collect:github:full` 之前**首页汇总也会 500**（不只是社区活跃度页），排障时先跑一次全量采集。
 
 ---
 
@@ -983,9 +1089,9 @@ erDiagram
 
 | 字段 | 类型 | 说明 |
 | --- | --- | --- |
-| `commits` | number | **代码贡献量**：已合并 PR 内提交总数（不含无 PR 的直推提交，口径见 §3.2）。**读时派生（ADR-0017）**：账号级 `Contributor.github.commits` 按**生效归属 `effectiveOrgId`** 求和，**不再读** `github-organizations.json`（该文件已降级为基线快照，见 §4.3）；机器人的量**计入**其归属桶；无贡献为 `0` |
+| `commits` | number | **代码贡献量**：已合并 PR 内提交总数（不含无 PR 的直推提交，口径见 §3.2）。**读时派生（ADR-0017）**：由 **GitHub 事件明细 `github-events.json`**（见 3.12）派生的账号级 `commits` 按**生效归属 `effectiveOrgId`** 求和，**不再读** `github-organizations.json`（该文件已降级为基线快照，见 §4.3）；机器人的量**计入**其归属桶；无贡献为 `0` |
 | `confluenceEdits` | number | **Confluence 贡献量**：编辑量（`confluence.edits`，账号级按 `effectiveOrgId` 求和的读时派生值，ADR-0010 / ADR-0011）；无记录为 `0` |
-| `topContributors` | `{ github: OrganizationTopContributor[]; confluence: OrganizationTopContributor[] }` | **各维度 top3 贡献者**（ADR-0016，服务端聚合、随本接口一次下发，前端**不得**逐组织另行请求）：`github` 栏按账号级 `commits` 降序、`confluence` 栏按 `edits` 降序，**两栏归属一律按 `effectiveOrgId` 分组**（GitHub 侧口径由 ADR-0016 决策 3 的 `orgId ?? 'unattributed'` 改为生效归属，ADR-0017 修订；与 §5.3.8 分桶口径一致）；**剔除 `value = 0` 的条目**后各取前 3，并列稳定排序（保持文件原序）。**机器账号不占人物位**（§5.3.8 的端口已排除，ADR-0017 决策 5），故 bot 不会出现在任何 top3 里。每项 `OrganizationTopContributor = { name, avatarUrl?, value }`：GitHub 取 `Contributor.name` / `avatarUrl`、`value = commits`；Confluence 取 `displayName`、`value = edits`，**无头像字段**（前端首字母色块降级） |
+| `topContributors` | `{ github: OrganizationTopContributor[]; confluence: OrganizationTopContributor[] }` | **各维度 top3 贡献者**（ADR-0016，服务端聚合、随本接口一次下发，前端**不得**逐组织另行请求）：`github` 栏按账号级 `commits` 降序、`confluence` 栏按 `edits` 降序，**两栏归属一律按 `effectiveOrgId` 分组**（GitHub 侧口径由 ADR-0016 决策 3 的 `orgId ?? 'unattributed'` 改为生效归属，ADR-0017 修订；与 §5.3.8 分桶口径一致）；**剔除 `value = 0` 的条目**后各取前 3，并列稳定排序（保持文件原序）。**机器账号不占人物位**（§5.3.8 的端口已排除，ADR-0017 决策 5），故 bot 不会出现在任何 top3 里。每项 `OrganizationTopContributor = { name, avatarUrl?, value }`：GitHub 取账号档案的 `name` / `avatarUrl`（**档案缺失时回落事件 `author` 快照**：`name` → `login`、`avatarUrl` → 空串，见 3.12），`value = commits`；Confluence 取 `displayName`、`value = edits`，**无头像字段**（前端首字母色块降级） |
 
 ```json
 {
@@ -1025,6 +1131,8 @@ erDiagram
 
 > **全覆盖派生（ADR-0017）**：`commits` / `confluenceEdits` / `topContributors` 三者一律按组织档案**全量**出行，未命中记 `0` / 空数组，故 `scope=contributing` 的行数恒等于组织档案条数（现 **13** 条，含伪组织 `unattributed`），**不会因某组织无贡献而缺行**。由此「组织卡 `commits` ≡ `GET /api/contributions` 同 `orgId` 的 `github.commits`」由同一派生函数保证，不可能再出现「commits = 0 但 top3 有人」的自相矛盾（旧实现按落盘组织级文件部分覆盖，正是该矛盾的成因）。
 
+**失败场景**：`50001` —— `organizations.json` 结构损坏 / `schemaVersion` 不匹配，**或 `scope=contributing` 时任一派生依赖不可读**：GitHub 侧的 **`github-events.json`**（缺失或结构损坏，见 3.12）+ `github-accounts.json`（档案）+ `identity-claims.json` + `persons.json`，Confluence 侧的 `confluence-accounts.json`（ADR-0010）。⚠️ `scope=all` 只读组织档案，**不碰**派生依赖，故事件文件缺失时 `scope=all` 仍可用、`scope=contributing` 报 `50001`（实测日志：`GET /api/organizations?scope=contributing → 500 (50001) github-events.json 数据结构校验未通过`）——前端组织墙与首页卡片走 `contributing`，会整卡失败（失败卡见 02 文档）。
+
 ---
 
 #### 5.3.3 `GET /api/contributions`
@@ -1036,21 +1144,22 @@ erDiagram
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 | --- | --- | --- | --- | --- |
 | `orgIds` | string（逗号分隔） | 否 | — | 组织 ID 白名单，如 `openan-labs,nova-silicon` |
-| `from` | string (ISO 8601) | 否 | — | 统计起始时间 |
-| `to` | string (ISO 8601) | 否 | — | 统计结束时间 |
+| `repoIds` | string（逗号分隔） | 否 | — | **仓库组合筛选**（任意仓库子集，缺省 / 空 ≡ 全选）：只统计 `repository` 命中集合的事件，`github` 五项与 `repos` 均在筛选范围内重算（见 5.3.17 的同名入参） |
+| `from` | string (ISO 8601 **时刻**) | 否 | — | **区间下界（含）**。⚠️ 契约是**半开区间** `from <= 事件时间 < to`（ADR-0018 决策 3）；缺省 ≡ 该侧无界，两侧都缺省 ≡ **全量口径**（与激活前逐位相同）。后端只比 **epoch 毫秒**、不解析时区——「用户眼里的一天」由**前端**按 `Asia/Shanghai` 翻成时刻（`rangeStartInstant` = 当日零点），见下方说明 |
+| `to` | string (ISO 8601 **时刻**) | 否 | — | **区间上界（不含）**。⚠️ 前端把结束日期翻成**次日零点**（`rangeEndInstant`）；若翻成当日零点，「1 月 1 日 ～ 12 月 31 日」会整天吞掉 12 月 31 日 |
 | `sortBy` | `'pullRequests' \| 'commits' \| 'issues' \| 'linesChanged' \| 'repos'` | 否 | `pullRequests` | 排序字段 |
 | `order` | `'asc' \| 'desc'` | 否 | `desc` | 排序方向 |
 | `limit` | number | 否 | — | 仅返回前 N 条，用于排行榜 Top N；不传返回全部 |
 
 **响应 `data`**：`OrganizationContribution[]`，字段见 3.2。
 
-> **数据来源（ADR-0017）**：本接口**不读** `data/github-organizations.json`，而是**读时派生**——读账号级 `github-accounts.json` + `identity-claims.json` + `persons.json` + `organizations.json`，按**生效归属 `effectiveOrgId`**（人工认领优先）聚合 `github` 五项（四项求和、`repos` 取并集，见下），**覆盖组织档案全部组织**（含伪组织 `unattributed`），未命中记 0。与 `GET /api/wiki`（ADR-0010）**同构**，两平台自此共用一套归属语义。
+> **数据来源（ADR-0017 → 事件明细收敛）**：本接口**不读** `data/github-organizations.json`，而是**读时派生**——原子事实是 **`github-events.json`**（事件级明细，见 3.12），叠加 `github-accounts.json`（**只取档案字段**：姓名 / 头像 / `githubId` / 采集口径 `orgId`）+ `identity-claims.json` + `persons.json` + `organizations.json`，按**生效归属 `effectiveOrgId`**（人工认领优先）聚合 `github` 五项（四项求和、`repos` 取并集，见下），**覆盖组织档案全部组织**（含伪组织 `unattributed`），未命中记 0。与 `GET /api/wiki`（ADR-0010）**同构**，两平台自此共用一套归属语义。
 >
-> - **响应形状不变**（仍是 `OrganizationContribution[]`，字段一模一样），变的只是**桶数与数值**：桶数 = 组织档案条数（现 **13**，旧实现读落盘文件只有 **4** 桶），`updatedAt` 取 `github-accounts.json` 的**文件**时间戳；
+> - **响应形状不变**（仍是 `OrganizationContribution[]`，字段一模一样），变的只是**桶数与数值**：桶数 = 组织档案条数（现 **13**，旧实现读落盘文件只有 **4** 桶），`updatedAt` 取 **`github-events.json`** 的**文件**时间戳（唯一原子事实的落盘时间）；
 > - **默认排序**按 `sortBy`（默认 `pullRequests`）降序，在 `ActivityService` 完成；派生层**不排序**，桶序即组织档案顺序（已按 `displayOrder` 排好）；
-> - **机器人的量计入**其生效归属桶（人物口径才排除，见 5.3.8），故 `commits` 合计恒等于账号级合计（存量数据实测 **1296**），与 `data/.snapshots/` 历史快照可比；
-> - ⚠️ **`repos` 是唯一不求和的字段**：语义为「参与过的仓库**去重数**」，故取账号级 `repoIds`（`github-accounts.json` v2 新增）的**并集大小**（ADR-0017 决策 15）。求和会重复计数跨账号共用的仓库（`huawei` 曾算出 51，而范围内仓库总数只有 13），前端「N 个仓库」一列会失真；修复后实测 `huawei` **13**、`cmcc` **3**、`zte` **1**、`lfn` **6**、`unattributed` **8**，与落盘基线在归属未变的桶上完全一致。注意它因此**不满足**「组织级 ≡ 账号级求和」（账号级 `repos` 之和 ≥ 组织级 `repos`），核对时须排除该字段；
-> - 认领 / 解除 / 改 `Person.orgId` 后**下一个请求即生效**，无需重跑采集器或重启进程（`JsonRepository` 按文件 mtime 失效缓存）；落盘的组织级文件降级为**基线快照**，仅供离线核对（见 4.3）。
+> - **机器人的量计入**其生效归属桶（人物口径才排除，见 5.3.8），故 `commits` 合计恒等于事件明细的 `commitCount` 合计，与 `data/.snapshots/` 历史快照可比；
+> - ⚠️ **`repos` 是唯一不求和的字段**：语义为「参与过的仓库**去重数**」，故取桶内事件的 `repository` **并集大小**（ADR-0017 决策 15 的并集口径不变，来源由账号级 `repoIds` 清单换成事件字段，见 3.2）。求和会重复计数跨账号共用的仓库（`huawei` 曾算出 51，而范围内仓库总数只有 13），前端「N 个仓库」一列会失真；2026-10-30 全量实测 `huawei` **13**（= 采集范围内全部仓库）、`cmcc` **3**、`zte` **1**、`lfn` **6**、`unattributed` **9**，与落盘基线在归属未变的桶上完全一致（基线 `unattributed` 为 12，差值来自 6 个账号被认领走）。注意它因此**不满足**「组织级 ≡ 账号级求和」（账号级 `repos` 之和 ≥ 组织级 `repos`），核对时须排除该字段；
+> - 认领 / 解除 / 改 `Person.orgId` 后**下一个请求即生效**，无需重跑采集器或重启进程（`JsonRepository` 按文件 mtime 失效缓存）；落盘的组织级文件与账号级 `github` 指标均降级为**基线快照**，仅供离线核对（见 4.3 / 3.7）。
 
 ```json
 {
@@ -1069,12 +1178,18 @@ erDiagram
 }
 ```
 
-**校验规则**：`from` 晚于 `to` → `40002`；`orgIds` 含未知 ID 时**忽略该项并继续**（记 `WARN`），不整体报错。
-**失败场景**：`50001`（`github-accounts.json` / `identity-claims.json` / `persons.json` / `organizations.json` 任一结构损坏或 `schemaVersion` 不匹配）。⚠️ ADR-0017 后本接口的依赖面从「1 个组织级文件」扩为「4 个原子事实文件」，任一损坏都会连带本接口不可用（旧实现只依赖 `github-organizations.json`）。
+**校验规则**：`from` 晚于 `to` → `40002`；⚠️ `from` **等于** `to` **合法**（半开区间的空区间，命中 0 条、各桶记 0，不报错——ADR-0018 决策 3）；`orgIds` 含未知 ID 时**忽略该项并继续**（记 `WARN`），不整体报错；`repoIds` 含未知仓库名时**不报错也不告警**——它只是筛选集合，命中不到任何事件即该仓库无贡献（结果里体现为各桶数值下降）。
+**失败场景**：`50001`（**`github-events.json`** / `github-accounts.json` / `identity-claims.json` / `persons.json` / `organizations.json` 任一**缺失**、结构损坏或 `schemaVersion` 不匹配）。⚠️ ADR-0017 后本接口的依赖面从「1 个组织级文件」扩为「4 个原子事实文件」，事件明细上线后再加 1 个（共 **5** 个），任一损坏都会连带本接口不可用（旧实现只依赖 `github-organizations.json`）。⚠️ 事件文件是**整文件级** fail-fast：一条坏事件（如 author 缺键，见 3.12）就让整个文件不可读；首次 `collect:github:full` 之前它压根不存在，此时本接口与首页汇总、组织列表、个人排行、仓库维度**一起**返回 `50001`。
 
 > **未归属贡献**：伪组织 `unattributed` 作为一条记录出现在结果中（**恒存在**，即使无人落入也记 0），前端按独立开发者卡片渲染（见 02 文档 3.6 节）。
 
-> **阶段三行为变化预告**：`from`/`to` 在阶段一**不生效**（本地数据无时间维度明细），接口接受参数但返回全量，并在 `message` 中保持 `"ok"`。阶段三接入采集后，区间口径由**采集器**在落盘时决定（增量以 `lastSyncAt` 游标为起点，见 05 文档 2.4 节）；接口依旧只读落盘结果，行为与阶段一保持一致。前端无需改动。
+> **时间区间筛选（ADR-0018，已激活）**：`from` / `to` **生效**，语义为**区间口径**——只统计事件时间戳落在半开区间 `from <= timestamp < to` 内的事件。实现是**读时切片**：`common/time-range.ts` 的 `toTimeRangeFilter()` 把字符串解析成 epoch 毫秒，`common/github-event-derivation.ts` 的 **`filterEventsByRange()`（唯一谓词）** 在 `deriveGithubFromEvents` **之前**切一刀，三个 GitHub provider（组织级 / 账号级 / 仓库级）共用它，故恒等式在**任意区间**下依然成立（`repos` 除外，仍取并集）。
+>
+> - **缺省 ≡ 全量口径**：两侧都不传时 `filterEventsByRange` **原数组同引用返回**（不遍历、不复制），结果与激活前逐位相同（实测 `pullRequests` 618 / `commits` 1813 / `issues` 180 / `linesChanged` 1445781）。
+> - **日界按 `Asia/Shanghai`，由前端翻译**：后端只比 epoch 毫秒、不解析时区、不认识「日期」。前端 `rangeStartInstant()` = 开始日在 `+08:00` 的零点，`rangeEndInstant()` = 结束日的**次日**零点。
+> - **不可解析的时间戳一律不命中**（`isWithinRange` 返回 `false`），脏数据不会让聚合变 `NaN`；而 `timestamp` 必填 + 采集期整条拒绝（3.12）让这种记录压根进不了文件。
+> - **Confluence 侧不适用**：`/api/wiki`（5.3.4）、`/api/confluence-accounts`（5.3.16）接受 `from` / `to` 但**恒不过滤**，该侧无时间维度明细（遗留债见 06 / ADR-0018 决策 5）。
+> - ⚠️ **不要另写过滤逻辑**：任何新端点或脚本想按时间筛事件，必须调 `filterEventsByRange`。在它之外另写一份 `events.filter(...)` 会让恒等式在两个实现之间悄悄分叉，而这类分叉**不会让任何测试变红**。
 
 ---
 
@@ -1082,7 +1197,7 @@ erDiagram
 
 **用途**：社区活跃度页的 wiki（Confluence）维度数据。
 
-**请求参数**：与 `/api/contributions` 相同（`sortBy` 可选值为 `requirements` / `topicShares`）。
+**请求参数**：与 `/api/contributions` 相同（`sortBy` 可选值为 `requirements` / `topicShares`）。⚠️ **`from` / `to` 接受但恒不过滤**（ADR-0018 决策 5）：Confluence 侧落盘的是账号级累计计数，**无时间维度明细**，故本接口恒为**全量口径**。既不报错也不隐藏——前端在 Confluence 视图**禁用**区间筛选器、在 GitHub 视图给 Confluence 列打「全历史」角标，让口径差异可见。补上 Confluence 事件级事实后再开放（遗留债见 06 / ADR-0018）。
 
 **响应 `data`**：`OrganizationWiki[]`，字段见 3.3。
 
@@ -1098,7 +1213,9 @@ erDiagram
 
 **用途**：社区活跃度页的聚合总量与数据更新时间（页头展示）。组织贡献分布环形图已改为复用 `GET /api/contributions` 按提交数统计（ADR-0003），不再依赖本接口。
 
-**请求参数**：`orgIds`、`from`、`to`（语义同上）。
+**请求参数**：`repoIds`、`from`、`to`（语义同 5.3.3）。⚠️ `orgIds` 由基类 `TimeRangeQueryDto` 继承而来——DTO **接受**但 Service **忽略**（汇总恒为全量组织的合计），传了不生效；`repoIds` **仅作用于 GitHub 侧四项合计**（Confluence 三项无仓库概念，不受影响）。
+
+> ⚠️ **`totals` 是混合口径**（ADR-0018 决策 5 / 7）：`pullRequests` / `commits` / `issues` / `linesChanged` **跟随区间**（GitHub 侧读时切片），`requirements` / `topicShares` / `edits` **恒为全量**（Confluence 侧无时间维度）。出参**不携带口径标记**，消费方须自行知晓；前端用页头文案与表头角标兜住（登记为遗留债）。`orgCount` 与 `updatedAt` 同样不受区间影响（前者恒等于组织档案条数，后者取两侧派生 `updatedAt` 的较晚者）。
 
 **响应 `data`**：
 
@@ -1113,7 +1230,7 @@ erDiagram
 | `totals.topicShares` | number | 议题分享总数（各组织求和） |
 | `totals.edits` | number | 编辑量总数（各组织求和，见 ADR-0011） |
 | `orgCount` | number | 参与统计的组织数 = `GET /api/contributions` 与 `GET /api/wiki` 两侧 `orgId` 的**并集大小**。⚠️ 两侧均为**全覆盖派生**后，本值恒等于**组织档案条数**（现 `13`，含伪组织 `unattributed`），**不再是「有贡献的组织数」**——零贡献组织也在册。ADR-0017 之前 GitHub 侧读落盘文件（部分覆盖），实测并集仅 `4` |
-| `updatedAt` | string | 数据更新时间 = 两侧派生结果 `updatedAt` 的**较晚者**，即 `github-accounts.json` 与 `confluence-accounts.json` 两个**文件**时间戳的最大值（账号级记录无该字段） |
+| `updatedAt` | string | 数据更新时间 = 两侧派生结果 `updatedAt` 的**较晚者**。⚠️ 两侧语义**不同源**：GitHub 侧 = **事件文件 `github-events.json` 的信封时间戳**（唯一原子事实的落盘时间，见 3.12；不再是账号档案的时间戳）；Confluence 侧 = `confluence-accounts.json` 的**记录级最大** `updatedAt`（`latestAccountUpdatedAt`，**不是**信封值）。现测分别 `2026-10-30T07:45:20.198Z` 与 `2026-09-30T02:17:14.380Z` ⇒ 取 GitHub 侧 |
 
 ```json
 {
@@ -1121,23 +1238,23 @@ erDiagram
   "message": "ok",
   "data": {
     "totals": {
-      "pullRequests": 817,
-      "commits": 1296,
-      "issues": 353,
-      "linesChanged": 579300,
-      "requirements": 89,
-      "topicShares": 39,
-      "edits": 672
+      "pullRequests": 618,
+      "commits": 1813,
+      "issues": 180,
+      "linesChanged": 1445781,
+      "requirements": 38,
+      "topicShares": 24,
+      "edits": 680
     },
     "orgCount": 13,
-    "updatedAt": "2026-09-18T09:00:00Z"
+    "updatedAt": "2026-10-30T07:45:20.198Z"
   }
 }
 ```
 
 > **口径**：环形图自 ADR-0003 起按**组织提交数**（`github.commits`）统计，自 [ADR-0013](./adr/0013-org-distribution-lists-all-orgs.md) 起**列出全部参与组织**（不再并入「其他」），数据复用 `GET /api/contributions`；本接口的 `totals` 仅作聚合参考，`linesChanged` 单独在排行榜中展示。
 >
-> **`totals` 随派生口径变化（ADR-0017）**：GitHub 四项改为账号级按生效归属求和后，`totals` 恒等于**账号级合计**（不再受落盘组织级文件的部分覆盖影响）。存量数据实测 `commits` 合计 **1296**，与 `data/.snapshots/` 历史快照可比；机器账号的量**计入**总量（只从人物口径排除），故剔除 bot 会破坏该可比性。
+> **`totals` 随派生口径变化（ADR-0017 + 事件明细收敛）**：GitHub 四项改由**事件明细**派生后，`totals` 恒等于**账号级合计**、也恒等于**仓库级合计**（5.3.17），不再受落盘组织级文件的部分覆盖影响。2026-10-30 全量实测（798 条事件）：`commits` **1813** / `pullRequests` **618** / `issues` **180** / `linesChanged` **1445781**，与 `data/.snapshots/` 历史快照可比；机器账号的量**计入**总量（只从人物口径排除），故剔除 bot 会破坏该可比性。⚠️ 事件文件缺失 / 非法时本端点返回 `50001`（见 3.12），不是「汇总为 0」。
 
 ---
 
@@ -1216,13 +1333,14 @@ erDiagram
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 | --- | --- | --- | --- | --- |
 | `orgIds` | string | 否 | — | 组织筛选，逗号分隔（语义同 5.3.3）；⚠️ 匹配键是**生效归属 `effectiveOrgId`**（ADR-0017），不再是采集口径 `orgId`——`orgIds=huawei` 会包含被人工认领到华为、但采集未能归属的账号 |
-| `from` | ISO 8601 | 否 | — | 起始时间；**阶段一接受但不生效**（见下方口径） |
-| `to` | ISO 8601 | 否 | — | 结束时间；同上 |
+| `repoIds` | string | 否 | — | **仓库组合筛选**（逗号分隔，缺省 / 空 ≡ 全选，语义同 5.3.3 / 5.3.17）：账号指标与出参 `github.repoIds` 均在筛选范围内重算 |
+| `from` | ISO 8601 **时刻** | 否 | — | **区间下界（含）**；语义同 5.3.3（半开区间、缺省 ≡ 全量口径、日界按 `Asia/Shanghai` 由前端翻译，ADR-0018）。账号指标与出参 `github.repoIds` 均在区间内**重算** |
+| `to` | ISO 8601 **时刻** | 否 | — | **区间上界（不含）**；同上 |
 | `sortBy` | string | 否 | `commits` | 可选 `pullRequests` / `commits` / `issues` / `linesChanged` / `repos` |
 | `order` | string | 否 | `desc` | `asc` / `desc` |
 | `limit` | number | 否 | — | 1–200；不传返回全部 |
 
-**响应 `data`**：`ContributorContributionView[]`——即 `Contributor`（字段见 3.7）**且 `github` 恒有值**，**追加**三个读时派生字段（ADR-0017）：
+**响应 `data`**：`ContributorContributionView[]`——即 `Contributor`（字段见 3.7）**且 `github` 恒有值**，**追加**三个读时派生字段（ADR-0017）。⚠️ 事件明细上线后，出参里**只有档案字段来自 `github-accounts.json`**（`name` / `avatarUrl` / `githubId` / `orgId` / `joinedAt` / `description`），`github` 五项与 `repoIds` 一律由 `github-events.json` 读时派生（`deriveGithubFromEvents`）：
 
 | 追加字段 | 类型 | 说明 |
 | --- | --- | --- |
@@ -1230,9 +1348,11 @@ erDiagram
 | `orgSource` | `'claim' \| 'collection' \| 'unattributed'` | 生效归属的来源，用于**审计与排查**（`claim` = 人工认领优先，`collection` = 采集判定兜底，`unattributed` = 两者皆无） |
 | `personId` | string \| null | 认领到的自然人 `Person.personId`；无认领边为 `null` |
 
-> 仅返回采集到贡献记录的个人，人工维护但本轮无贡献记录的档案不会出现在结果中。**派生结果一律不落盘**（`github-accounts.json` 不新增 `personId` / `isBot` / `isIndependent` 等字段）——机器人排除与独立开发者判定均在读路径的纯函数中完成（`common/effective-org.ts`），口径只有一处定义。
+> 返回的是**在事件明细中出现过的账号**（即本轮采集范围内有已合并 PR / Issue 者）：人工维护但无事件记录的档案不会出现在结果中；反之，**档案缺失的新账号也不会缺席**——由事件 `author` 快照兜底合成一条（`name` 回落 `login`、`avatarUrl` 回落空串、采集口径 `orgId` 为 `null`），故运营补档案不再是出参的前置条件。**派生结果一律不落盘**（`github-accounts.json` 不新增 `personId` / `isBot` / `isIndependent` 等字段）——机器人排除与独立开发者判定均在读路径的纯函数中完成（`common/effective-org.ts` / `common/github-event-derivation.ts`），口径只有一处定义。
 >
-> 出参的 `github` 含 v2 新增的 `repoIds`（仓库全名清单，见 3.7）：它是**组织级 `repos` 取并集**的输入，前端不消费，但随出参一并返回（不裁剪，避免出参与落盘结构出现第二套形状）。
+> 出参的 `github` 含 `repoIds`（仓库全名清单）：它现在**由事件的 `repository` 字段派生**（不再透传落盘值），既是组织级 `repos` 取并集的输入，也随出参一并返回（不裁剪，避免出参与落盘结构出现第二套形状）。⚠️ 传了 `repoIds` 入参时，出参的 `github.repoIds` 只含筛选范围内的仓库。
+>
+> **失败场景**：`50001`——依赖 **`github-events.json`**（缺失 / 结构损坏，见 3.12）+ `github-accounts.json` + `identity-claims.json` + `persons.json`；事件文件损坏会连带本接口、5.3.1 首页汇总、5.3.2 组织列表、5.3.3 组织贡献、5.3.17 仓库维度**一起**不可用。
 
 ```json
 {
@@ -1265,11 +1385,11 @@ erDiagram
 
 > **口径说明**：
 >
-> - 个人指标与组织指标（5.3.3）由**同一批账号级记录**派生，且**同按 `effectiveOrgId` 分桶**，故两者合计恒等（个人之和 = 组织之和，含伪组织 `unattributed` 行），可互相核对。**这是 ADR-0017 的核心不变量**：组织级是账号级的全覆盖求和投影，由函数形状保证，不依赖重算时机；
-> - **机器账号不占人物位**（ADR-0017 决策 5）：`isBotAccount` 取三信号并集——`githubId === 0`、`avatarUrl` 含 `avatars.githubusercontent.com/in/`（GitHub App 头像路径，人类是 `/u/`）、`contributorId` 匹配 `/bot/i`。⚠️ 实测存量 35 个带指标账号中**只有 `dependabot` 命中**（三信号同时成立），无显式名单（ADR-0017 遗留债 3：出现误判再落 `data/bot-accounts.json`）；bot 的量仍计入其生效归属桶（见 5.3.3），以保持求和恒等式与历史快照可比；
+> - 个人指标与组织指标（5.3.3）、仓库指标（5.3.17）由**同一批事件明细**（`github-events.json`）经**同一个** `deriveGithubFromEvents` 派生，且**同按 `effectiveOrgId` 分桶**，故三者合计恒等（个人之和 = 组织之和 = 仓库同范围之和，含伪组织 `unattributed` 行），可互相核对。**这是 ADR-0017 的核心不变量**（事件明细上线后从「组织级是账号级的求和投影」强化为「三段同源于事件」），由函数形状保证，不依赖重算时机；
+> - **机器账号不占人物位**（ADR-0017 决策 5）：`isBotAccount` 取三信号并集——`githubId === 0`、`avatarUrl` 含 `avatars.githubusercontent.com/in/`（GitHub App 头像路径，人类是 `/u/`）、`contributorId` 匹配 `/bot/i`。⚠️ 实测存量 **40** 个派生账号视图中**只有 `dependabot` 命中**（三信号同时成立；出参 39 条 = 40 − 1），无显式名单（ADR-0017 遗留债 3：出现误判再落 `data/bot-accounts.json`）；bot 的量仍计入其生效归属桶（见 5.3.3），以保持求和恒等式与历史快照可比。⚠️ **`null` 与 `0` 的对齐是隐式耦合**：事件明细里 Bot 的 `author.githubId` 是 **`null`**（GitHub App 在 GraphQL 下没有 `databaseId`，见 3.12），而 `isBotAccount` 判的是 **`=== 0`**——两者靠派生层 `githubId: authorRef?.githubId ?? 0` 对齐（档案缺失、用事件快照兜底合成的账号同样得 `0`），与采集器写账号档案的口径一致；改任一侧都必须同步另一侧，否则 Bot 会漏进人物口径（排行 / 人数 / top3）；
 > - `orgIds` 命中规则：**生效归属**为 `unattributed` 者按伪组织参与筛选，因此可单独查看该人群。注意**「未归属」≠「独立开发者」**——人数口径还要再排除机器账号（见 5.3.1）；
-> - `from` / `to` 在阶段一接受但不生效（采集侧暂未按时间切片个人记录），前端在卡片底部给出同期口径提示；
-> - 仅使用 GitHub 公开数据（`name` / `avatarUrl` / 协作计数），邮箱等身份信息只用于内存中的组织归属判定，**不落盘**；
+> - `from` / `to` **生效**（ADR-0018）：派生前先经**唯一谓词** `filterEventsByRange` 读时切片，与 5.3.3 / 5.3.17 共用同一实现，故「个人之和 = 组织之和 = 仓库同范围之和」在**任意区间**下依然成立；缺省 ≡ 全量口径。⚠️ 区间内无事件的账号**整行不出参**（榜单是枚举，不是桶——与 5.3.3 组织级恒全覆盖 13 桶不同），前端个人排行卡底部据此给出「按当前区间统计」提示；
+> - 仅使用 GitHub 公开数据（`name` / `avatarUrl` / 协作计数），邮箱等身份信息只用于**采集时**的组织归属判定，**不落盘**——事件明细的 `author` 恒为 `login` / `githubId` / `name` / `avatarUrl` 四键（见 3.12）；
 > - **不做展示名模糊匹配**：认领边以 `githubId` 为键，故 `zhiqiang-tang` 与 `tangzhiqiang` 是**两个不同账号**，不会因为名字相似而互相归属（ADR-0017 决策 6）。
 
 #### 5.3.9 `GET /api/meetings`
@@ -1613,8 +1733,49 @@ erDiagram
 > **口径说明**：
 >
 > - `orgIds` 命中规则：`effectiveOrgId` 为 `unattributed` 的未归属账号按伪组织参与筛选（与 5.3.8 同构）；筛选基于**生效归属**；
-> - `from` / `to` 当前接受但**不生效**（账号级记录无时间切片），与 5.3.4 / 5.3.8 的说明一致；
+> - `from` / `to` 接受但**恒不过滤**（ADR-0018 决策 5）：账号级记录是累计计数、无时间维度可切，故本接口恒为**全量口径**，与 5.3.4 一致。⚠️ 这与 5.3.8（GitHub 侧个人排行，区间**生效**）不同——前端因此在 Confluence 视图**禁用**区间筛选器、并给 Confluence 个人榜卡标注「本榜为全历史累计」；
 > - **不变式**：本接口 `requirements` / `topicShares` / `edits` 之和分别恒等于 `GET /api/wiki`（5.3.4）的组织级对应字段之和（含伪组织 `unattributed`）——`/api/wiki` 正是由本接口的同源账号级事实读时求和，可互相核对（ADR-0010）。
+
+#### 5.3.17 `GET /api/repo-contributions` —— 仓库维度贡献
+
+**语义**：按**仓库**并列展示 GitHub 贡献，与按组织并列（5.3.3）、按人并列（5.3.8）构成**同一批事件明细的三种视角**。⚠️ **不落盘、不新增数据文件**：结果完全由 `github-events.json`（3.12，唯一原子事实）读时聚合（`common/github-event-derivation.ts` → `JsonRepoContributionProvider`），无对应的采集器产物。
+
+**请求参数（Query）**：
+
+| 参数 | 类型 | 必填 | 默认 | 说明 |
+| --- | --- | --- | --- | --- |
+| `sortBy` | `'pullRequests' \| 'commits' \| 'issues' \| 'linesChanged' \| 'contributors' \| 'orgs'` | 否 | `commits` | 排序字段（前四项在 `github` 下，后两项在顶层） |
+| `order` | `'asc' \| 'desc'` | 否 | `desc` | 排序方向 |
+| `limit` | number | 否 | — | 取前 N 个仓库（1～200） |
+| `from` | string (ISO 8601 **时刻**) | 否 | — | **区间下界（含）**；语义同 5.3.3（半开区间、缺省 ≡ 全量口径，ADR-0018）。⚠️ 本端点**必须**跟随区间：与 5.3.3 / 5.3.8 同源于事件，只让两段切片会让「组织级 ≡ 账号级 ≡ 仓库级求和」在同一页面上对不上 |
+| `to` | string (ISO 8601 **时刻**) | 否 | — | **区间上界（不含）**；同上。区间内无事件的仓库**整行不出现**（前端据此把已勾选但失效的仓库保留为候选并标注「区间内无活动」，见 02 §4.1） |
+
+> ⚠️ **刻意不接受 `repoIds`**：仓库表的**行指标不随筛选变化**（选仓库只是「挑哪几行看」），筛选交给前端客户端过滤即可；这与 5.3.3 / 5.3.8 不同（那两处的 `repoIds` 会**重算**数值）。将来若需要「某仓库集合内的合计」，应新增端点或走 5.3.3，而不是给本端点加筛选——否则行指标会随筛选自我矛盾。
+>
+> ⚠️ **`orgIds` 是「接受但忽略」**：它由基类 `TimeRangeQueryDto` 继承而来，DTO 层不会报 `40000`，但 `JsonRepoContributionProvider` **不读它**（组织维度不改变仓库行的量）——传了也不生效。这是继承带来的既有形状，登记于此以免误用；若将来要支持，语义只能是「挑行」（按 `orgs` 是否含某组织过滤），而不是重算行指标。
+
+**响应 `data`**：`RepoContribution[]`（`contract/entities.ts`；**出参实体，不落盘**）：
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `repoId` | string | 仓库全名 `owner/repo`（即事件的 `repository`）。⚠️ 它是**仓库名**而非档案 slug，与组织 / 自然人的 `orgId` / `personId` 命名不同源，前端不要拿它去查组织档案 |
+| `github` | object | 该仓库的量：`pullRequests`（已合并 PR 数）/ `commits`（PR 内提交数合计）/ `issues` / `linesChanged`（口径同 3.2）。类型是 `Omit<GithubMetrics, 'repos'>`——**不含 `repos`**（仓库维度自身就是去重单位，恒为 1 没有意义），也**不含 `repoIds`**（账号级专有，见 3.7） |
+| `contributors` | number | **人物口径**贡献者数：该仓库出现过的去重 login 数，**排除机器账号**（`isBotAccount`，同 5.3.8）；`author === null`（已注销账号）的事件不进人物口径 |
+| `orgs` | number | 参与组织数：该仓库贡献者按**生效归属 `effectiveOrgId`** 去重（含伪组织 `unattributed`） |
+| `updatedAt` | string | 取**事件文件**时间戳（`github-events.json` 的 `updatedAt`），逐行相同 |
+
+**排序与截断**：默认 `commits` 降序，**同值按 `repoId` 字典序升序**（稳定 tie-break，避免同分仓库在两次请求间乱序）；`limit` 在排序后截断。⚠️ 排序与截断都在 **Provider** 内完成（字段跨 `github.*` 与顶层 `contributors` / `orgs`，`ActivityService` 的通用排序不适用），与 5.3.3 / 5.3.8「Service 排序」不同。
+
+> **口径与不变量**：
+>
+> - **三段同源**：`Σ 仓库四项 ≡ Σ 组织四项（5.3.3）≡ Σ 账号四项（5.3.8，含 bot）`——同一个 `deriveGithubFromEvents` 单点定义，可互相核对；
+> - **口径混合**（与组织级一致）：四项计数**含 bot**；`contributors` 是**人物口径**（排除 bot）；`orgs` 按生效归属去重（bot 的量计入其归属桶）；
+> - **认领 / 解除 / 改 `Person.orgId` 后下一个请求即生效**（`JsonRepository` 按 mtime 失效缓存）：`orgs` / `contributors` 随之变化，而四项量不受归属影响；
+> - 派生过程中的归属告警（如认领边指向不存在的自然人）按 `WARN` 记日志，不阻断响应。
+
+**校验规则**：`from` 晚于 `to` → `40002`（`TimeRangeQueryDto.assertRange()`）；`sortBy` / `order` 非白名单值、`limit` 非整数或超出 1～200 → `40000`（`class-validator`）。
+
+**失败场景**：`50001` —— **`github-events.json`** 缺失 / 结构损坏，或 `github-accounts.json` / `identity-claims.json` / `persons.json` 任一不可读（本端点同样注入账号档案仓库，用于姓名 / 头像展示与 bot 判定；档案缺失时由事件 `author` 快照兜底合成）。⚠️ 首次 `collect:github:full` 之前**必然** `50001`；且事件文件是**整文件级** fail-fast（一条坏事件即全文件不可读，见 3.12），故本端点与 5.3.1 首页汇总、5.3.2 组织列表、5.3.3、5.3.8 **同生共死**。前端按失败卡渲染（见 02 文档）。
 
 ---
 
@@ -1636,7 +1797,8 @@ erDiagram
 | **对外术语**（如「独立开发者」） | `README` §5 术语表（术语的唯一来源）；`01`/`02`/`03`/`07` 正文；前端页面文案（含卡片 `label` 与 `hint`、口径说明区）；`apps/api/scripts/fixtures/seed-data/*.json` 的 `tags` 与描述文案 |
 | **指标口径**（如 `partnerCount`） | 本文档 §3.4 / §3.6；`07` §2 对应指标小节；`README` §5 术语表；前端 `HomePage.tsx` 口径说明区 |
 | **归属口径**（`orgId` → `effectiveOrgId`，ADR-0010 / ADR-0017） | 本文档 §3.2 / §3.7 / §5.3.2 / §5.3.3 / §5.3.8 / §6.2；`common/effective-org.ts`（**唯一实现**，两平台共用）；`apps/web/src/types/contract.ts` 的 `GithubOrgSource` / `ConfluenceOrgSource` / `ContributorContributionView`（手写镜像，编译器不报错，必须人工对齐）；前端判据与文案（`ContributorRankCard.tsx` 的独立开发者判据、`HomePage.tsx` / `OrganizationWall.tsx` 的口径说明）；`02` §3/§4；`07` §2.1/§2.2/§3；`README` §5 术语表 |
-| **落盘结构变更**（增删字段 / 提升 `schemaVersion`） | `entities.ts`（落盘类型）+ `validators.ts`（结构校验）+ `repositories.module.ts`（期望版本）+ `data/*.json`（信封）+ `apps/api/scripts/fixtures/seed-data/*.json`（离线自检合成种子）**五处同批原子切换**；采集器写路径（若该字段不再落盘，须同时摘掉注入与导入）；本文档 §1.1 版本表 + §3 + §4；`07` §2/§3；`README` §9 版本记录 |
+| **时间口径**（`from` / `to` 语义、区间 vs 全量，ADR-0018） | 本文档 §5.3.3（区间契约的**唯一详述处**）+ §5.3.4 / §5.3.5 / §5.3.8 / §5.3.16 / §5.3.17 各自的 from/to 行与口径说明 + §6.2；`common/time-range.ts`（日界与半开判定）+ `common/github-event-derivation.ts` 的 `filterEventsByRange`（**唯一谓词**，任何按时间筛事件的新代码必须调它）；三个 GitHub provider（切片位置）；Confluence 两个 provider 与 `confluence-account.port.ts` / `wiki.port.ts`（**恒不过滤**的契约注释）；`activity-query.dto.ts`（`assertRange` 与注释）；前端 `lib/format.ts`（`rangeStartInstant` / `rangeEndInstant`，日界 `+08:00`）+ `ActivityFilters.tsx`（预设与禁用态）+ `ActivityPage.tsx`（GitHub / Confluence 参数分离）+ `ActivityTable.tsx`（「全历史」角标）；`02` §3.2 / §4.1 / §4.2 / §4.3 / §8.2（首页恒累计、筛选器与预设、区间行为表、参数分流）；`03` §端口设计（切片位置）+ §12（测试重点用例）；`05` §3.3（Confluence 无时间维度的遗留债）+ §5.4（自检场景 [8] / [7]）；`06` #2（快照比对只在全量口径下成立）/ #5（v2 迁移的 fail-fast 面）/ #6（两套口径混排）；`07` §1.2 A6 + §2.2 A1 / A2 / A3 / A5 / A6 / A7 / A9 + §2.3 P9 + §4 待办；`CONTEXT.md` `## Language`（时间口径 / 全量口径 / 区间口径 / 事件时间戳 / 默认区间）；`README` §5 术语表 + §6 决策速查 + §9 v1.28。⚠️ **两个自检脚本各管一半**：`identity-check` 场景 7 管区间口径下的恒等式，`collector-check` 场景 8 管缺时间戳整条拒绝；而 `collector-check` 的 **D1 恒等式比对只在全量口径下成立**（基线快照不带区间），改区间语义时不要拿它当区间回归 |
+| **落盘结构变更**（增删字段 / 提升 `schemaVersion`） | `entities.ts`（落盘类型）+ `validators.ts`（结构校验）+ `repositories.module.ts`（期望版本）+ `data/*.json`（信封）+ `apps/api/scripts/fixtures/seed-data/*.json`（离线自检合成种子）**五处同批原子切换**；采集器写路径（若该字段不再落盘，须同时摘掉注入与导入）；本文档 §1.1 版本表 + §3 + §4；`07` §2/§3；`README` §9 版本记录。⚠️ **事件明细 `github-events.json` 另有两条硬要求**：① 写侧 `GithubCollectorService.toEvent()` 必须与 `validators.ts` **逐字段同源**——可空字段缺失时一律落 `null`，**绝不省略键**（`JSON.stringify` 会丢 `undefined`，一条坏事件即让整个文件校验失败，见 §3.12 的 Bot 事故）；② 离线自检 `scripts/collector-check.mjs` 必须 `import` 编译产物的 `isGithubContributionEventArray`，对全量 / 增量 / Bot 三条路径的落盘事件**逐条**校验，并保留「缺键必被判非法」的**负向对照**（`05` §5.4 场景 7）。⚠️ 该文件**刻意不进** `seed-data/`：首次采集前不存在是预期状态（启动自检只 WARN，见 §1.1） |
 
 > ⚠️ **历史教训**：2026-09-21 之后曾发生一次 `type` 枚举迁移（`partner` / `external` / `community` → `tsc` / `participant`），代码与数据均已改，但 `01` / `02` / `03` / `04` / `07`（数据采集目录，重编号前为 `08`）/ `README` 六篇文档集体滞留在迁移前，直到 2026-10-16 才修正。根因正是当时的变更流程只要求同步「代码 + 数据」——第 4 步就是为此新增的。取证与明细见 `README §9` v1.18（该问题已于 2026-10-16 修正，故不再登记于 `06`）。
 
@@ -1656,11 +1818,20 @@ erDiagram
 | `Person.orgId` | 与 `Contributor.orgId` 是同一个字段 | **自然人级**归属（身份匹配控制台维护，为其唯一真相）；`Contributor.orgId` 是 **GitHub 账号级**归属（采集口径）。⚠️ 自然人**无** `Person.orgId` 时，认领**不会**清零账号的采集归属，而是**回落**到 `orgId`（ADR-0017 决策 6），故「已认领」不等于「归属一定来自认领」 |
 | `Contributor.orgId` | 接口对外值 / 「为空 = 独立开发者」 | **采集口径**（`aliases.github` → `emailDomains` → `null`，每轮采集重算）；接口对外一律用 `effectiveOrgId`（ADR-0017）。`null` 只表示**采集未能归属**，是否独立开发者取决于生效归属 + 非机器人 |
 | `ConfluenceAccount.orgId` | 接口对外值 / 生效归属 | **采集口径**（`aliases` → 空间兜底）；接口对外一律用 `effectiveOrgId`（ADR-0010） |
+| `GithubContributionEvent.author.githubId = null` | 数据缺失 / 采集失败 | **Bot（GitHub App）本就没有 `databaseId`**：GraphQL 的 `... on User` 片段不匹配 Bot，响应里该键**缺席**，采集边界一律归一为 `null`（**键必须存在**，见 §3.12）。人物口径靠 `isBotAccount` 排除；派生层再把 `null` 归一为 `0` 以命中 bot 信号之一（见 §5.3.8） |
+| `GithubContributionEvent.author = null` | 作者信息丢失 | **已注销账号**：事件照常落盘，四项量计入仓库 / 组织桶，但**不进人物口径**（无 login 可归账号） |
+| `RepoContribution.repoId` | 组织 / 自然人主键 | **仓库全名** `owner/repo`（即事件的 `repository`），不是档案 slug，不可拿它查组织档案（见 §5.3.17） |
+| `github-events.json` 不存在 | 数据为空 / 故障 | 首次 `collect:github:full` 之前的**预期状态**：启动自检只 WARN 不阻断，GitHub 侧**全部**派生端点（首页汇总 / 组织列表 / 组织贡献 / 个人排行 / 仓库维度）返回 `50001`（见 §1.1 / §3.12） |
 | `effectiveOrgId` | 恒等于落盘 `orgId` / 仅 Confluence 侧有 | 认领边派生的 `Person.orgId` **优先**；未认领才回落到落盘 `orgId` / 伪组织 `unattributed`。**GitHub（ADR-0017）与 Confluence（ADR-0010）两侧同构**，共用 `common/effective-org.ts` 的兜底链语义；改认领后下一个请求即生效（`JsonRepository` 按 mtime 失效缓存） |
 | `ConfluenceAccount.orgSource` | 只可能是 `'claim'` | 落盘仅 `'alias' \| 'space' \| 'unattributed'`；`'claim'` 只出现在接口出参（读时覆写） |
 | `ContributorContributionView.orgSource` | 与 Confluence 侧同义 / 会落盘 | GitHub 侧取值 `'claim' \| 'collection' \| 'unattributed'`，**只存在于出参、不落盘**（`github-accounts.json` 无此字段）。`'collection'` 对应 Confluence 侧的 `'alias'`/`'space'`——GitHub 的采集判定不区分子来源 |
 | `isBotAccount` | 落盘标志位 / 需要维护黑名单 | **读路径纯函数**，三信号并集（`githubId === 0`、头像含 `/in/`、`contributorId` 匹配 `/bot/i`）。**只从人物口径排除**（人数、组织卡 top3、个人榜），其 commits / PRs 等**量仍计入**生效归属桶，以保持求和恒等式与历史快照可比 |
 | `OrganizationContribution.github.*` | 读 `github-organizations.json` 的落盘值 | **读时派生**（账号级按 `effectiveOrgId` 求和，**全覆盖**组织档案）；落盘文件已降级为基线快照（ADR-0017，见 §4.3） |
+| `from` / `to` | 闭区间 / 后端按日期切日 | **半开区间** `from <= 事件时间 < to`；后端只比 **epoch 毫秒**，日界按 `Asia/Shanghai` 由**前端**翻成时刻（`to` 取结束日的**次日**零点）。`from == to` 合法（空区间，命中 0）；`from > to` → `40002`。两侧都缺省 ≡ **全量口径**（ADR-0018） |
+| 缺省区间 | 「不筛选」是特例 / 需要额外标志位 | 缺省 ≡ **全量口径**，且实现上 `filterEventsByRange` 对 `undefined` **原数组同引用返回**（可被 `===` 断言）。默认区间刻意**不硬编码年份**——`ActivityFilters.tsx` 的「本年」预设按 `new Date().getFullYear()` 现算 |
+| `github-events.json` 的 `timestamp` | 可空的备用字段 | **必填**（`schemaVersion` 2 起）：区间口径的唯一切片依据。缺失的记录在**采集期整条拒绝**（不落盘、不进聚合）+ `WARN` + 游标 `untimedEvents` 累计（ADR-0018 决策 4） |
+| Confluence 侧的区间入参 | 会过滤 / 应报错 | **接受但恒不过滤**：该侧无时间维度明细，恒为**全量口径**。前端在 Confluence 视图**禁用**区间筛选器、在 GitHub 视图给 Confluence 列打「全历史」角标——差异必须**可见**，不靠报错也不靠隐藏（ADR-0018 决策 5） |
+| 首页 / 组织卡的数字 | 跟随活跃度页区间 | **恒为累计（全量口径）**：首页没有区间筛选器，标签带「（累计）」。⚠️ 活跃度页头 `GET /api/contributions/summary` 的 `totals` 则是**混合口径**（GitHub 四项跟随区间、Confluence 三项恒全量） |
 | `IdentityClaim.accountKey` | 账号对象本体 / 可跨来源复用 | **来源内**稳定标识（github=`githubId`、confluence=`accountId`、meeting=人名原文），**必须与 `source` 组合**才有意义 |
 | 「解除匹配」 | 把账号标记为「未匹配」状态位 | **物理删除该条边**；账号因「不再被任何边引用」而自动回到候选池 |
 | 组织花名册 `members` | 一份落盘的成员表 | 由 `Person.orgId` **派生**（组织档案上不存成员清单，避免两份真相） |

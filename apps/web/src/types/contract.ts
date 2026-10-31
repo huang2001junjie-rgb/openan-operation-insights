@@ -96,6 +96,22 @@ export interface OrganizationContribution {
   updatedAt: string;
 }
 
+/**
+ * 仓库维度贡献（后端 `contract/entities.ts#RepoContribution` 镜像）。
+ * 由 `github-events.json`（GitHub 侧唯一原子事实）读时派生、不落盘。
+ * 口径混合：四项计数含 bot；contributors 为人物口径（排除 bot）；orgs 按生效归属去重（含 unattributed）。
+ */
+export interface RepoContribution {
+  /** owner/repo 全名 */
+  repoId: string;
+  github: Omit<GithubMetrics, 'repos'>;
+  /** 贡献者数：排除 bot 后的去重登录名数 */
+  contributors: number;
+  /** 参与组织数：按生效归属去重（含伪组织 unattributed） */
+  orgs: number;
+  updatedAt: string;
+}
+
 export interface ConfluenceMetrics {
   requirements: number;
   topicShares: number;

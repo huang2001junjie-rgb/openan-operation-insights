@@ -5,6 +5,7 @@ import {
   ContributorContributionView,
   OrganizationContribution,
   OrganizationWiki,
+  RepoContribution,
 } from '../../contract/entities';
 import { ActivityService } from './activity.service';
 import {
@@ -12,6 +13,7 @@ import {
   ListConfluenceAccountsQueryDto,
   ListContributionsQueryDto,
   ListContributorContributionsQueryDto,
+  ListRepoContributionsQueryDto,
   ListWikiQueryDto,
 } from './dto/activity-query.dto';
 
@@ -31,6 +33,17 @@ export class ActivityController {
     @Query() query: ListContributorContributionsQueryDto,
   ): Promise<ContributorContributionView[]> {
     return this.activityService.listContributorContributions(query);
+  }
+
+  /**
+   * GET /api/repo-contributions —— 社区活跃度：仓库维度贡献明细（D1）。
+   * 由 github-events.json 读时派生；不接受 repoIds（选仓库只是挑行，前端客户端过滤）。
+   */
+  @Get('repo-contributions')
+  listRepoContributions(
+    @Query() query: ListRepoContributionsQueryDto,
+  ): Promise<RepoContribution[]> {
+    return this.activityService.listRepoContributions(query);
   }
 
   /** GET /api/contributions/summary —— 汇总指标（环形图数据源） */

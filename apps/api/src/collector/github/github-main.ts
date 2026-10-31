@@ -78,6 +78,12 @@ async function bootstrap(): Promise<void> {
     logger.log('── 采集结果 ──────────────────────────────');
     logger.log(`模式        : ${outcome.mode}`);
     logger.log(`记录数      : ${outcome.recordCount}`);
+    if (outcome.untimedCount > 0) {
+      // 正常恒为 0：出现即代表数据源回归（缺 mergedAt / createdAt），必须让运营看见
+      logger.warn(
+        `缺时间戳    : 拒绝 ${outcome.untimedCount} 条（不落盘、不计入聚合，见 .sync-state 的 untimedEvents）`,
+      );
+    }
     logger.log(`GraphQL 请求: ${outcome.requestCount}`);
     logger.log(`组织数      : ${outcome.orgCount}（含独立开发者伪组织）`);
     logger.log(`贡献者      : ${outcome.personCount} 人带 GitHub 指标`);
@@ -85,6 +91,9 @@ async function bootstrap(): Promise<void> {
     logger.log(`邮箱归属    : ${outcome.emailAttributedCount} 人通过邮箱域名命中组织`);
     logger.log(
       `合计        : PR ${outcome.totals.pullRequests} / 提交 ${outcome.totals.commits} / Issue ${outcome.totals.issues} / 行数 ${outcome.totals.linesChanged}`,
+    );
+    logger.log(
+      `事件        : 共 ${outcome.events.total} 条（新增 ${outcome.events.appended}，幂等跳过 ${outcome.events.skipped}）`,
     );
     logger.log(`截断风险    : ${outcome.truncated ? '是（status=partial）' : '否'}`);
     logger.log(`写入文件    : ${outcome.written.length > 0 ? outcome.written.join(', ') : '(dry-run)'}`);

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-10-28T07:09:27.684Z",
+  "updatedAt": "2026-10-29T07:34:18.234Z",
   "data": [
     {
       "personId": "casey-cain",
@@ -164,13 +164,6 @@
       "updatedAt": "2026-09-30T01:57:14.237Z"
     },
     {
-      "personId": "eduardo-panciera-molanes",
-      "displayName": "Eduardo Panciera Molanes",
-      "orgId": "personal",
-      "createdAt": "2026-09-30T01:51:48.718Z",
-      "updatedAt": "2026-09-30T01:55:21.494Z"
-    },
-    {
       "personId": "lionel-shi",
       "displayName": "Lionel Shi",
       "orgId": "huawei",
@@ -194,23 +187,23 @@
     {
       "personId": "kailai-zhang",
       "displayName": "Kailai Zhang",
-      "orgId": null,
+      "orgId": "cmcc",
       "createdAt": "2026-10-08T07:22:50.319Z",
-      "updatedAt": "2026-10-08T07:22:50.319Z"
+      "updatedAt": "2026-10-29T02:50:11.610Z"
     },
     {
       "personId": "eduardo-m-panciera-molanes",
       "displayName": "Eduardo M Panciera Molanes",
-      "orgId": null,
+      "orgId": "personal",
       "createdAt": "2026-10-08T07:23:43.925Z",
-      "updatedAt": "2026-10-08T07:23:43.925Z"
+      "updatedAt": "2026-10-29T02:50:32.592Z"
     },
     {
       "personId": "dajiang-du",
       "displayName": "Dajiang Du",
-      "orgId": null,
+      "orgId": "asiainfo",
       "createdAt": "2026-10-08T07:24:07.961Z",
-      "updatedAt": "2026-10-08T07:24:07.961Z"
+      "updatedAt": "2026-10-29T07:34:18.234Z"
     }
   ]
 }

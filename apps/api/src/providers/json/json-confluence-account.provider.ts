@@ -37,8 +37,9 @@ export class JsonConfluenceAccountProvider implements ConfluenceAccountPort {
     ]);
 
     if (query.from || query.to) {
-      // 账号级记录无时间维度明细，接受参数但返回全量（与 5.3.8 同口径）
-      this.logger.debug('阶段一忽略 from/to 过滤，返回全量 Confluence 账号');
+      // Confluence 侧无事件级时间维度，from/to 恒不参与过滤（ADR-0018 决策 5）：
+      // 返回全量口径，由前端标注「全历史」——不报错、不静默改数字
+      this.logger.debug('Confluence 账号级为全量口径：from/to 不参与过滤（无时间维度明细）');
     }
 
     const { views, warnings } = toConfluenceAccountViews(accounts, claims, persons);

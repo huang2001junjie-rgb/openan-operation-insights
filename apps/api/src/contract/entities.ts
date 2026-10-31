@@ -51,6 +51,64 @@ export interface AccountGithubMetrics extends GithubMetrics {
   repoIds: string[];
 }
 
+/**
+ * `github-events.json` v1 落盘事件：**GitHub 侧唯一原子事实**（事件级明细，D1 收敛）。
+ * 组织级 / 账号级 / 仓库级的一切数字都由本文件**读时派生**（认领边、账号档案、别名索引参与归属解析）；
+ * `github-accounts.json` 降级为账号档案（姓名/头像/githubId/采集口径 orgId），`github-organizations.json` 维持基线快照。
+ *
+ * 与采集管道的 `GithubContributionRecord` 的差异：`author` 仅保留展示与归属所需字段——
+ * `email` / `commitEmail` / `url` 沿用「仅用于采集时归属判定，**不落盘**」的既有决策。
+ */
+export interface GithubEventAuthorRef {
+  login: string;
+  githubId: number | null;
+  name: string | null;
+  avatarUrl: string;
+}
+
+/**
+ * GitHub 贡献事件（ADR-0017 D1 / ADR-0018）：GitHub 侧唯一原子事实，
+ * 组织级 / 账号级 / 仓库级数字全部由它读时派生。
+ *
+ * 刻意**不存**邮箱（`commitEmail` / `author.email` 只活在采集期内存，ADR-0017 D3）；
+ * 刻意**不存**派生指标（pullRequests / commits / issues / linesChanged）——事件本身就是最小事实。
+ * `timestamp` **必填**（ADR-0018 决策 4）：它是事件唯一的时间坐标，缺时间的事件在采集期即被拦下
+ * 不落盘（WARN + 计入 `.sync-state.json` 的 `untimedEvents`），读路径因此没有 null 分支。
+ */
+export interface GithubContributionEvent {
+  kind: 'pullRequest' | 'issue';
+  /** owner/repo 全名 */
+  repository: string;
+  /** PR / issue 编号；`kind + repository + number` = 增量去重幂等键 */
+  number: number;
+  /** 作者缺失（已注销账号等）时为 null；读路径按人物口径跳过，与组织级聚合口径一致 */
+  author: GithubEventAuthorRef | null;
+  /** PR：additions + deletions；Issue 恒为 0 */
+  linesChanged: number;
+  /**
+   * 事件时间戳（ISO 8601 时刻）：PR=mergedAt；Issue=createdAt。
+   * 区间口径（ADR-0018）以它做 `from <= timestamp < to` 的半开过滤。
+   */
+  timestamp: string;
+  /** PR：PR 内提交总数；Issue 恒为 0 */
+  commitCount: number;
+}
+
+/**
+ * 仓库维度贡献（`GET /api/repo-contributions` 出参）：由 `github-events.json` **读时派生**、不落盘。
+ * 口径混合（同组织级）：四项计数**含 bot**（dependabot 量计入其归属桶）；`contributors` 为**人物口径**（排除 bot）。
+ */
+export interface RepoContribution {
+  /** owner/repo 全名 */
+  repoId: string;
+  github: Omit<GithubMetrics, 'repos'>;
+  /** 贡献者数：排除 bot 后的去重登录名数 */
+  contributors: number;
+  /** 参与组织数：按**生效归属**去重（含伪组织 `unattributed`） */
+  orgs: number;
+  updatedAt: string;
+}
+
 export interface OrganizationContribution {
   orgId: string;
   orgName: string;

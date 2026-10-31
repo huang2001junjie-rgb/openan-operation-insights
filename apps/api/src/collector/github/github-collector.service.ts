@@ -2,6 +2,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import {
   AccountGithubMetrics,
   Contributor,
+  GithubContributionEvent,
   Organization,
   OrganizationContribution,
 } from '../../contract/entities';
@@ -9,6 +10,7 @@ import { JsonRepository } from '../../repositories/json-repository';
 import {
   CONTRIBUTIONS_REPOSITORY,
   CONTRIBUTORS_REPOSITORY,
+  GITHUB_EVENTS_REPOSITORY,
   ORGANIZATIONS_REPOSITORY,
 } from '../../repositories/repository.tokens';
 import { ORG_UNATTRIBUTED, UNATTRIBUTED_DISPLAY_NAME } from '../collector.constants';
@@ -27,7 +29,13 @@ export interface GithubCollectOptions {
 
 export interface GithubCollectOutcome {
   mode: 'incremental' | 'full';
+  /** 本轮从数据源取到的记录数（含被拒的缺时间戳记录） */
   recordCount: number;
+  /**
+   * 因缺时间戳被**整条拒绝**的记录数（ADR-0018 决策 4）：不落事件文件、不进聚合。
+   * 接受数 = `recordCount - untimedCount`；累计值另见 `.sync-state.json` 的 `untimedEvents`。
+   */
+  untimedCount: number;
   requestCount: number;
   truncated: boolean;
   orgCount: number;
@@ -37,8 +45,16 @@ export interface GithubCollectOutcome {
   /** 本轮通过邮箱域名命中的贡献者数（用于核对归属回填效果） */
   emailAttributedCount: number;
   totals: { pullRequests: number; commits: number; issues: number; linesChanged: number };
+  /** 事件文件（github-events.json）落盘统计：total=写后总数，appended=本轮新增，skipped=幂等键去重跳过 */
+  events: { total: number; appended: number; skipped: number };
   written: string[];
 }
+
+/**
+ * 通过时间戳校验的记录（`timestamp` 为非空可解析 ISO 时刻）：只有它能落盘为事件
+ * （`GithubContributionEvent.timestamp` 必填，ADR-0018 决策 4）。
+ */
+type TimedContributionRecord = GithubContributionRecord & { timestamp: string };
 
 /** 指标聚合桶：组织维度（orgId）与个人维度（contributorId）共用（ADR-0003） */
 interface MetricsAggregate {
@@ -86,6 +102,8 @@ export class GithubCollectorService {
     private readonly contributions: JsonRepository<OrganizationContribution[]>,
     @Inject(CONTRIBUTORS_REPOSITORY)
     private readonly contributors: JsonRepository<Contributor[]>,
+    @Inject(GITHUB_EVENTS_REPOSITORY)
+    private readonly events: JsonRepository<GithubContributionEvent[]>,
     private readonly syncState: GithubSyncStateStore,
   ) {}
 
@@ -118,10 +136,24 @@ export class GithubCollectorService {
       `采集到 ${fetched.records.length} 条记录（请求 ${fetched.requestCount} 次，剩余配额 ${String(fetched.rateLimitRemaining)}）`,
     );
 
+    // 时间戳是区间口径唯一的切片依据（ADR-0018 决策 4），故缺时间的记录**整条拒绝**：
+    // 既不落事件文件也不进聚合（否则基线快照会与事件派生结果漂移），WARN + 计数暴露，不静默丢
+    const { timed: records, untimed } = GithubCollectorService.splitByTimestamp(fetched.records);
+    const untimedEvents = (previousState.untimedEvents ?? 0) + untimed.length;
+    if (untimed.length > 0) {
+      this.logger.warn(
+        `拒绝 ${untimed.length} 条缺时间戳的记录（PR 需 mergedAt、Issue 需 createdAt）：不落盘、不计入聚合；` +
+          `累计 untimedEvents=${untimedEvents}；样例=${untimed
+            .slice(0, 3)
+            .map((record) => `${record.kind} ${record.repository}#${record.number}`)
+            .join(', ')}`,
+      );
+    }
+
     const seed = this.buildSeed(previousState, baseline);
     const personSeed = this.buildContributorSeed(contributorBaseline);
     const { aggregates, personAggregates, authors, unattributedLogins, emailAttributedCount } =
-      this.aggregate(fetched.records, aliasIndex, emailDomainIndex, seed, personSeed);
+      this.aggregate(records, aliasIndex, emailDomainIndex, seed, personSeed);
 
     const contributions = this.buildContributions(organizations, aggregates);
     const totals = this.sumTotals(aggregates);
@@ -133,6 +165,7 @@ export class GithubCollectorService {
     const outcome: GithubCollectOutcome = {
       mode: options.mode,
       recordCount: fetched.records.length,
+      untimedCount: untimed.length,
       requestCount: fetched.requestCount,
       truncated: fetched.truncated,
       orgCount: contributions.length,
@@ -140,6 +173,7 @@ export class GithubCollectorService {
       unattributedCount: mergedUnattributed.length,
       emailAttributedCount,
       totals,
+      events: { total: 0, appended: 0, skipped: 0 },
       written: [],
     };
 
@@ -160,6 +194,13 @@ export class GithubCollectorService {
       )),
     );
 
+    // 事件落盘（GitHub 侧唯一原子事实）：组织/账号/仓库级读路径全部由它派生
+    outcome.events = await this.persistEvents(records, options.mode);
+    outcome.written.push('github-events.json');
+    this.logger.log(
+      `事件落盘：共 ${outcome.events.total} 条（本轮新增 ${outcome.events.appended}，幂等跳过 ${outcome.events.skipped}）`,
+    );
+
     const nextState: GithubSyncState = {
       ...previousState,
       schemaVersion: 1,
@@ -170,6 +211,7 @@ export class GithubCollectorService {
       rateLimitRemaining: fetched.rateLimitRemaining,
       unattributedLogins: mergedUnattributed,
       recordCount: fetched.records.length,
+      untimedEvents,
       orgRepos: this.buildReposIndex(aggregates),
       personRepos: this.buildReposIndex(personAggregates),
     };
@@ -473,6 +515,105 @@ export class GithubCollectorService {
     return result;
   }
 
+  /**
+   * 事件落盘（github-events.json）：
+   * - `full`：本轮事件**整体替换**（与聚合文件的替换语义一致）；
+   * - `incremental`：读已落盘事件为基线，按幂等键 `kind|repository|number` 去重后**追加**、整文件重写；
+   *   文件缺失（首次增量）视为空基线，本轮记录全量落入。
+   */
+  /**
+   * 按时间戳切分记录（ADR-0018 决策 4）。
+   *
+   * 落盘契约要求事件 `timestamp` 为**可解析的 ISO 时刻**，故这里把「拿不到时间」的记录挡在
+   * 落盘之前——真通道结构上产不出这种记录（PR 只查 `states: MERGED` ⇒ `mergedAt` 必存在，
+   * Issue 必有 `createdAt`），它只可能来自数据源回归或 fixture，属于**数据错误**而非业务分支。
+   */
+  private static splitByTimestamp(records: GithubContributionRecord[]): {
+    timed: TimedContributionRecord[];
+    untimed: GithubContributionRecord[];
+  } {
+    const timed: TimedContributionRecord[] = [];
+    const untimed: GithubContributionRecord[] = [];
+    for (const record of records) {
+      const timestamp = record.timestamp;
+      if (
+        typeof timestamp === 'string' &&
+        timestamp.length > 0 &&
+        !Number.isNaN(Date.parse(timestamp))
+      ) {
+        timed.push({ ...record, timestamp });
+      } else {
+        untimed.push(record);
+      }
+    }
+    return { timed, untimed };
+  }
+
+  private async persistEvents(
+    records: TimedContributionRecord[],
+    mode: 'incremental' | 'full',
+  ): Promise<{ total: number; appended: number; skipped: number }> {
+    const incoming = records.map(GithubCollectorService.toEvent);
+
+    if (mode === 'full') {
+      await this.events.write(incoming);
+      return { total: incoming.length, appended: incoming.length, skipped: 0 };
+    }
+
+    let existing: GithubContributionEvent[];
+    try {
+      existing = (await this.events.read()).data;
+    } catch {
+      existing = [];
+    }
+
+    const seen = new Set(existing.map(GithubCollectorService.eventKey));
+    const appended: GithubContributionEvent[] = [];
+    let skipped = 0;
+    for (const event of incoming) {
+      const key = GithubCollectorService.eventKey(event);
+      if (seen.has(key)) {
+        skipped += 1;
+        continue;
+      }
+      seen.add(key);
+      appended.push(event);
+    }
+
+    await this.events.write([...existing, ...appended]);
+    return { total: existing.length + appended.length, appended: appended.length, skipped };
+  }
+
+  /** 事件幂等键：同一 PR/issue 在同一仓库内编号唯一 */
+  private static eventKey(event: GithubContributionEvent): string {
+    return `${event.kind}|${event.repository}|${event.number}`;
+  }
+
+  /**
+   * 记录 → 落盘事件：剥离 `email` / `commitEmail` / `url`（「仅用于采集时归属判定，不落盘」的既有决策），
+   * 仅保留展示与读时归属解析所需字段；作者缺失时 author 为 null（读路径按人物口径跳过）。
+   */
+  private static toEvent(record: TimedContributionRecord): GithubContributionEvent {
+    return {
+      kind: record.kind,
+      repository: record.repository,
+      number: record.number,
+      // 逐字段兜底为 null：Bot（dependabot 等 GitHub App）在 GraphQL 侧缺 githubId / name，
+      // 直接透传会得到 undefined，JSON 序列化**丢键**→ 落盘文件过不了 isGithubContributionEvent 校验
+      author: record.author
+        ? {
+            login: record.author.login,
+            githubId: record.author.githubId ?? null,
+            name: record.author.name ?? null,
+            avatarUrl: record.author.avatarUrl ?? '',
+          }
+        : null,
+      linesChanged: record.linesChanged,
+      timestamp: record.timestamp,
+      commitCount: record.commitCount ?? 0,
+    };
+  }
+
   /** 仓库集合索引：组织（orgRepos）与个人（personRepos）共用 */
   private buildReposIndex(aggregates: Map<string, MetricsAggregate>): Record<string, string[]> {
     const result: Record<string, string[]> = {};
@@ -645,6 +786,11 @@ export class GithubCollectorService {
     this.logger.log(
       `归属判定：${outcome.emailAttributedCount} 人通过邮箱域名命中组织，其余按登录名别名或独立开发者兜底`,
     );
+    if (outcome.untimedCount > 0) {
+      this.logger.log(
+        `本轮接受 ${outcome.recordCount - outcome.untimedCount} / ${outcome.recordCount} 条记录（拒绝 ${outcome.untimedCount} 条缺时间戳）`,
+      );
+    }
     if (outcome.truncated) {
       this.logger.warn('本轮结果已触及搜索结果上限，数据可能被截断（status=partial）');
     }

@@ -1,6 +1,7 @@
 import {
   ConfluenceAccount,
   Contributor,
+  GithubContributionEvent,
   HomeFileData,
   IdentityClaim,
   MeetingAttendanceMatrix,
@@ -173,6 +174,46 @@ export function isContributor(value: unknown): value is Contributor {
 
 export function isContributorArray(value: unknown): value is Contributor[] {
   return Array.isArray(value) && value.every(isContributor);
+}
+
+/** ISO 8601 时刻（UTC 或带偏移）：事件时间戳的唯一合法形态 */
+const ISO_INSTANT_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$/;
+
+/**
+ * `github-events.json` v2 落盘事件（GitHub 侧唯一原子事实）：
+ * - `author` 允许为 null（已注销账号）；
+ * - `email` / `commitEmail` **禁止落盘**，故不在此校验；
+ * - `timestamp` **必填且可解析**（ADR-0018 决策 4）：区间口径靠它切片，缺时间的事件在采集期
+ *   已被拦下（不落盘 + WARN + `.sync-state` 计数），故读路径不再需要 null 分支。
+ *   校验器把这条约束前移到落盘边界——写侧一旦回归，读失败（fail-fast）而不是静默漏算。
+ */
+function isGithubContributionEvent(value: unknown): value is GithubContributionEvent {
+  if (!isObject(value)) return false;
+  const kind = value.kind;
+  const author = value.author;
+  const timestamp = value.timestamp;
+  return (
+    (kind === 'pullRequest' || kind === 'issue') &&
+    isString(value.repository) &&
+    isNumber(value.number) &&
+    (author === null ||
+      (isObject(author) &&
+        isString(author.login) &&
+        (author.githubId === null || isNumber(author.githubId)) &&
+        isNullableString(author.name) &&
+        isNullableString(author.avatarUrl))) &&
+    isNumber(value.linesChanged) &&
+    isString(timestamp) &&
+    ISO_INSTANT_PATTERN.test(timestamp) &&
+    !Number.isNaN(Date.parse(timestamp)) &&
+    isNumber(value.commitCount)
+  );
+}
+
+export function isGithubContributionEventArray(
+  value: unknown,
+): value is GithubContributionEvent[] {
+  return Array.isArray(value) && value.every(isGithubContributionEvent);
 }
 
 export function isSummitDetail(value: unknown): value is SummitDetail {

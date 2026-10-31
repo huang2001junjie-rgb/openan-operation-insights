@@ -24,6 +24,8 @@ export interface GithubContributionRecord {
   kind: GithubRecordKind;
   /** nameWithOwner，如 openan-labs/core */
   repository: string;
+  /** PR / issue 编号；与 kind+repository 构成事件落盘的幂等键（增量去重） */
+  number: number;
   author: GithubAuthorRef | null;
   /** PR：additions + deletions；Issue 恒为 0 */
   linesChanged: number;

@@ -5,22 +5,26 @@ import {
   ContributorContributionView,
   OrganizationContribution,
   OrganizationWiki,
+  RepoContribution,
 } from '../../contract/entities';
 import {
   CONFLUENCE_ACCOUNT_PORT,
   CONTRIBUTION_PORT,
   CONTRIBUTOR_CONTRIBUTION_PORT,
+  REPO_CONTRIBUTION_PORT,
   WIKI_PORT,
 } from '../../providers/tokens';
 import { ConfluenceAccountPort } from '../../providers/ports/confluence-account.port';
 import { ContributionPort } from '../../providers/ports/contribution.port';
 import { ContributorContributionPort } from '../../providers/ports/contributor-contribution.port';
+import { RepoContributionPort } from '../../providers/ports/repo-contribution.port';
 import { WikiPort } from '../../providers/ports/wiki.port';
 import {
   ContributionSummaryQueryDto,
   ListConfluenceAccountsQueryDto,
   ListContributionsQueryDto,
   ListContributorContributionsQueryDto,
+  ListRepoContributionsQueryDto,
   ListWikiQueryDto,
 } from './dto/activity-query.dto';
 
@@ -34,6 +38,8 @@ export class ActivityService {
     @Inject(CONTRIBUTION_PORT) private readonly contributions: ContributionPort,
     @Inject(CONTRIBUTOR_CONTRIBUTION_PORT)
     private readonly contributorContributions: ContributorContributionPort,
+    @Inject(REPO_CONTRIBUTION_PORT)
+    private readonly repoContributions: RepoContributionPort,
     @Inject(WIKI_PORT) private readonly wiki: WikiPort,
     @Inject(CONFLUENCE_ACCOUNT_PORT)
     private readonly confluenceAccounts: ConfluenceAccountPort,
@@ -43,6 +49,7 @@ export class ActivityService {
     query.assertRange();
     const list = await this.contributions.getContributions({
       orgIds: query.orgIds,
+      repoIds: query.repoIds,
       from: query.from,
       to: query.to,
     });
@@ -65,6 +72,7 @@ export class ActivityService {
     query.assertRange();
     const list = await this.contributorContributions.getContributorContributions({
       orgIds: query.orgIds,
+      repoIds: query.repoIds,
       from: query.from,
       to: query.to,
     });
@@ -78,6 +86,23 @@ export class ActivityService {
     });
 
     return query.limit ? sorted.slice(0, query.limit) : sorted;
+  }
+
+  /**
+   * 仓库维度贡献（D1）：由 github-events.json 读时派生；
+   * 排序 / 截断在 Provider 内完成（排序字段跨 `github.*` 与顶层，Service 的通用排序不适用）。
+   */
+  async listRepoContributions(
+    query: ListRepoContributionsQueryDto,
+  ): Promise<RepoContribution[]> {
+    query.assertRange();
+    return this.repoContributions.getRepoContributions({
+      from: query.from,
+      to: query.to,
+      sortBy: query.sortBy,
+      order: query.order,
+      limit: query.limit,
+    });
   }
 
   async listWiki(query: ListWikiQueryDto): Promise<OrganizationWiki[]> {
@@ -123,11 +148,19 @@ export class ActivityService {
     return query.limit ? sorted.slice(0, query.limit) : sorted;
   }
 
+  /**
+   * 合计口径注意（ADR-0018 决策 5）：带区间时 `totals` 是**混合口径**——
+   * GitHub 侧按事件 `timestamp` 落在区间内统计，Confluence 侧无时间维度、恒为全量累计。
+   * 前端在 Confluence 视图下不传区间（整页统一为全量口径），并在 GitHub 视图的 Confluence
+   * 列上标注「全历史」，避免用户把两种口径当成同一个时间窗读。
+   */
   async getSummary(query: ContributionSummaryQueryDto): Promise<ContributionSummaryData> {
     query.assertRange();
     const [contributions, wiki] = await Promise.all([
+      // repoIds 仅作用于 GitHub 侧合计（Confluence 无仓库概念，不受影响）
       this.contributions.getContributions({
         orgIds: query.orgIds,
+        repoIds: query.repoIds,
         from: query.from,
         to: query.to,
       }),

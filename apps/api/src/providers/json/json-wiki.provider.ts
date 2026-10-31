@@ -43,6 +43,10 @@ export class JsonWikiProvider implements WikiPort {
     private readonly organizations: JsonRepository<Organization[]>,
   ) {}
 
+  /**
+   * `query.from` / `query.to` 恒不参与过滤（ADR-0018 决策 5）：账号级原子事实是**累计计数**，
+   * 没有可切片的时间维度，本端口恒为全量口径。
+   */
   async getWiki(query: WikiQuery): Promise<OrganizationWiki[]> {
     const [{ data: accounts }, { data: claims }, { data: persons }, { data: organizations }] =
       await Promise.all([

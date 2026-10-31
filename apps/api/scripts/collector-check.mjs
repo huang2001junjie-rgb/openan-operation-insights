@@ -7,7 +7,8 @@
  *
  * 原理：把**合成种子数据**（scripts/fixtures/seed-data，与 github-records.sample.json 配套）
  * 复制到系统临时目录，用 GITHUB_FIXTURE 跑**真实落盘**，校验全量替换 / 增量叠加 / 幂等 /
- * 伪组织补齐 / 邮箱域名归属等不变量；结束后清理临时目录。
+ * 伪组织补齐 / 邮箱域名归属 / 事件落盘（github-events.json 幂等键与 D1 恒等式）/
+ * 缺时间戳记录整条拒绝（ADR-0018）等不变量；结束后清理临时目录。
  *
  * 种子数据刻意与仓库 data/ 解耦：真实 data/ 会随每次线上采集而变化，若作为校验输入，
  * 断言将随数据漂移而失效。脚本结尾会逐字节比对，确认真实 data/ 未被改动。
@@ -16,7 +17,7 @@ import { spawnSync } from 'node:child_process';
 import { cpSync, existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, relative, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const apiDir = resolve(scriptDir, '..');
@@ -82,10 +83,11 @@ function makeDataDir() {
   return dir;
 }
 
-function runCollector(dataDir, args) {
+/** 跑一次采集器；`fixturePath` 缺省用主 fixture，个别场景（如 Bot 作者）传自造的临时 fixture */
+function runCollector(dataDir, args, fixturePath = fixture) {
   const result = spawnSync(process.execPath, [cliPath, ...args], {
     cwd: apiDir,
-    env: { ...process.env, DATA_DIR: dataDir, GITHUB_FIXTURE: fixture },
+    env: { ...process.env, DATA_DIR: dataDir, GITHUB_FIXTURE: fixturePath },
     encoding: 'utf8',
   });
   const output = `${result.stdout ?? ''}${result.stderr ?? ''}`;
@@ -175,6 +177,118 @@ function totalsOf(map) {
     totals.linesChanged += item.github.linesChanged;
   });
   return totals;
+}
+
+// ── 事件明细（github-events.json，D1：GitHub 侧唯一原子事实）─────────
+
+function eventsOf(dir) {
+  return readJson(join(dir, 'github-events.json')).data;
+}
+
+/**
+ * API 侧结构校验器（dist 产物）：断言采集器写出的事件文件**能被读路径接受**。
+ *
+ * 这条断言不是形式主义：写侧与校验器一旦不一致（曾发生——Bot 作者的 `githubId / name`
+ * 在 GraphQL 响应中缺键，透传成 `undefined` 后被 JSON 序列化丢弃），线上表现是
+ * `github-events.json data 结构校验未通过`，**所有** GitHub 派生接口（含首页汇总）返回 50001。
+ * 离线阶段用同一个校验器把关，才能在采集前拦住。
+ */
+const { isGithubContributionEventArray } = await import(
+  pathToFileURL(join(apiDir, 'dist/repositories/validators.js')).href
+);
+
+function checkEventsValid(events, label) {
+  const invalid = events.filter((event) => !isGithubContributionEventArray([event]));
+  check(
+    `事件明细通过 API 侧结构校验器（${label}）`,
+    invalid.length === 0,
+    invalid.length === 0
+      ? `${events.length} 条全部合法`
+      : `非法 ${invalid.length} 条，首个=${JSON.stringify(invalid[0])}`,
+  );
+}
+
+/** 事件幂等键：与采集器 `GithubCollectorService.eventKey` 同构 */
+function eventKey(event) {
+  return `${event.kind}|${event.repository}|${event.number}`;
+}
+
+/** 四项计数求和：入参为 `{pullRequests, commits, issues, linesChanged}` 数组 */
+function sumMetrics(list) {
+  return list.reduce(
+    (acc, item) => ({
+      pullRequests: acc.pullRequests + item.pullRequests,
+      commits: acc.commits + (item.commits ?? 0),
+      issues: acc.issues + item.issues,
+      linesChanged: acc.linesChanged + item.linesChanged,
+    }),
+    { pullRequests: 0, commits: 0, issues: 0, linesChanged: 0 },
+  );
+}
+
+/** 事件级四项求和：PR / Issue 按 kind 计数，提交数取 commitCount（Issue 恒 0） */
+function eventTotals(events) {
+  return sumMetrics(
+    events.map((event) => ({
+      pullRequests: event.kind === 'pullRequest' ? 1 : 0,
+      commits: event.commitCount ?? 0,
+      issues: event.kind === 'issue' ? 1 : 0,
+      linesChanged: event.linesChanged,
+    })),
+  );
+}
+
+/** 仓库维度分桶：repoId → { 事件, 贡献账号 login 集合 }（仓库表读时派生的离线对照） */
+function repoBuckets(events) {
+  const buckets = new Map();
+  for (const event of events) {
+    const bucket = buckets.get(event.repository) ?? {
+      repoId: event.repository,
+      items: [],
+      logins: new Set(),
+    };
+    bucket.items.push(event);
+    if (event.author?.login) bucket.logins.add(event.author.login.toLowerCase());
+    buckets.set(event.repository, bucket);
+  }
+  return buckets;
+}
+
+/** 分桶摘要：`repoId=PR/提交/Issue/行数/人数`，便于失败时一眼定位 */
+function repoSummary(events) {
+  return [...repoBuckets(events).values()]
+    .map((bucket) => {
+      const totals = eventTotals(bucket.items);
+      return `${bucket.repoId}=${totals.pullRequests}/${totals.commits}/${totals.issues}/${totals.linesChanged}/${bucket.logins.size}`;
+    })
+    .sort()
+    .join(' ');
+}
+
+function shortTotals(totals) {
+  return `PR ${totals.pullRequests} / 提交 ${totals.commits} / Issue ${totals.issues} / 行数 ${totals.linesChanged}`;
+}
+
+/**
+ * 增量游标种子（[4] 叠加口径 / [6] 事件幂等 共用）。
+ *
+ * `personRepos` 刻意留空：个人仓库集合自 v2 起由业务文件的 `github.repoIds` 自持
+ * （ADR-0017 决策 15），元信息缺失也不该让个人仓库数退化（组织维度仍依赖 orgRepos，故另测）。
+ */
+function writeIncrementalState(dir) {
+  writeJson(join(dir, '.sync-state.json'), {
+    schemaVersion: 1,
+    lastSyncAt: '2026-08-10T00:00:00Z',
+    lastRunAt: '2026-08-10T00:00:00Z',
+    lastMode: 'incremental',
+    status: 'success',
+    etags: {},
+    rateLimitRemaining: null,
+    unattributedLogins: ['aria-dev', 'solo-hacker'],
+    recordCount: 0,
+    orgRepos: {},
+    personRepos: {},
+  });
 }
 
 /**
@@ -392,7 +506,13 @@ function main() {
     );
 
     const fixtureEmails = collectFixtureEmails();
-    const persisted = ['github-organizations.json', 'github-accounts.json', 'home.json', 'organizations.json']
+    const persisted = [
+      'github-organizations.json',
+      'github-accounts.json',
+      'home.json',
+      'organizations.json',
+      'github-events.json',
+    ]
       .map((name) => readFileSync(join(fullDir, name), 'utf8'))
       .join('\n');
     const leaked = fixtureEmails.filter((email) => persisted.includes(email));
@@ -401,15 +521,58 @@ function main() {
       leaked.length === 0,
       leaked.length === 0 ? `已核对 ${fixtureEmails.length} 个邮箱均未落盘` : `泄漏：${leaked.join(', ')}`,
     );
+
+    // ── 事件落盘（D1：组织级 / 账号级 / 仓库级读路径的唯一原子事实）──
+    const events = eventsOf(fullDir);
+    const keys = new Set(events.map(eventKey));
+    check('事件整体替换：落盘 9 条（= fixture 记录数）', events.length === 9, `events=${events.length}`);
+    check('事件幂等键唯一（kind|repository|number）', keys.size === events.length, `unique=${keys.size}`);
+    check(
+      '事件只保留派生所需字段（author 内无 email，事件无 commitEmail / url）',
+      events.every(
+        (event) =>
+          Object.keys(event).sort().join(',') ===
+            'author,commitCount,kind,linesChanged,number,repository,timestamp' &&
+          Object.keys(event.author ?? {}).sort().join(',') === 'avatarUrl,githubId,login,name',
+      ),
+      `事件字段=${Object.keys(events[0] ?? {}).join(',')} / author 字段=${Object.keys(events[0]?.author ?? {}).join(',')}`,
+    );
+    checkEventsValid(events, '全量');
+    check(
+      '全量日志输出事件统计（共 9 / 新增 9 / 跳过 0）',
+      output.includes('共 9 条（本轮新增 9，幂等跳过 0）'),
+      'stdout 命中关键字',
+    );
+
+    // ⚠️ 这条比对**只在全量口径下成立**：基线快照 github-organizations.json 是采集器写死的累计值，
+    // 不带任何区间。若拿它去对区间切片后的事件合计，必然「漂移」——那不是数据坏了，是口径错了。
+    // 区间口径下的同一条恒等式由 identity-check [7] 覆盖（组织级 ≡ 账号级 ≡ 仓库级，同一区间内）。
+    const totalsFromEvents = eventTotals(events);
+    const totalsFromAccounts = sumMetrics([...githubById.values()].filter(Boolean));
+    check(
+      'D1 恒等式（全量口径）：事件级 = 组织级 = 账号级四项合计（PR7/提交62/Issue2/488 行）',
+      shortTotals(totalsFromEvents) === 'PR 7 / 提交 62 / Issue 2 / 行数 488' &&
+        JSON.stringify(totalsOf(map)) === JSON.stringify(totalsFromEvents) &&
+        JSON.stringify(totalsFromAccounts) === JSON.stringify(totalsFromEvents),
+      `事件 ${shortTotals(totalsFromEvents)} / 组织 ${shortTotals(totalsOf(map))} / 账号 ${shortTotals(totalsFromAccounts)}`,
+    );
+    check(
+      '仓库维度可派生：core=5/28/1/222/5 人，docs=1/4/1/16/2 人，kernel=1/30/0/250/1 人',
+      repoSummary(events) ===
+        'openan-labs/core=5/28/1/222/5 openan-labs/docs=1/4/1/16/2 openan-labs/kernel=1/30/0/250/1',
+      repoSummary(events),
+    );
   }
 
   console.log('\n[3] 全量幂等：重复运行结果一致');
   {
     const first = stripTimestamps(readJson(join(fullDir, 'github-organizations.json')));
     const firstContributors = stripTimestamps(readJson(join(fullDir, 'github-accounts.json')));
+    const firstEvents = stripTimestamps(readJson(join(fullDir, 'github-events.json')));
     runCollector(fullDir, ['--mode=full']);
     const second = stripTimestamps(readJson(join(fullDir, 'github-organizations.json')));
     const secondContributors = stripTimestamps(readJson(join(fullDir, 'github-accounts.json')));
+    const secondEvents = stripTimestamps(readJson(join(fullDir, 'github-events.json')));
     check(
       '重复全量运行贡献内容不变',
       JSON.stringify(first) === JSON.stringify(second),
@@ -420,26 +583,19 @@ function main() {
       JSON.stringify(firstContributors) === JSON.stringify(secondContributors),
       '（忽略 updatedAt）',
     );
+    check(
+      '重复全量运行事件明细不变（整体替换，无重复键）',
+      JSON.stringify(firstEvents) === JSON.stringify(secondEvents) &&
+        secondEvents.data.length === 9 &&
+        new Set(secondEvents.data.map(eventKey)).size === 9,
+      `events=${secondEvents.data.length}`,
+    );
   }
 
   console.log('\n[4] 增量叠加：历史累计不被清零');
   {
     const dir = makeDataDir();
-    writeJson(join(dir, '.sync-state.json'), {
-      schemaVersion: 1,
-      lastSyncAt: '2026-08-10T00:00:00Z',
-      lastRunAt: '2026-08-10T00:00:00Z',
-      lastMode: 'incremental',
-      status: 'success',
-      etags: {},
-      rateLimitRemaining: null,
-      unattributedLogins: ['aria-dev', 'solo-hacker'],
-      recordCount: 0,
-      orgRepos: {},
-      // 刻意留空：个人仓库集合自 v2 起由业务文件的 github.repoIds 自持（ADR-0017 决策 15），
-      // 元信息缺失也不该让个人仓库数退化（组织维度仍依赖 orgRepos，故另测）
-      personRepos: {},
-    });
+    writeIncrementalState(dir);
 
     const output = runCollector(dir, ['--mode=incremental']);
     const map = contributionsMap(dir);
@@ -655,7 +811,239 @@ function main() {
     );
   }
 
-  console.log('\n[6] 隔离性：真实 data/ 与合成种子均未被改动');
+  console.log('\n[6] 事件增量：时间窗内全落、重复运行按幂等键跳过、基线残缺可补齐');
+  {
+    const dir = makeDataDir();
+    writeIncrementalState(dir);
+    check(
+      '增量前无事件基线（首次增量按空基线处理）',
+      !existsSync(join(dir, 'github-events.json')),
+      'github-events.json 不存在',
+    );
+
+    // 游标 2026-08-10 之后的 7 条记录（#101 / #201 早于游标，被时间窗排除）
+    const firstOutput = runCollector(dir, ['--mode=incremental']);
+    check(
+      '首次增量：时间窗内 7 条事件全部落入',
+      eventsOf(dir).length === 7,
+      `events=${eventsOf(dir).length}（${repoSummary(eventsOf(dir))}）`,
+    );
+    check(
+      '首次增量日志：新增 7 / 跳过 0',
+      firstOutput.includes('共 7 条（本轮新增 7，幂等跳过 0）'),
+      'stdout 命中关键字',
+    );
+    checkEventsValid(eventsOf(dir), '增量');
+
+    // 把游标拨回同一位置重跑：同一批记录再次到达，应被幂等键全数跳过（聚合仍照常叠加）
+    const baseline = stripTimestamps(readJson(join(dir, 'github-events.json')));
+    writeIncrementalState(dir);
+    const secondOutput = runCollector(dir, ['--mode=incremental']);
+    const afterRerun = stripTimestamps(readJson(join(dir, 'github-events.json')));
+    check(
+      '重复增量：幂等键去重，事件仍为 7 条且内容不变',
+      afterRerun.data.length === 7 && JSON.stringify(afterRerun) === JSON.stringify(baseline),
+      `events=${afterRerun.data.length}`,
+    );
+    check(
+      '重复增量日志：新增 0 / 跳过 7',
+      secondOutput.includes('共 7 条（本轮新增 0，幂等跳过 7）'),
+      'stdout 命中关键字',
+    );
+
+    // 追加语义（非重算）：基线被裁到 2 条后重跑，只补回缺失的 5 条，不产生重复键
+    const truncated = readJson(join(dir, 'github-events.json'));
+    truncated.data = truncated.data.slice(0, 2);
+    writeJson(join(dir, 'github-events.json'), truncated);
+    writeIncrementalState(dir);
+    runCollector(dir, ['--mode=incremental']);
+    const restored = eventsOf(dir);
+    check(
+      '基线残缺后按幂等键补齐（2 + 5 = 7，键仍唯一）',
+      restored.length === 7 && new Set(restored.map(eventKey)).size === 7,
+      `events=${restored.length} / unique=${new Set(restored.map(eventKey)).size}`,
+    );
+  }
+
+  console.log('\n[7] Bot / 无作者：事件 author 键齐全，缺失字段落为 null 而非被 JSON 丢键');
+  {
+    const dir = makeDataDir();
+    // 真实形态复刻：dependabot 是 GitHub App（Bot），`AUTHOR_FIELDS` 的 `... on User` 片段不匹配，
+    // 响应里 `databaseId / name / email` **键都不存在**（不是 null）。曾经原样透传成 undefined，
+    // 落盘时被 JSON.stringify 丢键 → github-events.json 结构校验失败 → 所有 GitHub 派生接口 50001。
+    const botFixture = join(dir, 'bot-records.json');
+    writeJson(botFixture, {
+      records: [
+        {
+          kind: 'pullRequest',
+          repository: 'openan-labs/core',
+          number: 900,
+          author: {
+            login: 'dependabot',
+            url: 'https://github.com/apps/dependabot',
+            avatarUrl: 'https://avatars.githubusercontent.com/in/29110?v=4',
+          },
+          linesChanged: 4,
+          timestamp: '2026-09-18T09:25:07Z',
+          commitEmail: null,
+          commitCount: 1,
+        },
+        {
+          kind: 'issue',
+          repository: 'openan-labs/core',
+          number: 901,
+          // 已注销账号：author 整体为 null，同样必须落盘且合法
+          author: null,
+          linesChanged: 0,
+          timestamp: '2026-09-19T09:25:07Z',
+          commitCount: 0,
+        },
+      ],
+    });
+
+    runCollector(dir, ['--mode=full'], botFixture);
+    const events = eventsOf(dir);
+    const botEvent = events.find((event) => event.author?.login === 'dependabot');
+    check(
+      'Bot 事件 author 四键齐全（githubId / name 为 null，而非缺键）',
+      !!botEvent &&
+        Object.keys(botEvent.author).sort().join(',') === 'avatarUrl,githubId,login,name' &&
+        botEvent.author.githubId === null &&
+        botEvent.author.name === null,
+      botEvent ? `author=${JSON.stringify(botEvent.author)}` : 'dependabot 事件缺失',
+    );
+    check(
+      '作者已注销（author=null）的事件照样落盘',
+      events.some((event) => event.number === 901 && event.author === null),
+      `events=${events.length}`,
+    );
+    checkEventsValid(events, 'Bot / 无作者');
+    check(
+      '负向对照：缺 githubId / name 的 author 确会被校验器拒绝（证明上面的断言不是空转）',
+      !isGithubContributionEventArray([
+        {
+          kind: 'pullRequest',
+          repository: 'a/b',
+          number: 1,
+          author: { login: 'x', avatarUrl: '' },
+          linesChanged: 0,
+          timestamp: null,
+          commitCount: 0,
+        },
+      ]),
+      '缺键 author → 非法',
+    );
+
+    const botAccount = readJson(join(dir, 'github-accounts.json')).data.find(
+      (item) => item.contributorId === 'dependabot',
+    );
+    check(
+      '账号档案：Bot 的 name 回落为 login，指标照常计入',
+      botAccount?.name === 'dependabot' &&
+        botAccount?.github?.pullRequests === 1 &&
+        botAccount?.github?.commits === 1,
+      botAccount ? `name=${botAccount.name} / ${shortGithub(botAccount.github)}` : 'dependabot 档案缺失',
+    );
+  }
+
+  console.log('\n[8] 缺时间戳的记录整条拒绝：不落事件、不进聚合、WARN + 游标计数（ADR-0018 决策 4）');
+  {
+    const dir = makeDataDir();
+    // 真通道结构上产不出这种记录（PR 只查 states: MERGED ⇒ mergedAt 必存在，Issue 必有 createdAt），
+    // 它只可能来自数据源回归或 fixture。落盘契约要求事件 timestamp 必填，故采集期整条拒绝：
+    // 若放进聚合，基线快照会计入它而事件派生不会，两边凭空漂移（[5] 的漂移告警就会误报）。
+    const untimedFixture = join(dir, 'untimed-records.json');
+    // 作者用组织账号本身：登录名别名直接命中 openan-labs 桶，聚合断言不必再关心归属规则
+    const author = {
+      login: 'openan-labs',
+      githubId: 1001,
+      name: 'OpenAN Labs',
+      avatarUrl: 'https://avatars.githubusercontent.com/u/1001?v=4',
+      url: 'https://github.com/openan-labs',
+    };
+    writeJson(untimedFixture, {
+      records: [
+        {
+          kind: 'pullRequest',
+          repository: 'openan-labs/core',
+          number: 910,
+          author,
+          linesChanged: 12,
+          timestamp: '2026-09-20T00:00:00Z',
+          commitEmail: null,
+          commitCount: 4,
+        },
+        {
+          // 缺 mergedAt（数据源回归形态）
+          kind: 'pullRequest',
+          repository: 'openan-labs/core',
+          number: 911,
+          author,
+          linesChanged: 3,
+          timestamp: null,
+          commitEmail: null,
+          commitCount: 9,
+        },
+        {
+          // 空串同样视为缺时间
+          kind: 'issue',
+          repository: 'openan-labs/core',
+          number: 912,
+          author,
+          linesChanged: 0,
+          timestamp: '',
+          commitCount: 0,
+        },
+      ],
+    });
+
+    const output = runCollector(dir, ['--mode=full'], untimedFixture);
+    const events = eventsOf(dir);
+    const map = contributionsMap(dir);
+    const state = readJson(join(dir, '.sync-state.json'));
+
+    check(
+      '只有带合法时间戳的记录落盘为事件（3 条抓取 → 1 条落盘）',
+      events.length === 1 &&
+        events[0].number === 910 &&
+        events[0].timestamp === '2026-09-20T00:00:00Z',
+      `events=${events.map((event) => `#${event.number}`).join(',') || '空'}`,
+    );
+    check(
+      '被拒记录不进聚合：提交 4（而非 13）、Issue 0（而非 1）、行数 12（而非 15）',
+      sameGithub(map.get('openan-labs')?.github, {
+        pullRequests: 1,
+        commits: 4,
+        issues: 0,
+        linesChanged: 12,
+        repos: 1,
+      }),
+      shortGithub(map.get('openan-labs')?.github),
+    );
+    check(
+      '游标记录累计拒绝数 untimedEvents=2，recordCount 仍为抓取数 3',
+      state.untimedEvents === 2 && state.recordCount === 3,
+      `untimedEvents=${state.untimedEvents} / recordCount=${state.recordCount}`,
+    );
+    check(
+      '拒绝必须 WARN 到日志（不静默丢），并带上累计数与样例定位',
+      output.includes('拒绝 2 条缺时间戳的记录') &&
+        output.includes('untimedEvents=2') &&
+        output.includes('pullRequest openan-labs/core#911'),
+      'stdout/stderr 命中 WARN 关键字',
+    );
+    check(
+      '负向对照：事件校验器拒绝 null / 空串 / 纯日期，接受 ISO 时刻（拒绝发生在落盘之前）',
+      !isGithubContributionEventArray([{ ...events[0], timestamp: null }]) &&
+        !isGithubContributionEventArray([{ ...events[0], timestamp: '' }]) &&
+        !isGithubContributionEventArray([{ ...events[0], timestamp: '2026-09-20' }]) &&
+        isGithubContributionEventArray([{ ...events[0], timestamp: '2026-09-20T00:00:00Z' }]),
+      'null / 空串 / 日期 → 非法；ISO 时刻 → 合法',
+    );
+    checkEventsValid(events, '缺时间戳拒绝');
+  }
+
+  console.log('\n[9] 隔离性：真实 data/ 与合成种子均未被改动');
   {
     check(
       '仓库 data/ 逐字节未变',

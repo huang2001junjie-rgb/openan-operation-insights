@@ -14,6 +14,10 @@ export interface MultiSelectProps {
   onChange: (value: string[]) => void;
   placeholder?: string;
   searchable?: boolean;
+  /** 搜索框占位文案（默认「搜索组织」） */
+  searchPlaceholder?: string;
+  /** 提供后在下拉底部显示「全选」按钮（勾选全部选项） */
+  onSelectAll?: () => void;
   className?: string;
 }
 
@@ -24,6 +28,8 @@ export function MultiSelect({
   onChange,
   placeholder = '全部',
   searchable = true,
+  searchPlaceholder = '搜索组织',
+  onSelectAll,
   className,
 }: MultiSelectProps) {
   const [open, setOpen] = useState(false);
@@ -67,7 +73,11 @@ export function MultiSelect({
   const filtered = useMemo(() => {
     const kw = keyword.trim().toLowerCase();
     if (!kw) return options;
-    return options.filter((option) => option.label.toLowerCase().includes(kw));
+    return options.filter(
+      (option) =>
+        option.label.toLowerCase().includes(kw) ||
+        Boolean(option.hint?.toLowerCase().includes(kw)),
+    );
   }, [options, keyword]);
 
   const toggle = (optionValue: string) => {
@@ -141,7 +151,7 @@ export function MultiSelect({
                   autoFocus
                   value={keyword}
                   onChange={(event) => setKeyword(event.target.value)}
-                  placeholder="搜索组织"
+                  placeholder={searchPlaceholder}
                   className="h-8 w-full rounded-lg border border-white/10 bg-white/[0.04] pl-8 pr-2 text-xs text-slate-100 placeholder:text-slate-500 focus:border-brand-400/50 focus:outline-none"
                 />
               </span>
@@ -194,6 +204,18 @@ export function MultiSelect({
               })
             )}
           </ul>
+
+          {onSelectAll ? (
+            <div className="border-t border-white/[0.07] p-1.5">
+              <button
+                type="button"
+                onClick={onSelectAll}
+                className="w-full rounded-lg px-3 py-1.5 text-left text-xs text-brand-300 transition hover:bg-white/[0.06]"
+              >
+                全选
+              </button>
+            </div>
+          ) : null}
         </div>
       ) : null}
     </div>

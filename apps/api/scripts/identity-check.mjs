@@ -7,7 +7,8 @@
  *
  * 原理：把**合成种子数据**写入系统临时目录，直接用编译产物（dist）实例化
  * JsonRepository 与三个 Service，断言 slug 生成 / 跨文件顺序 / 删除级联 /
- * 候选池降级 / 组织花名册派生 / 令牌守卫等不变量。仓库 data/ 不被触碰。
+ * 候选池降级 / 组织花名册派生 / 令牌守卫 / 区间口径切片（ADR-0018）等不变量。
+ * 仓库 data/ 不被触碰。
  */
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -30,6 +31,12 @@ const {
   toContributorViews,
   deriveOrganizationContributions,
 } = await import(pathTo('common/effective-org.js'));
+// D1：事件为 GitHub 侧唯一原子事实，组织级 / 账号级 / 仓库级均由它读时派生
+const { deriveGithubFromEvents, filterEventsByRange } = await import(
+  pathTo('common/github-event-derivation.js')
+);
+// ADR-0018：区间口径的唯一实现（半开区间 from ≤ ts < to）
+const { toTimeRangeFilter, isWithinRange } = await import(pathTo('common/time-range.js'));
 
 function pathTo(rel) {
   return new URL(`file://${join(dist, rel).replace(/\\/g, '/')}`).href;
@@ -268,7 +275,7 @@ async function scenarioRoster() {
 
 // ── 场景 5：生效归属派生（ADR-0017）─────────────────────────────────
 async function scenarioDerivation() {
-  console.log('\n[5] 生效归属派生：认领优先 / 全覆盖 / repos 并集 / bot 处置');
+  console.log('\n[5] 生效归属派生：认领优先 / 全覆盖 / repos 并集 / bot 处置 / 事件同源（D1）');
 
   // 账号级 4 条，刻意让 unattributed 桶的「并集」与「求和」结果不同（2 vs 3），锁死 repos 语义
   const contributors = [
@@ -408,6 +415,114 @@ async function scenarioDerivation() {
     views.filter(isIndependentDeveloper).length === 1 && isIndependentDeveloper(viewOf('cnafan')),
     `count=${views.filter(isIndependentDeveloper).length}`,
   );
+
+  // ── D1：组织级 / 账号级 / 仓库级同源于事件明细，不存在双写漂移 ──
+  // 生成规则：每个账号在其 repoIds 的**首个**仓库产生 1 个 PR（承载全部 commits / lines），
+  // 其余仓库各产生 1 个 Issue（0 commits / 0 lines）——四项合计可手算，用于恒等式断言。
+  const events = contributors.flatMap((item, accountIndex) =>
+    item.github.repoIds.map((repoId, repoIndex) => ({
+      kind: repoIndex === 0 ? 'pullRequest' : 'issue',
+      repository: repoId,
+      number: accountIndex * 10 + repoIndex + 1,
+      author: {
+        login: item.contributorId,
+        githubId: item.githubId,
+        name: item.name,
+        avatarUrl: item.avatarUrl ?? '',
+      },
+      linesChanged: repoIndex === 0 ? item.github.linesChanged : 0,
+      timestamp: '2026-08-01T00:00:00Z',
+      commitCount: repoIndex === 0 ? item.github.commits : 0,
+    })),
+  );
+
+  const derivation = deriveGithubFromEvents({ events, accounts: contributors, claims, persons });
+  const eventViewOf = (id) => derivation.views.find((view) => view.contributorId === id);
+  const eventTotals = derivation.views.reduce(
+    (acc, view) => ({
+      pullRequests: acc.pullRequests + view.github.pullRequests,
+      commits: acc.commits + view.github.commits,
+      issues: acc.issues + view.github.issues,
+      linesChanged: acc.linesChanged + view.github.linesChanged,
+    }),
+    { pullRequests: 0, commits: 0, issues: 0, linesChanged: 0 },
+  );
+  const eventDerived = deriveOrganizationContributions(ORGS, derivation.views, '2026-10-28T00:00:00Z');
+  const eventBucketOf = (orgId) => eventDerived.find((item) => item.orgId === orgId)?.github;
+  const commitsFromEvents = eventDerived.reduce((sum, item) => sum + item.github.commits, 0);
+
+  check(
+    '事件派生：认领优先同样生效（chuanyuchen → orange/claim）',
+    eventViewOf('chuanyuchen').effectiveOrgId === 'orange' &&
+      eventViewOf('chuanyuchen').orgSource === 'claim' &&
+      eventViewOf('chuanyuchen').personId === person.personId,
+    `${eventViewOf('chuanyuchen').effectiveOrgId}/${eventViewOf('chuanyuchen').orgSource}`,
+  );
+  check(
+    '事件派生：账号级指标与事件明细一致（PR4/提交37/Issue2/140 行）',
+    eventTotals.pullRequests === 4 &&
+      eventTotals.commits === 37 &&
+      eventTotals.issues === 2 &&
+      eventTotals.linesChanged === 140,
+    `PR ${eventTotals.pullRequests} / 提交 ${eventTotals.commits} / Issue ${eventTotals.issues} / 行数 ${eventTotals.linesChanged}`,
+  );
+  check(
+    '恒等式：事件派生的组织级 commits 合计 = 账号级合计',
+    commitsFromEvents === eventTotals.commits && commitsFromEvents === 37,
+    `${commitsFromEvents} vs ${eventTotals.commits}`,
+  );
+  check(
+    '事件派生：bot 量计入归属桶（unattributed commits = 22），人物口径排除',
+    eventBucketOf('unattributed').commits === 22 &&
+      derivation.views.some((view) => view.contributorId === 'dep-bot') &&
+      !derivation.contributors.some((view) => view.contributorId === 'dep-bot'),
+    `unattributed=${eventBucketOf('unattributed').commits} / views=${derivation.views.length} / contributors=${derivation.contributors.length}`,
+  );
+  check(
+    '事件派生：独立开发者只数人不含 bot（1 人 = cnafan）',
+    derivation.contributors.filter(isIndependentDeveloper).length === 1 &&
+      isIndependentDeveloper(eventViewOf('cnafan')),
+    `count=${derivation.contributors.filter(isIndependentDeveloper).length}`,
+  );
+  check(
+    '仓库维度分桶：3 个仓库，openan/core = 提交 37 / 4 个账号',
+    derivation.repos.length === 3 &&
+      derivation.repos.find((repo) => repo.repoId === 'openan/core')?.github.commits === 37 &&
+      derivation.repos.find((repo) => repo.repoId === 'openan/core')?.logins.size === 4,
+    derivation.repos.map((repo) => `${repo.repoId}:${repo.github.commits}/${repo.logins.size}`).join(' '),
+  );
+
+  // repoIds 任意组合筛选：只选 kernel 时，仅命中该仓库的账号与量
+  const filtered = deriveGithubFromEvents({
+    events,
+    accounts: contributors,
+    claims,
+    persons,
+    repoFilter: new Set(['openan/kernel']),
+  });
+  check(
+    '仓库筛选（repoIds 任意组合）：只剩 cnafan 的 1 个 Issue，其余账号不出现',
+    filtered.views.length === 1 &&
+      filtered.views[0].contributorId === 'cnafan' &&
+      filtered.views[0].github.issues === 1 &&
+      filtered.views[0].github.commits === 0 &&
+      filtered.repos.length === 1,
+    filtered.views
+      .map((view) => `${view.contributorId}:Issue${view.github.issues}/提交${view.github.commits}`)
+      .join(' ') || '空',
+  );
+
+  // 账号档案缺失（github-accounts.json 未收录）：用事件 author 快照兜底合成，认领边仍优先
+  const dossierless = deriveGithubFromEvents({ events, accounts: [], claims, persons });
+  const withoutDossier = (id) => dossierless.views.find((view) => view.contributorId === id);
+  check(
+    '档案缺失兜底：4 个视图仍产出、name 取事件快照，无采集口径者回落 unattributed',
+    dossierless.views.length === 4 &&
+      withoutDossier('chuanyuchen').name === 'Chuanyu Chen' &&
+      withoutDossier('chuanyuchen').effectiveOrgId === 'orange' &&
+      withoutDossier('solo-x').effectiveOrgId === 'unattributed',
+    `${dossierless.views.length} 视图 / chuanyuchen=${withoutDossier('chuanyuchen').effectiveOrgId} / solo-x=${withoutDossier('solo-x').effectiveOrgId}`,
+  );
 }
 
 // ── 场景 6：令牌守卫 ───────────────────────────────────────────────
@@ -422,6 +537,149 @@ function scenarioGuard() {
   check('缺少令牌 → 40101', codeOf(() => enabled.canActivate(ctx({}))) === 40101);
   check('令牌错误 → 40102', codeOf(() => enabled.canActivate(ctx({ 'x-admin-token': 'wrong' }))) === 40102);
   check('令牌正确 → 放行', enabled.canActivate(ctx({ 'x-admin-token': 'secret-token' })) === true);
+}
+
+// ── 场景 7：区间口径（ADR-0018）────────────────────────────────────
+function scenarioRange() {
+  console.log('\n[7] 区间口径：半开边界 / 北京日界 / 同区间恒等式 / 空区间 / 落盘契约');
+
+  const at = (timestamp, overrides = {}) => ({
+    kind: 'pullRequest',
+    repository: 'openan/core',
+    number: 1,
+    author: { login: 'chuanyuchen', githubId: 22441124, name: 'Chuanyu Chen', avatarUrl: '' },
+    linesChanged: 10,
+    timestamp,
+    commitCount: 1,
+    ...overrides,
+  });
+
+  // 日界按 Asia/Shanghai：北京 2026-01-01 00:00 = 2025-12-31T16:00:00Z；北京 2026-02-01 00:00 = 2026-01-31T16:00:00Z
+  const boundary = [
+    at('2025-12-31T15:59:59Z', { number: 1 }), // 下界前一秒 → 区间外
+    at('2025-12-31T16:00:00Z', { number: 2 }), // 下界整点 → 区间内（含）
+    at('2026-01-31T15:59:59Z', { number: 3 }), // 上界前一秒 → 区间内
+    at('2026-01-31T16:00:00Z', { number: 4 }), // 上界整点 → 区间外（不含）
+  ];
+  const january = toTimeRangeFilter('2025-12-31T16:00:00.000Z', '2026-01-31T16:00:00.000Z');
+  const hit = filterEventsByRange(boundary, january);
+  check(
+    '半开区间 from ≤ ts < to：命中 #2 / #3（下界含、上界不含），北京日界不被 UTC 切歪',
+    hit.length === 2 && hit.map((event) => event.number).join(',') === '2,3',
+    hit.map((event) => `#${event.number}@${event.timestamp}`).join(' ') || '空',
+  );
+  check(
+    '不带区间 ≡ 全量口径：原数组同引用返回（不遍历、不复制）',
+    filterEventsByRange(boundary, undefined) === boundary &&
+      filterEventsByRange(boundary, toTimeRangeFilter(undefined, undefined)) === boundary,
+    'identity',
+  );
+  check(
+    '单侧无界：只给 from 时上界开放（命中 3 条）',
+    filterEventsByRange(boundary, toTimeRangeFilter('2025-12-31T16:00:00.000Z')).length === 3,
+    'from only',
+  );
+  check(
+    '空区间（from === to）合法且命中 0 条，不抛错',
+    filterEventsByRange(boundary, toTimeRangeFilter('2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'))
+      .length === 0,
+    'empty range',
+  );
+  check(
+    'isWithinRange：区间内 true、区间外 false、不可解析一律 false（脏数据不让聚合变 NaN）',
+    isWithinRange('2026-01-15T00:00:00Z', january) === true &&
+      isWithinRange('2026-02-01T00:00:00Z', january) === false &&
+      isWithinRange('不是时间', january) === false,
+    'true / false / false',
+  );
+
+  // ── 同区间恒等式：三个读实现共用 filterEventsByRange 谓词 ──
+  const accounts = [
+    {
+      contributorId: 'chuanyuchen',
+      githubId: 22441124,
+      name: 'Chuanyu Chen',
+      orgId: 'huawei',
+      avatarUrl: '',
+      github: { pullRequests: 0, commits: 0, issues: 0, linesChanged: 0, repos: 0, repoIds: [] },
+    },
+    {
+      contributorId: 'cnafan',
+      githubId: 9312901,
+      name: 'cnafan',
+      orgId: null,
+      avatarUrl: '',
+      github: { pullRequests: 0, commits: 0, issues: 0, linesChanged: 0, repos: 0, repoIds: [] },
+    },
+  ];
+  const cnafan = { login: 'cnafan', githubId: 9312901, name: 'cnafan', avatarUrl: '' };
+  const spread = [
+    at('2026-07-10T00:00:00Z', { number: 11, commitCount: 3, linesChanged: 30 }),
+    at('2026-07-20T00:00:00Z', { number: 12, repository: 'openan/kernel', commitCount: 5, linesChanged: 50, author: cnafan }),
+    at('2026-09-05T00:00:00Z', { number: 13, commitCount: 7, linesChanged: 70 }),
+  ];
+  const derive = (range) =>
+    deriveGithubFromEvents({
+      events: filterEventsByRange(spread, range),
+      accounts,
+      claims: [],
+      persons: [],
+    });
+  const allTime = derive(undefined);
+  // 北京 7 月整月：[2026-06-30T16:00Z, 2026-07-31T16:00Z)
+  const july = derive(toTimeRangeFilter('2026-06-30T16:00:00.000Z', '2026-07-31T16:00:00.000Z'));
+  const empty = derive(toTimeRangeFilter('2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'));
+
+  const commitsOf = (views) => views.reduce((sum, view) => sum + view.github.commits, 0);
+  const repoCommitsOf = (repos) => repos.reduce((sum, repo) => sum + repo.github.commits, 0);
+  const bucketsOf = (views) => deriveOrganizationContributions(ORGS, views, '2026-10-28T00:00:00Z');
+  const orgCommitsOf = (views) => bucketsOf(views).reduce((sum, item) => sum + item.github.commits, 0);
+
+  check(
+    '区间切片生效：北京 7 月整月命中 2 条事件（提交 3+5=8），全量为 15',
+    commitsOf(july.views) === 8 && commitsOf(allTime.views) === 15,
+    `7月=${commitsOf(july.views)} / 全量=${commitsOf(allTime.views)}`,
+  );
+  check(
+    '恒等式在同一区间下成立：组织级 ≡ 账号级 ≡ 仓库级求和（全量与 7 月窗口各自成立）',
+    orgCommitsOf(allTime.views) === commitsOf(allTime.views) &&
+      repoCommitsOf(allTime.repos) === commitsOf(allTime.views) &&
+      orgCommitsOf(july.views) === commitsOf(july.views) &&
+      repoCommitsOf(july.repos) === commitsOf(july.views),
+    `全量 ${orgCommitsOf(allTime.views)}/${commitsOf(allTime.views)}/${repoCommitsOf(allTime.repos)}` +
+      ` · 7月 ${orgCommitsOf(july.views)}/${commitsOf(july.views)}/${repoCommitsOf(july.repos)}`,
+  );
+  check(
+    '空区间：组织级仍全覆盖派生（3 个 0 值桶），账号级与仓库级为空（榜单是枚举，不是桶）',
+    bucketsOf(empty.views).length === ORGS.length &&
+      orgCommitsOf(empty.views) === 0 &&
+      empty.views.length === 0 &&
+      empty.repos.length === 0,
+    `桶=${bucketsOf(empty.views).length} / 账号级=${empty.views.length} / 仓库级=${empty.repos.length}`,
+  );
+  check(
+    '区间内无事件的仓库不出行：7 月窗口只剩 core / kernel 各 1 行（前端筛选候选随之收缩）',
+    july.repos.length === 2 &&
+      july.repos
+        .map((repo) => repo.repoId)
+        .sort()
+        .join(',') === 'openan/core,openan/kernel' &&
+      repoCommitsOf(july.repos) === 8,
+    july.repos.map((repo) => `${repo.repoId}:${repo.github.commits}`).join(' ') || '空',
+  );
+
+  // 落盘契约：timestamp 必填（ADR-0018 决策 4）。写侧一旦回归，必须在读边界 fail-fast（50001），
+  // 而不是让区间筛选静默漏算——这正是把校验放在 validators 而不是读路径里的理由。
+  const legal = at('2026-07-10T00:00:00Z');
+  check(
+    '事件校验器：null / 纯日期 / 垃圾串 → 非法；UTC 与带偏移时刻 → 合法',
+    !validators.isGithubContributionEventArray([{ ...legal, timestamp: null }]) &&
+      !validators.isGithubContributionEventArray([{ ...legal, timestamp: '2026-07-10' }]) &&
+      !validators.isGithubContributionEventArray([{ ...legal, timestamp: '昨天' }]) &&
+      validators.isGithubContributionEventArray([legal]) &&
+      validators.isGithubContributionEventArray([{ ...legal, timestamp: '2026-07-10T08:00:00+08:00' }]),
+    'null / 日期 / 垃圾串 → 拒；ISO 时刻（Z 与 +08:00）→ 通过',
+  );
 }
 
 function codeOf(fn) {
@@ -442,6 +700,7 @@ try {
   await scenarioRoster();
   await scenarioDerivation();
   scenarioGuard();
+  scenarioRange();
 } catch (error) {
   failed += 1;
   console.error(`\n未捕获异常：${error?.stack ?? error}`);

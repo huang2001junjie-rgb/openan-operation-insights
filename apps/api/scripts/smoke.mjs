@@ -10,7 +10,26 @@ const cases = [
   { name: '贡献明细', path: '/contributions?sortBy=pullRequests&order=desc&limit=5', expect: (d) => Array.isArray(d) },
   { name: '个人贡献明细', path: '/contributor-contributions?sortBy=commits&order=desc&limit=5', expect: (d) => Array.isArray(d) },
   { name: '个人贡献组织筛选', path: '/contributor-contributions?orgIds=huawei&sortBy=commits&order=desc', expect: (d) => Array.isArray(d) },
+  // 仓库维度（D1：由 github-events.json 读时派生）——需先跑过 collect:github:full，否则事件文件缺失会报错
+  {
+    name: '仓库维度贡献明细',
+    path: '/repo-contributions?sortBy=commits&order=desc&limit=5',
+    expect: (d) => Array.isArray(d) && d.every((row) => 'repoId' in row && 'contributors' in row && 'orgs' in row),
+  },
+  { name: '仓库维度非法排序字段→40001', path: '/repo-contributions?sortBy=oops', expectError: 40001 },
+  // 仓库组合筛选（repoIds）：组织级 / 个人级 / 汇总三条路径同一入参
+  { name: '仓库组合筛选（组织级）', path: '/contributions?repoIds=project-openan%2Fregistry-center', expect: (d) => Array.isArray(d) },
+  {
+    name: '仓库组合筛选（个人级）',
+    path: '/contributor-contributions?repoIds=project-openan%2Fregistry-center&sortBy=commits&order=desc',
+    expect: (d) => Array.isArray(d),
+  },
   { name: '汇总指标', path: '/contributions/summary', expect: (d) => typeof d.totals?.pullRequests === 'number' },
+  {
+    name: '汇总指标（仓库组合筛选）',
+    path: '/contributions/summary?repoIds=project-openan%2Fregistry-center',
+    expect: (d) => typeof d.totals?.pullRequests === 'number',
+  },
   { name: 'wiki 成果明细', path: '/wiki?sortBy=requirements&order=desc&limit=5', expect: (d) => Array.isArray(d) },
   { name: '账号级 Confluence 明细', path: '/confluence-accounts?sortBy=requirements&order=desc&limit=5', expect: (d) => Array.isArray(d) },
   { name: '账号级 Confluence 组织筛选', path: '/confluence-accounts?orgIds=unattributed&sortBy=requirements', expect: (d) => Array.isArray(d) },

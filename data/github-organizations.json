@@ -1,12 +1,12 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-09-30T02:16:02.456Z",
+  "updatedAt": "2026-10-30T07:45:20.184Z",
   "data": [
     {
       "orgId": "cmcc",
       "orgName": "China Mobile",
       "logoUrl": "/logos/china_mobile.png",
-      "homepageUrl": "https://www.chinamobileltd.com",
+      "homepageUrl": "https://open-source.chinamobile.com/",
       "github": {
         "pullRequests": 40,
         "commits": 148,
@@ -14,35 +14,35 @@
         "linesChanged": 24440,
         "repos": 3
       },
-      "updatedAt": "2026-09-30T02:16:02.455Z"
+      "updatedAt": "2026-10-30T07:45:20.183Z"
     },
     {
       "orgId": "huawei",
       "orgName": "Huawei",
       "logoUrl": "/logos/huawei.png",
-      "homepageUrl": "https://www.huawei.com",
+      "homepageUrl": "https://www.huawei.com/",
       "github": {
-        "pullRequests": 350,
-        "commits": 1057,
-        "issues": 117,
-        "linesChanged": 871302,
+        "pullRequests": 493,
+        "commits": 1504,
+        "issues": 160,
+        "linesChanged": 1339277,
         "repos": 13
       },
-      "updatedAt": "2026-09-30T02:16:02.455Z"
+      "updatedAt": "2026-10-30T07:45:20.183Z"
     },
     {
       "orgId": "zte",
       "orgName": "ZTE",
       "logoUrl": "/logos/zte.webp",
-      "homepageUrl": "https://www.zte.com.cn",
+      "homepageUrl": "https://www.zte.com.cn/",
       "github": {
-        "pullRequests": 1,
-        "commits": 1,
+        "pullRequests": 2,
+        "commits": 4,
         "issues": 0,
-        "linesChanged": 2962,
+        "linesChanged": 4342,
         "repos": 1
       },
-      "updatedAt": "2026-09-30T02:16:02.455Z"
+      "updatedAt": "2026-10-30T07:45:20.183Z"
     },
     {
       "orgId": "unattributed",
@@ -50,13 +50,13 @@
       "logoUrl": "",
       "homepageUrl": "",
       "github": {
-        "pullRequests": 57,
-        "commits": 90,
-        "issues": 16,
-        "linesChanged": 36923,
-        "repos": 11
+        "pullRequests": 83,
+        "commits": 157,
+        "issues": 17,
+        "linesChanged": 77722,
+        "repos": 12
       },
-      "updatedAt": "2026-09-30T02:16:02.455Z"
+      "updatedAt": "2026-10-30T07:45:20.183Z"
     }
   ]
 }

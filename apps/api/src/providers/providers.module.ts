@@ -2,6 +2,7 @@ import { Global, Module } from '@nestjs/common';
 import { JsonConfluenceAccountProvider } from './json/json-confluence-account.provider';
 import { JsonContributionProvider } from './json/json-contribution.provider';
 import { JsonContributorContributionProvider } from './json/json-contributor-contribution.provider';
+import { JsonRepoContributionProvider } from './json/json-repo-contribution.provider';
 import { JsonHomeMetricProvider } from './json/json-home-metric.provider';
 import { JsonWikiProvider } from './json/json-wiki.provider';
 import { JsonMeetingAttendanceProvider } from './json/json-meeting-attendance.provider';
@@ -11,6 +12,7 @@ import {
   CONFLUENCE_ACCOUNT_PORT,
   CONTRIBUTION_PORT,
   CONTRIBUTOR_CONTRIBUTION_PORT,
+  REPO_CONTRIBUTION_PORT,
   HOME_METRIC_PORT,
   WIKI_PORT,
   MEETING_ATTENDANCE_PORT,
@@ -36,6 +38,8 @@ import {
     { provide: ORGANIZATION_PORT, useClass: JsonOrganizationProvider },
     { provide: CONTRIBUTION_PORT, useClass: JsonContributionProvider },
     { provide: CONTRIBUTOR_CONTRIBUTION_PORT, useClass: JsonContributorContributionProvider },
+    // 仓库维度贡献（D1）：github-events.json 读时派生，恒为 JSON 读实现
+    { provide: REPO_CONTRIBUTION_PORT, useClass: JsonRepoContributionProvider },
     { provide: WIKI_PORT, useClass: JsonWikiProvider },
     // 账号级 Confluence 事实（ADR-0008）：与组织级 WIKI_PORT 平行，恒为 JSON 读实现
     { provide: CONFLUENCE_ACCOUNT_PORT, useClass: JsonConfluenceAccountProvider },
@@ -48,6 +52,7 @@ import {
     ORGANIZATION_PORT,
     CONTRIBUTION_PORT,
     CONTRIBUTOR_CONTRIBUTION_PORT,
+    REPO_CONTRIBUTION_PORT,
     WIKI_PORT,
     CONFLUENCE_ACCOUNT_PORT,
     SUMMIT_PORT,

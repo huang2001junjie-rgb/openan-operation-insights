@@ -1,15 +1,15 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import {
   Contributor,
-  ContributorContribution,
   ContributorContributionView,
+  GithubContributionEvent,
   IdentityClaim,
   Person,
 } from '../../contract/entities';
-import { buildGithubClaimIndex, isBotAccount, resolveGithubEffectiveOrg } from '../../common/effective-org';
 import { JsonRepository } from '../../repositories/json-repository';
 import {
   CONTRIBUTORS_REPOSITORY,
+  GITHUB_EVENTS_REPOSITORY,
   IDENTITY_CLAIMS_REPOSITORY,
   PERSONS_REPOSITORY,
 } from '../../repositories/repository.tokens';
@@ -17,68 +17,69 @@ import {
   ContributorContributionPort,
   ContributorContributionQuery,
 } from '../ports/contributor-contribution.port';
-
-const hasMetrics = (item: Contributor): item is ContributorContribution => Boolean(item.github);
+import {
+  deriveGithubFromEvents,
+  filterEventsByRange,
+} from '../../common/github-event-derivation';
+import { toTimeRangeFilter } from '../../common/time-range';
 
 /**
- * 账号级 GitHub 读实现（ADR-0003 / ADR-0017）：返回采集器落盘的账号级事实，
- * 并叠加**读时派生**的生效归属（`effectiveOrgId` / `orgSource` / `personId`，人工认领优先）。
+ * 个人维度贡献 JSON Provider（阶段一 / ADR-0003 / ADR-0017）。
  *
- * 与 `JsonConfluenceAccountProvider`（ADR-0010）同构。本端口是**人物口径**，故：
+ * **D1 收敛**：账号级 GitHub 指标由 `github-events.json`（唯一原子事实）**读时派生**，
+ * 叠加读时生效归属（认领边优先）；`github-accounts.json` 降级为**账号档案**——
+ * 只提供展示与归属字段（姓名/头像/githubId/采集口径 orgId），其 `github` 指标不再参与读路径。
  *
- * - 仅返回带采集指标的个人：纯档案条目（无 `github`）不参与排行；
- * - **机器账号（如 `dependabot`）不在返回结果中**（ADR-0017 决策 5）——其代码量仍计入组织级求和
- *   （`ContributionPort`，决策 11），只是不占「独立开发者人数」与 top3 / 排行的人物位；
- * - 组织筛选基于 **`effectiveOrgId`**：未归属账号即伪组织 `unattributed`（04 文档 §3.7）。
+ * 口径：
+ * - **人物口径**：机器账号（dependabot 等）不在出参（ADR-0017 决策 5）；其量仍计入组织级（决策 11）；
+ * - **组织过滤**：基于 `effectiveOrgId`（认领优先），`unattributed` 伪组织可显式筛选；
+ * - **仓库过滤**：`repoIds` 任意组合（缺省/空 ≡ 全选），账号指标与 repoIds 均在筛选范围内重算；
+ * - **区间口径**（ADR-0018）：`from/to` 按事件 `timestamp` 做半开过滤，缺省即全量口径；
+ *   区间内无事件的账号**不出现在榜单**（与组织级的全覆盖派生不同——榜单是人物枚举，不是桶）。
  */
 @Injectable()
 export class JsonContributorContributionProvider implements ContributorContributionPort {
   private readonly logger = new Logger(JsonContributorContributionProvider.name);
 
   constructor(
+    @Inject(GITHUB_EVENTS_REPOSITORY)
+    private readonly eventsRepository: JsonRepository<GithubContributionEvent[]>,
     @Inject(CONTRIBUTORS_REPOSITORY)
-    private readonly repository: JsonRepository<Contributor[]>,
+    private readonly accountsRepository: JsonRepository<Contributor[]>,
     @Inject(IDENTITY_CLAIMS_REPOSITORY)
-    private readonly claims: JsonRepository<IdentityClaim[]>,
+    private readonly claimsRepository: JsonRepository<IdentityClaim[]>,
     @Inject(PERSONS_REPOSITORY)
-    private readonly persons: JsonRepository<Person[]>,
+    private readonly personsRepository: JsonRepository<Person[]>,
   ) {}
 
   async getContributorContributions(
     query: ContributorContributionQuery,
   ): Promise<ContributorContributionView[]> {
-    const [{ data: accounts }, { data: claims }, { data: persons }] = await Promise.all([
-      this.repository.read(),
-      this.claims.read(),
-      this.persons.read(),
+    const [eventsEnvelope, accountsEnvelope, claimsEnvelope, personsEnvelope] = await Promise.all([
+      this.eventsRepository.read(),
+      this.accountsRepository.read(),
+      this.claimsRepository.read(),
+      this.personsRepository.read(),
     ]);
 
-    if (query.from || query.to) {
-      // 阶段一本地数据无时间维度明细，接受参数但返回全量（见 04 文档 5.3.3）
-      this.logger.debug('阶段一忽略 from/to 过滤，返回全量个人贡献');
+    const derivation = deriveGithubFromEvents({
+      // 区间口径（ADR-0018）：与组织级 / 仓库级共用同一谓词，恒等式在同区间下成立
+      events: filterEventsByRange(eventsEnvelope.data, toTimeRangeFilter(query.from, query.to)),
+      accounts: accountsEnvelope.data,
+      claims: claimsEnvelope.data,
+      persons: personsEnvelope.data,
+      repoFilter: query.repoIds?.length ? new Set(query.repoIds) : null,
+    });
+    for (const warning of derivation.warnings) this.logger.warn(warning);
+
+    // 组织白名单：按生效归属（effectiveOrgId）过滤；空数组表示不过滤
+    const requestedOrgs = query.orgIds ?? [];
+    if (requestedOrgs.length === 0) {
+      return derivation.contributors as ContributorContributionView[];
     }
-
-    const { index, warnings } = buildGithubClaimIndex(claims, persons);
-    for (const warning of warnings) {
-      this.logger.warn(warning);
-    }
-
-    const views = accounts
-      .filter(hasMetrics)
-      .map((account) => resolveGithubEffectiveOrg(account, index))
-      .filter((view) => !isBotAccount(view));
-
-    if (!query.orgIds?.length) {
-      return views;
-    }
-
-    const whitelist = new Set(query.orgIds);
-    const knownIds = new Set(views.map((view) => view.effectiveOrgId));
-    const unknown = query.orgIds.filter((id) => !knownIds.has(id));
-    if (unknown.length > 0) {
-      this.logger.warn(`忽略未知 orgId：${unknown.join(', ')}`);
-    }
-
-    return views.filter((view) => whitelist.has(view.effectiveOrgId));
+    const whitelist = new Set(requestedOrgs);
+    return derivation.contributors.filter((view) =>
+      whitelist.has(view.effectiveOrgId),
+    ) as ContributorContributionView[];
   }
 }

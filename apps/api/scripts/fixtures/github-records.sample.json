@@ -1,9 +1,10 @@
 {
-  "_comment": "离线采集固定数据：用于无 GITHUB_TOKEN 时验证聚合/归属/落盘全链路。配合 GITHUB_FIXTURE=scripts/fixtures/github-records.sample.json 使用。commitEmail 模拟 PR 首提交作者邮箱，author.email 模拟账户公开资料邮箱。",
+  "_comment": "离线采集固定数据：用于无 GITHUB_TOKEN 时验证聚合/归属/落盘全链路。配合 GITHUB_FIXTURE=scripts/fixtures/github-records.sample.json 使用。commitEmail 模拟 PR 首提交作者邮箱，author.email 模拟账户公开资料邮箱。number 为 PR/issue 编号：与 kind+repository 构成事件落盘（github-events.json）的幂等键。",
   "records": [
     {
       "kind": "pullRequest",
       "repository": "openan-labs/core",
+      "number": 101,
       "author": {
         "login": "openan-labs",
         "githubId": 1001,
@@ -19,6 +20,7 @@
     {
       "kind": "pullRequest",
       "repository": "openan-labs/core",
+      "number": 102,
       "author": {
         "login": "openan-labs",
         "githubId": 1001,
@@ -34,6 +36,7 @@
     {
       "kind": "issue",
       "repository": "openan-labs/docs",
+      "number": 11,
       "author": {
         "login": "openan-labs",
         "githubId": 1001,
@@ -48,6 +51,7 @@
     {
       "kind": "pullRequest",
       "repository": "openan-labs/kernel",
+      "number": 201,
       "author": {
         "login": "nova-silicon",
         "githubId": 1002,
@@ -63,6 +67,7 @@
     {
       "kind": "pullRequest",
       "repository": "openan-labs/core",
+      "number": 103,
       "author": {
         "login": "solo-hacker",
         "githubId": 2001,
@@ -78,6 +83,7 @@
     {
       "kind": "issue",
       "repository": "openan-labs/core",
+      "number": 12,
       "author": {
         "login": "aria-dev",
         "githubId": 2002,
@@ -92,6 +98,7 @@
     {
       "kind": "pullRequest",
       "repository": "openan-labs/core",
+      "number": 104,
       "author": {
         "login": "nora-kim",
         "githubId": 2003,
@@ -108,6 +115,7 @@
     {
       "kind": "pullRequest",
       "repository": "openan-labs/docs",
+      "number": 13,
       "author": {
         "login": "pierre-dev",
         "githubId": 2004,
@@ -124,6 +132,7 @@
     {
       "kind": "pullRequest",
       "repository": "openan-labs/core",
+      "number": 105,
       "author": {
         "login": "tomas-x",
         "githubId": 2005,

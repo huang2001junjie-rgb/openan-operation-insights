@@ -10,26 +10,40 @@ import { formatDateTime, formatNumber } from '@/lib/format';
 import { sortRows, type ActivityRow, type SortKey } from './merge';
 import { orgBadgeFallback } from './org-display';
 
-const COLUMNS: Array<{ key: SortKey; label: string; align?: 'right' }> = [
+/**
+ * `allTime` 标记该列**不参与区间筛选**（ADR-0018 决策 5）：Confluence 侧落盘的是账号级累计计数，
+ * 没有可切片的时间维度。GitHub 列按区间统计时，同一行会混两种口径，故区间生效时给这些列
+ * 打「全历史」角标——数字照旧展示，但口径差异必须对用户可见，不能让人当成同一个时间窗读。
+ */
+const COLUMNS: Array<{ key: SortKey; label: string; align?: 'right'; allTime?: boolean }> = [
   { key: 'orgName', label: '组织' },
   { key: 'pullRequests', label: '合并 PR', align: 'right' },
   { key: 'commits', label: '提交数', align: 'right' },
   { key: 'issues', label: 'Issue', align: 'right' },
   { key: 'linesChanged', label: '代码行数', align: 'right' },
-  { key: 'requirements', label: '需求文档', align: 'right' },
-  { key: 'topicShares', label: '议题分享', align: 'right' },
-  { key: 'edits', label: '编辑', align: 'right' },
+  { key: 'requirements', label: '需求文档', align: 'right', allTime: true },
+  { key: 'topicShares', label: '议题分享', align: 'right', allTime: true },
+  { key: 'edits', label: '编辑', align: 'right', allTime: true },
 ];
 
 export interface ActivityTableProps {
   rows: ActivityRow[];
+  /** 区间筛选是否生效：生效时给 Confluence 列打「全历史」角标（两口径混排的显式提示） */
+  rangeActive?: boolean;
   isLoading: boolean;
   isError: boolean;
   error?: unknown;
   onRetry?: () => void;
 }
 
-export function ActivityTable({ rows, isLoading, isError, error, onRetry }: ActivityTableProps) {
+export function ActivityTable({
+  rows,
+  rangeActive = false,
+  isLoading,
+  isError,
+  error,
+  onRetry,
+}: ActivityTableProps) {
   const [sortKey, setSortKey] = useState<SortKey>('pullRequests');
   const [direction, setDirection] = useState<'asc' | 'desc'>('desc');
   const [keyword, setKeyword] = useState('');
@@ -115,6 +129,14 @@ export function ActivityTable({ rows, isLoading, isError, error, onRetry }: Acti
                           )}
                         >
                           {column.label}
+                          {rangeActive && column.allTime ? (
+                            <span
+                              className="rounded border border-white/10 bg-white/[0.04] px-1 py-px text-[0.55rem] font-normal leading-tight text-slate-500"
+                              title="Confluence 侧无时间维度明细，此列为全历史累计，不参与区间筛选"
+                            >
+                              全历史
+                            </span>
+                          ) : null}
                           <span
                             className={cn(
                               'text-[0.6rem] transition-opacity',
@@ -213,7 +235,9 @@ export function ActivityTable({ rows, isLoading, isError, error, onRetry }: Acti
 
           <p className="mt-3 flex items-center gap-1.5 text-[0.7rem] text-slate-500">
             <IconFile width={13} height={13} />
-            点击表头可切换排序；合计行随筛选与搜索实时变化。
+            {rangeActive
+              ? '点击表头可切换排序；合计行随筛选与搜索实时变化。GitHub 列按当前区间统计，标「全历史」的 Confluence 列为全量累计（该侧无时间维度明细，不参与区间筛选）。'
+              : '点击表头可切换排序；合计行随筛选与搜索实时变化。'}
           </p>
         </AsyncState>
       </div>

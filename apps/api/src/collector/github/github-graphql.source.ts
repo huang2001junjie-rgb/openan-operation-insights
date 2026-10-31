@@ -43,13 +43,31 @@ interface PrCommitsConnection {
   nodes: { commit: { author: { email: string | null } | null } | null }[];
 }
 
+/**
+ * GraphQL 原始作者负载。**不能**直接标成 `GithubAuthorRef`：`AUTHOR_FIELDS` 把
+ * `databaseId / name / email` 放在 `... on User` 内联片段里，而 **Bot（dependabot 等 GitHub App）
+ * 不匹配该片段**——响应里这三个键直接**缺席**（运行时 `undefined`，而非 `null`）。
+ * 曾因此把 `undefined` 透传到落盘层，`JSON.stringify` 丢键导致 `github-events.json` 结构校验失败、
+ * 所有 GitHub 派生接口 50001。故此处一律可选，由 `toAuthor()` 归一化为端口契约要求的 `null`。
+ */
+interface RawAuthor {
+  login?: string | null;
+  url?: string | null;
+  avatarUrl?: string | null;
+  githubId?: number | null;
+  name?: string | null;
+  email?: string | null;
+}
+
 interface SearchNode {
   __typename: string;
+  /** PR / issue 编号：事件落盘幂等键（kind+repository+number）的组成部分 */
+  number?: number;
   mergedAt?: string | null;
   createdAt?: string | null;
   additions?: number;
   deletions?: number;
-  author?: GithubAuthorRef | null;
+  author?: RawAuthor | null;
   repository?: { nameWithOwner: string } | null;
   commits?: PrCommitsConnection | null;
 }
@@ -112,6 +130,7 @@ query ($q: String!, $after: String) {
     nodes {
       __typename
       ... on PullRequest {
+        number
         mergedAt
         additions
         deletions
@@ -120,6 +139,7 @@ query ($q: String!, $after: String) {
         ${PR_COMMITS_FIELDS}
       }
       ... on Issue {
+        number
         createdAt
         author { ${AUTHOR_FIELDS} }
         repository { nameWithOwner }
@@ -136,6 +156,7 @@ query ($owner: String!, $name: String!, $after: String) {
     pullRequests(states: MERGED, first: ${PAGE_SIZE}, after: $after) {
       pageInfo { hasNextPage endCursor }
       nodes {
+        number
         mergedAt
         additions
         deletions
@@ -154,6 +175,7 @@ query ($owner: String!, $name: String!, $after: String) {
     issues(first: ${PAGE_SIZE}, after: $after) {
       pageInfo { hasNextPage endCursor }
       nodes {
+        number
         createdAt
         author { ${AUTHOR_FIELDS} }
       }
@@ -328,7 +350,8 @@ export class GithubGraphqlSource implements GithubSource {
         records.push({
           kind: 'pullRequest',
           repository: `${owner}/${name}`,
-          author: node.author ?? null,
+          number: node.number ?? 0,
+          author: this.toAuthor(node.author),
           linesChanged: (node.additions ?? 0) + (node.deletions ?? 0),
           timestamp: node.mergedAt ?? null,
           commitEmail: node.commits?.nodes?.[0]?.commit?.author?.email ?? null,
@@ -366,7 +389,8 @@ export class GithubGraphqlSource implements GithubSource {
         records.push({
           kind: 'issue',
           repository: `${owner}/${name}`,
-          author: node.author ?? null,
+          number: node.number ?? 0,
+          author: this.toAuthor(node.author),
           linesChanged: 0,
           timestamp: node.createdAt ?? null,
           commitCount: 0,
@@ -441,7 +465,8 @@ export class GithubGraphqlSource implements GithubSource {
       return {
         kind: 'pullRequest',
         repository,
-        author: node.author ?? null,
+        number: node.number ?? 0,
+        author: this.toAuthor(node.author),
         linesChanged: (node.additions ?? 0) + (node.deletions ?? 0),
         timestamp: node.mergedAt ?? null,
         commitEmail: node.commits?.nodes?.[0]?.commit?.author?.email ?? null,
@@ -452,10 +477,29 @@ export class GithubGraphqlSource implements GithubSource {
     return {
       kind: 'issue',
       repository,
-      author: node.author ?? null,
+      number: node.number ?? 0,
+      author: this.toAuthor(node.author),
       linesChanged: 0,
       timestamp: node.createdAt ?? null,
       commitCount: 0,
+    };
+  }
+
+  /**
+   * 原始作者 → 端口契约 `GithubAuthorRef`：Bot 缺失的 `githubId / name / email` 一律归一化为 `null`，
+   * `avatarUrl / url` 归一化为空串。登录名缺失（已注销账号）视为无作者，返回 null。
+   */
+  private toAuthor(raw: RawAuthor | null | undefined): GithubAuthorRef | null {
+    const login = raw?.login?.trim();
+    if (!login) return null;
+
+    return {
+      login,
+      githubId: raw?.githubId ?? null,
+      name: raw?.name ?? null,
+      avatarUrl: raw?.avatarUrl ?? '',
+      url: raw?.url ?? '',
+      email: raw?.email ?? null,
     };
   }
 
