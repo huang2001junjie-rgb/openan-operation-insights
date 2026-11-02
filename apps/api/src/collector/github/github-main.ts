@@ -95,6 +95,9 @@ async function bootstrap(): Promise<void> {
     logger.log(
       `事件        : 共 ${outcome.events.total} 条（新增 ${outcome.events.appended}，幂等跳过 ${outcome.events.skipped}）`,
     );
+    if (outcome.releases) {
+      logger.log(`Releases    : 共 ${outcome.releases.total} 条，覆盖 ${outcome.releases.reposWithReleases} 个仓库`);
+    }
     logger.log(`截断风险    : ${outcome.truncated ? '是（status=partial）' : '否'}`);
     logger.log(`写入文件    : ${outcome.written.length > 0 ? outcome.written.join(', ') : '(dry-run)'}`);
     logger.log('─────────────────────────────────────────');

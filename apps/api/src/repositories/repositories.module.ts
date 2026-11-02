@@ -5,6 +5,7 @@ import {
   ConfluenceAccount,
   Contributor,
   GithubContributionEvent,
+  GithubReleasesFileData,
   HomeFileData,
   IdentityClaim,
   MeetingAttendanceMatrix,
@@ -20,6 +21,7 @@ import {
   CONTRIBUTIONS_REPOSITORY,
   CONTRIBUTORS_REPOSITORY,
   GITHUB_EVENTS_REPOSITORY,
+  GITHUB_RELEASES_REPOSITORY,
   HOME_REPOSITORY,
   IDENTITY_CLAIMS_REPOSITORY,
   WIKI_REPOSITORY,
@@ -33,6 +35,7 @@ import {
   isContributionArray,
   isContributorArray,
   isGithubContributionEventArray,
+  isGithubReleasesFileData,
   isHomeFileData,
   isIdentityClaimArray,
   isWikiArray,
@@ -128,6 +131,16 @@ const repositoryProviders = [
     inject: [ConfigService],
   },
   {
+    provide: GITHUB_RELEASES_REPOSITORY,
+    // GitHub Release 原子事实（ADR-0019）：版本发布页全部数字的读时派生来源；
+    // 与 github-events.json 同为首次采集前可能缺失的文件，自检按「待采集」降级 WARN
+    useFactory: makeRepository<GithubReleasesFileData>(
+      'github-releases.json',
+      isGithubReleasesFileData,
+    ),
+    inject: [ConfigService],
+  },
+  {
     provide: SUMMITS_REPOSITORY,
     useFactory: makeRepository<SummitDetail[]>('summits.json', isSummitDetailArray),
     inject: [ConfigService],
@@ -173,6 +186,8 @@ export class DataBootstrapService implements OnApplicationBootstrap {
     @Inject(CONTRIBUTORS_REPOSITORY) private readonly contributors: JsonRepository<Contributor[]>,
     @Inject(GITHUB_EVENTS_REPOSITORY)
     private readonly githubEvents: JsonRepository<GithubContributionEvent[]>,
+    @Inject(GITHUB_RELEASES_REPOSITORY)
+    private readonly githubReleases: JsonRepository<GithubReleasesFileData>,
     @Inject(SUMMITS_REPOSITORY) private readonly summits: JsonRepository<SummitDetail[]>,
     @Inject(MEETINGS_REPOSITORY)
     private readonly meetings: JsonRepository<MeetingAttendanceMatrix>,
@@ -189,18 +204,19 @@ export class DataBootstrapService implements OnApplicationBootstrap {
       this.wiki,
       this.confluenceAccounts,
       this.contributors,
-      // github-events.json 首次上线前可能缺失（需跑一次 collect:github:full）：
+      // github-events.json / github-releases.json 首次上线前可能缺失（需跑一次 collect:github:full）：
       // 自检只 WARN 不阻断启动，GitHub 侧接口在缺失时返回 50001（宁可暴露，不静默为 0）
       this.githubEvents,
+      this.githubReleases,
       this.summits,
       this.meetings,
       this.persons,
       this.identityClaims,
     ] as const;
 
-    // github-events.json 在跑过首次 collect:github:full 之前**必然**缺失，属预期状态而非故障：
-    // 降为 WARN 并给出下一步动作，避免每次启动 / 每次采集都打一条刺眼的 ERROR
-    const pendingCollect = new Set<string>([this.githubEvents.label]);
+    // github-events.json / github-releases.json 在跑过首次 collect:github:full 之前**必然**缺失，
+    // 属预期状态而非故障：降为 WARN 并给出下一步动作，避免每次启动 / 每次采集都打一条刺眼的 ERROR
+    const pendingCollect = new Set<string>([this.githubEvents.label, this.githubReleases.label]);
 
     const results = await Promise.all(
       repositories.map(async (repo) => {
@@ -242,6 +258,7 @@ export class DataBootstrapService implements OnApplicationBootstrap {
     CONFLUENCE_ACCOUNTS_REPOSITORY,
     CONTRIBUTORS_REPOSITORY,
     GITHUB_EVENTS_REPOSITORY,
+    GITHUB_RELEASES_REPOSITORY,
     SUMMITS_REPOSITORY,
     MEETINGS_REPOSITORY,
     PERSONS_REPOSITORY,

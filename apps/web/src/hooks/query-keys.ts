@@ -36,6 +36,8 @@ export const queryKeys = {
    */
   repoContributions: (params: Pick<ActivityParams, 'from' | 'to'> = {}) =>
     ['repo-contributions', { from: params.from ?? '', to: params.to ?? '' }] as const,
+  /** 版本发布页（ADR-0019）：无参数，汇总口径由服务端派生 */
+  repoReleases: ['repo-releases'] as const,
   summits: (year?: number, includeDetail?: boolean, page?: number, pageSize?: number) =>
     ['summits', { year: year ?? null, includeDetail: includeDetail ?? false, page: page ?? 1, pageSize: pageSize ?? 20 }] as const,
   summitDetail: (id: string) => ['summits', 'detail', id] as const,

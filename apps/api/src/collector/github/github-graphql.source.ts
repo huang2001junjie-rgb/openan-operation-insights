@@ -13,6 +13,8 @@ import type {
   GithubContributionRecord,
   GithubFetchOptions,
   GithubFetchResult,
+  GithubReleaseFetchResult,
+  GithubReleaseRecord,
   GithubSource,
 } from './github-source.port';
 
@@ -100,6 +102,21 @@ interface RepositoryIssuesPayload {
 interface OrganizationRepositoriesPayload {
   organization: {
     repositories: { nodes: { nameWithOwner: string }[]; pageInfo: PageInfo };
+  } | null;
+}
+
+/** Release 节点：tag 与 publishedAt 允许缺失（GraphQL 对 draft 返回 null），采集期归一化/过滤 */
+interface ReleaseNode {
+  tagName?: string | null;
+  name?: string | null;
+  publishedAt?: string | null;
+  url: string;
+  isDraft?: boolean;
+}
+
+interface RepositoryReleasesPayload {
+  repository: {
+    releases: { nodes: ReleaseNode[]; pageInfo: PageInfo };
   } | null;
 }
 
@@ -191,6 +208,19 @@ query ($login: String!, $after: String) {
     repositories(first: ${PAGE_SIZE}, after: $after, isFork: false) {
       pageInfo { hasNextPage endCursor }
       nodes { nameWithOwner }
+    }
+  }
+}
+`;
+
+/** Releases 通道（ADR-0019）：按创建时间倒序逐仓库全量枚举，draft 在采集期过滤 */
+const REPOSITORY_RELEASES_QUERY = `
+query ($owner: String!, $name: String!, $after: String) {
+  rateLimit { remaining resetAt }
+  repository(owner: $owner, name: $name) {
+    releases(first: ${PAGE_SIZE}, after: $after, orderBy: {field: CREATED_AT, direction: DESC}) {
+      pageInfo { hasNextPage endCursor }
+      nodes { tagName name publishedAt url isDraft }
     }
   }
 }
@@ -365,6 +395,67 @@ export class GithubGraphqlSource implements GithubSource {
 
     this.logger.warn(`${owner}/${name} 的 PR 翻页达到上限 ${MAX_PAGES} 页`);
     return records;
+  }
+
+  // ── Releases 通道（ADR-0019）───────────────────────────────
+
+  /**
+   * 逐仓库全量枚举 Releases：量级小、无增量语义，每次采集整体替换落盘。
+   * draft 不采集；缺 tag / publishedAt 的异常节点跳过并 WARN（contributions 同类防御）。
+   */
+  async fetchReleases(): Promise<GithubReleaseFetchResult> {
+    const repositories = await this.resolveRepos();
+    const releases: GithubReleaseRecord[] = [];
+
+    for (const fullName of repositories) {
+      const [owner, name] = fullName.split('/');
+      if (!owner || !name) {
+        this.logger.warn(`跳过非法仓库名：${fullName}`);
+        continue;
+      }
+
+      let reachedPageLimit = false;
+      let cursor: string | null = null;
+      for (let page = 0; page < MAX_PAGES; page += 1) {
+        const payload: RepositoryReleasesPayload =
+          await this.request<RepositoryReleasesPayload>(REPOSITORY_RELEASES_QUERY, {
+            owner,
+            name,
+            after: cursor,
+          });
+
+        if (!payload.repository) {
+          this.logger.warn(`仓库不可访问（权限/不存在）：${fullName}，跳过其 Releases`);
+          break;
+        }
+
+        const connection = payload.repository.releases;
+        for (const node of connection.nodes) {
+          if (node.isDraft) continue;
+          if (!node.tagName || !node.publishedAt) {
+            this.logger.warn(`Release 缺 tag/publishedAt，跳过：${fullName}（url=${node.url}）`);
+            continue;
+          }
+          releases.push({
+            repository: fullName,
+            tag: node.tagName,
+            name: node.name ?? '',
+            publishedAt: node.publishedAt,
+            url: node.url,
+          });
+        }
+
+        if (!connection.pageInfo.hasNextPage) break;
+        cursor = connection.pageInfo.endCursor;
+        reachedPageLimit = page + 1 >= MAX_PAGES;
+      }
+
+      if (reachedPageLimit) {
+        this.logger.warn(`${fullName} 的 Releases 翻页达到上限 ${MAX_PAGES} 页，后续页被丢弃`);
+      }
+    }
+
+    return { repositories, releases };
   }
 
   private async fetchRepositoryIssues(

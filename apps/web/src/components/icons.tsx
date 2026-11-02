@@ -30,6 +30,13 @@ export const IconActivity = (props: IconProps) => (
   </svg>
 );
 
+export const IconTag = (props: IconProps) => (
+  <svg {...base(props)}>
+    <path d="M12.6 2.6A2 2 0 0 0 11.2 2H4a2 2 0 0 0-2 2v7.2a2 2 0 0 0 .6 1.4l8.4 8.4a2 2 0 0 0 2.8 0l7.2-7.2a2 2 0 0 0 0-2.8z" />
+    <circle cx="7.5" cy="7.5" r="0.6" fill="currentColor" stroke="none" />
+  </svg>
+);
+
 export const IconCalendar = (props: IconProps) => (
   <svg {...base(props)}>
     <rect x="3" y="5" width="18" height="16" rx="3" />

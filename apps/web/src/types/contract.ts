@@ -112,6 +112,44 @@ export interface RepoContribution {
   updatedAt: string;
 }
 
+/** 单组件发布摘要（GET /api/repo-releases，ADR-0019） */
+export interface RepoReleaseSummary {
+  /** owner/repo 全名 */
+  repoId: string;
+  /** 累计发布次数 */
+  releaseCount: number;
+  /** 最近一次发布（按 publishedAt 最新，不按 tag 名排序） */
+  latest: {
+    /** tag 名，原样展示（如 `v2.1.0`） */
+    tag: string;
+    /** 发布名称；与 tag 不同时仅作参考展示 */
+    name: string;
+    publishedAt: string;
+    url: string;
+  };
+}
+
+/** 版本发布页数据（ADR-0019）；前端展示一律中文，无 i18n */
+export interface RepoReleasesData {
+  /** 有 Release 的组件（按最近发布倒序） */
+  repos: RepoReleaseSummary[];
+  /** 采集范围内仓库总数 */
+  totalInScope: number;
+  /** 无 Release 的仓库（repoId 升序） */
+  reposWithoutReleases: string[];
+  /** 近 90 天（宽松含边界当天）发布次数 */
+  recent90dCount: number;
+  /** 最近一次发布（无则 null） */
+  latestRelease: {
+    repoId: string;
+    tag: string;
+    publishedAt: string;
+  } | null;
+  /** 平均发布周期（天）：各组件内部发布间隔均值、再按组件等权平均；无任一组件 ≥2 次发布时为 null */
+  avgDaysBetweenReleases: number | null;
+  updatedAt: string;
+}
+
 export interface ConfluenceMetrics {
   requirements: number;
   topicShares: number;

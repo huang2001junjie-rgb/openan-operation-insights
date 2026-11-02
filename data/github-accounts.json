@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "updatedAt": "2026-10-30T07:45:20.191Z",
+  "updatedAt": "2026-11-02T03:14:55.124Z",
   "data": [
     {
       "contributorId": "wrathwolf",
@@ -182,10 +182,10 @@
       "orgId": "huawei",
       "avatarUrl": "https://avatars.githubusercontent.com/u/293838403?v=4",
       "github": {
-        "pullRequests": 60,
-        "commits": 111,
+        "pullRequests": 63,
+        "commits": 115,
         "issues": 0,
-        "linesChanged": 266059,
+        "linesChanged": 267019,
         "repos": 4,
         "repoIds": [
           "project-openan/a2a-t-sdk-java",
@@ -220,10 +220,10 @@
       "orgId": "huawei",
       "avatarUrl": "https://avatars.githubusercontent.com/u/9649802?u=e7f6687a744a7656e2a05930f47d2ed2933e8cb8&v=4",
       "github": {
-        "pullRequests": 187,
-        "commits": 707,
-        "issues": 120,
-        "linesChanged": 271902,
+        "pullRequests": 188,
+        "commits": 708,
+        "issues": 122,
+        "linesChanged": 271920,
         "repos": 9,
         "repoIds": [
           "project-openan/a2a-t-sdk-java",
@@ -370,10 +370,10 @@
       "orgId": "huawei",
       "avatarUrl": "https://avatars.githubusercontent.com/u/211948174?v=4",
       "github": {
-        "pullRequests": 25,
-        "commits": 93,
+        "pullRequests": 26,
+        "commits": 99,
         "issues": 15,
-        "linesChanged": 22458,
+        "linesChanged": 23302,
         "repos": 5,
         "repoIds": [
           "project-openan/governance",
@@ -426,10 +426,10 @@
       "orgId": "huawei",
       "avatarUrl": "https://avatars.githubusercontent.com/u/169223219?u=7a1edcfdc48e79f17c1cbc76c5f0e1e548191568&v=4",
       "github": {
-        "pullRequests": 61,
-        "commits": 87,
+        "pullRequests": 65,
+        "commits": 92,
         "issues": 25,
-        "linesChanged": 302591,
+        "linesChanged": 304771,
         "repos": 4,
         "repoIds": [
           "project-openan/openan-demo",
@@ -672,10 +672,10 @@
       "orgId": null,
       "avatarUrl": "https://avatars.githubusercontent.com/u/340030904?v=4",
       "github": {
-        "pullRequests": 4,
-        "commits": 4,
+        "pullRequests": 5,
+        "commits": 5,
         "issues": 0,
-        "linesChanged": 2545,
+        "linesChanged": 2569,
         "repos": 2,
         "repoIds": [
           "project-openan/a2a-t-sdk-java",

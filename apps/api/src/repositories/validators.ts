@@ -2,6 +2,7 @@ import {
   ConfluenceAccount,
   Contributor,
   GithubContributionEvent,
+  GithubReleasesFileData,
   HomeFileData,
   IdentityClaim,
   MeetingAttendanceMatrix,
@@ -214,6 +215,31 @@ export function isGithubContributionEventArray(
   value: unknown,
 ): value is GithubContributionEvent[] {
   return Array.isArray(value) && value.every(isGithubContributionEvent);
+}
+
+/**
+ * github-releases.json data 校验（ADR-0019）。
+ * draft 不采集，故 publishedAt 必填且可解析——与 github-events 的 timestamp 同思路：
+ * 它是「最新版本 / 近 90 天」口径的唯一切片依据，写侧回归则读路径 fail-fast。
+ */
+export function isGithubReleasesFileData(value: unknown): value is GithubReleasesFileData {
+  if (!isObject(value)) return false;
+  if (!isStringArray(value.repositories)) return false;
+  if (!value.repositories.every((repo) => repo.includes('/'))) return false;
+  if (!Array.isArray(value.releases)) return false;
+  return value.releases.every((release) => {
+    if (!isObject(release)) return false;
+    return (
+      isString(release.repository) &&
+      release.repository.includes('/') &&
+      isString(release.tag) &&
+      isString(release.name) &&
+      isString(release.publishedAt) &&
+      ISO_INSTANT_PATTERN.test(release.publishedAt) &&
+      !Number.isNaN(Date.parse(release.publishedAt)) &&
+      isString(release.url)
+    );
+  });
 }
 
 export function isSummitDetail(value: unknown): value is SummitDetail {

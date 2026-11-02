@@ -62,7 +62,33 @@ export interface GithubFetchResult {
   rateLimitRemaining: number | null;
 }
 
+/** 一条归一化后的 Release 记录（ADR-0019）；draft 不采集 */
+export interface GithubReleaseRecord {
+  /** nameWithOwner，如 openan-labs/core */
+  repository: string;
+  /** tag 名，原样透传（如 `v2.1.0`） */
+  tag: string;
+  /** 发布名称（GitHub release name）；为空时归一化为空串 */
+  name: string;
+  /** 发布时间 publishedAt（ISO 8601 UTC）；draft 为 null，已在采集期过滤，这里必填 */
+  publishedAt: string;
+  /** Release 页面地址 */
+  url: string;
+}
+
+/** fetchReleases 出参：采集范围内仓库清单 + Release 原子事实 */
+export interface GithubReleaseFetchResult {
+  /** 采集范围内全部仓库（白名单 / 组织枚举的解析结果） */
+  repositories: string[];
+  releases: GithubReleaseRecord[];
+}
+
 export interface GithubSource {
   readonly label: string;
   fetch(options: GithubFetchOptions): Promise<GithubFetchResult>;
+  /**
+   * 拉取采集范围内全部仓库的 Releases（全量枚举，量级小、无需增量游标）。
+   * 返回 null 表示「本数据源不支持 / 本轮不采集 Release」，落盘步骤跳过（保留既有文件）。
+   */
+  fetchReleases(): Promise<GithubReleaseFetchResult | null>;
 }

@@ -1,6 +1,6 @@
 # 07 · 数据采集目录（Data Catalog）
 
-> 依赖文档：`04-data-and-api-contract.md`、`05-integration-roadmap.md`；归属 / 贡献量 / 排序口径另见 `adr/0008`（身份两层）、`adr/0010`（认领优先的生效归属，Confluence 侧先行）、`adr/0011`（Confluence 编辑量指标）、`adr/0014`（身份认领控制台）、`adr/0016`（组织卡展示顺序）、`adr/0017`（GitHub 生效归属读时派生 + 账号级 `repoIds`，v1.25）、**`adr/0018`（时间区间筛选读时切片 + `timestamp` 必填 + `github-events.json` v2，v1.28）**
+> 依赖文档：`04-data-and-api-contract.md`、`05-integration-roadmap.md`；归属 / 贡献量 / 排序口径另见 `adr/0008`（身份两层）、`adr/0010`（认领优先的生效归属，Confluence 侧先行）、`adr/0011`（Confluence 编辑量指标）、`adr/0014`（身份认领控制台）、`adr/0016`（组织卡展示顺序）、`adr/0017`（GitHub 生效归属读时派生 + 账号级 `repoIds`，v1.25）、**`adr/0018`（时间区间筛选读时切片 + `timestamp` 必填 + `github-events.json` v2，v1.28）、**`adr/0019`（组件版本发布：`github-releases.json` v1 全量枚举 + `GET /api/repo-releases` 读时派生 + 页面 `/releases`）**
 > 定位：**从数据视角**登记本看板（数据集成看板）所采集 / 展示的每一项数据——从哪来、怎么采、怎么归类、是否已实现、未实现还缺什么。
 > **本文件可自由编辑**：它是登记册（registry），**不定义契约**；字段与接口的权威定义以 `04` 为唯一来源。发现不一致时直接修订本文件，或按 `04 §6.1` 发起契约变更。
 
@@ -343,6 +343,21 @@ flowchart LR
 - 归类：事件是**只追加的事实**，不含任何归属判定（`orgId` 由 P6 认领边 + P1 采集口径别名在读时派生）；机器账号识别也**不依赖事件字段**——`isBotAccount` 的三信号作用于派生视图，事件里 Bot 的 `githubId` 为 `null`、派生兜底归一为 `0` 后命中「`githubId === 0`」信号（**`null` ↔ `0` 是隐式耦合**，改任一侧都要同步，见 04 §5.3.8）。
 - 首次采集前该文件**不存在**属预期状态：`repositories` 模块启动自检对「文件缺失」**只 WARN**（并提示运行 `collect:github:full`），其余校验失败才 ERROR；此时接口报 `50001`（见 §1.1 与 04 §1.1）。⚠️ 它**刻意不进** `seed-data/`（离线自检不依赖它）。
 - 未实现需补：① 未落**未合并 PR** 与 **commit 级明细**（若要「提 PR 未合并」口径或按提交时间切片，须扩展 `kind`）；② 事件只追加不裁剪，长期需归档策略（文件体积随时间线性增长）；③ `untimedEvents` 游标**只累计、无阈值告警**（真通道产不出缺时间戳的记录，按「护栏不响就是没事」处理；若某轮出现非零增量，靠 `WARN` 日志发现）。
+
+**P10 GitHub Release 原子事实**
+- 状态：✅ 已实现（`data/github-releases.json`，信封 `schemaVersion` **1**，ADR-0019）。GitHub 侧 Release 的**唯一原子事实**：版本发布页（A10）全部数字的读时派生来源；与 P9 并列「首次 `collect:github:full` 前可能不存在」的文件（启动自检只 WARN，接口缺失报 `50001`）。
+- 字段（`GithubReleasesFileData`）：`repositories`（采集范围内**全部仓库**，白名单 / 组织枚举的解析结果，采集时固化——**无 Release 仓库的分母只能由它提供**，不能由 `releases` 反推）+ `releases[]`（一条 = 一个**非 draft** Release：`repository` / `tag` 原样 / `name` / `publishedAt` / `url`）。
+- 采集：`collect:github:full` 与 `collect:github`（增量轮）**每轮全量枚举、整体替换**：逐仓库 `repository.releases(first: 100, orderBy: CREATED_AT DESC)` 翻页，draft 与缺 `tag` / `publishedAt` 的异常节点**跳过 + `WARN`**；失败（含配额触底）整体中止本轮、保留上一次落盘。⚠️ **无增量游标**（Release 量级小，全量替换最简）。
+- 归类：与 P9 同为「采集侧原子事实、读侧派生」族，但**互不派生**——Release 数据不进事件文件，事件也不进 Release 文件；fixture 源（`GITHUB_FIXTURE`）**显式含 `releases` 才落盘**，否则跳过（不用空数据覆盖真实文件）。
+- 未实现需补：① prerelease **未打标**（计数含预发版本，出参无 `isPrerelease` 字段；若未来要「仅正式版」口径需加采集字段，属契约变更）；② 长期 Release 增多后全量枚举的请求量线性增长（现每仓 1+ 次 / 轮）。
+
+### 2.6 版本发布 `/releases`
+
+**A10 组件版本发布**
+- 状态：✅ 已实现（**读时派生、不落盘**，ADR-0019）。来源：**Release 原子事实** `data/github-releases.json`（P10）；由 `JsonRepoReleaseProvider`（`REPO_RELEASE_PORT`）派生；接口 `GET /api/repo-releases`（04 §5.3.18，位于 **release 模块**）。⚠️ 与 A1 / A2 / A9 **不共享** `deriveGithubFromEvents`——Release 是独立事实族。
+- 口径：`repos` **仅含有 Release** 的组件（`releaseCount > 0`，按 `latest.publishedAt` 倒序）；「最新版本」按 `publishedAt` **最新**取、**不按 tag 字符串排序**；近 90 天计数沿用 A6「自今起 N 天」窗口；平均发布周期 = 各组件内部发布间隔均值、按**组件等权**平均（无组件 ≥2 次发布时为 `null`）；无 Release 仓库在 `reposWithoutReleases` 声明（页面表尾「其余 N 个仓库暂无 Release：…」）。
+- 前端：`ReleasesPage`（4 张 StatCard：有 Release 组件 x/y、近 90 天发布、最近一次发布（天前）、平均发布周期）+ `RepoReleaseTable`（搜索 / 排序 / 合计行 / 声明行）；导航「版本发布」位于「社区活跃度」后。
+- 未实现需补：① 站内 Release 历史时间线 / 展开视图（数据已全量落盘，加视图即可）；② 按组织归属统计发布（需 join P6 生效归属，与 P10 的 `repository` 维度组合）。
 
 ## 3. 归类与派生总则
 

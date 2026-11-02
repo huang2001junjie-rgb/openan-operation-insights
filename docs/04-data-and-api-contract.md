@@ -13,6 +13,7 @@
 | `data/organizations.json` | `JsonFileEnvelope<Organization[]>` | 组织档案（TSC 成员单位 / 参与单位 / 运营单位 / 独立开发者伪组织）；**同时是组织级派生投影的桶清单** | 数十 |
 | `data/github-organizations.json` | `JsonFileEnvelope<OrganizationContribution[]>` | GitHub 维度贡献（采集器仍写，但**已降级为基线快照**，读路径不依赖，ADR-0017）；组织级数字改由 `github-events.json` 按生效归属派生（见 3.2 / 3.12） | 数十 |
 | `data/github-events.json` | `JsonFileEnvelope<GithubContributionEvent[]>` | GitHub **事件级明细**（已合并 PR / Issue，每仓每号一条）——GitHub 侧**唯一原子事实**；组织级 / 账号级 / 仓库级的一切数字都由它读时派生（见 3.12） | 数百～数千 |
+| `data/github-releases.json` | `JsonFileEnvelope<GithubReleasesFileData>` | GitHub **Release 原子事实**（每个 Release 一条，draft 不采集）+ 采集范围内仓库清单——版本发布页（`/releases`）的读时派生来源（见 3.13～3.15，ADR-0019） | 数十～数百 |
 | `data/confluence-organizations.json` | `JsonFileEnvelope<OrganizationWiki[]>` | wiki 维度贡献（Confluence） | 数十 |
 | `data/github-accounts.json` | `JsonFileEnvelope<Contributor[]>` | 个人贡献者**账号档案**（GitHub 账号维度：姓名 / 头像 / `githubId` / 采集口径 `orgId`）；⚠️ 其 `github` 指标已降级为**基线快照**，读路径不再消费（见 3.7） | 数百 |
 | `data/confluence-accounts.json` | `JsonFileEnvelope<ConfluenceAccount[]>` | Confluence 账号级事实（账号 × 三个维度：需求 / 议题分享 / 编辑；组织级的求和来源，ADR-0010） | 数十～数百 |
@@ -52,6 +53,7 @@
 > | `confluence-accounts.json` | **4** | v3 新增 `orgSource`（ADR-0010）；v4 新增 `edits`（ADR-0011） |
 > | `github-accounts.json` | **2** | v2 在 `github` 下新增**必填** `repoIds`（仓库清单，ADR-0017 决策 15）：组织级 `repos` 是去重数，只能由账号级清单取并集得出。⚠️ 事件明细上线后该文件的 `github` 指标已不参与读路径（降级为基线快照，见 3.7），但版本号仍为 **2** |
 > | `github-events.json` | **2** | v1 新文件（GitHub 侧**唯一原子事实**，见 3.12）；**v2** 把 `timestamp` 由 `string \| null` 升为**必填 `string`**——它是区间口径的唯一切片依据，可空会让同一份文件在「全量 / 区间」两种读法下给出两个总量（ADR-0018 决策 4）。存量数据用 `npm run migrate:github-events-v2` 抬信封版本（**只改信封、记录逐条不动**）。⚠️ 它**刻意不在** `seed-data/` 里：首次 `collect:github:full` 之前磁盘上不存在，属预期状态而非故障，启动自检只 WARN（见下方 ⚠️ 段） |
+> | `github-releases.json` | **1** | v1 新文件（ADR-0019）：`releases` 原子事实 + `repositories` 采集范围清单。与 `github-events.json` 同为首次采集前可能缺失的文件，启动自检只 WARN |
 > | 其余（`organizations` / `github-organizations` / `summits` / `meetings` / `persons` / `identity-claims`） | **1** | 未发生不兼容变更 |
 >
 > ⚠️ 提升版本必须**同批原子切换**：`entities.ts`（落盘类型）+ `validators.ts`（结构校验）+ `repositories.module.ts`（期望值）+ `data/*.json`（信封）+ `apps/api/scripts/fixtures/seed-data/*.json`（离线自检的合成种子）。
@@ -487,6 +489,41 @@ erDiagram
 > **写读必须同源**：`JsonRepository` fail-fast（`50001`，不静默降级、不静默为 0），所以改本实体字段时，`contract/entities.ts`（类型）+ `repositories/validators.ts`（校验器）+ 采集器 `toEvent()`（写侧）+ `scripts/collector-check.mjs`（断言）+ 本文档须**同批**改动。
 >
 > ⚠️ 本文件**刻意不在** `apps/api/scripts/fixtures/seed-data/` 中：离线自检由自造 fixture 驱动，真实磁盘上它在首次 `collect:github:full` 之前**不存在**（启动自检只 WARN 不阻断，见 §1.1）。
+
+### 3.13 `GithubReleaseEvent`（GitHub Release 原子事实）
+
+> 版本发布页（`/releases`，ADR-0019）的落盘实体：一条记录 = 一个 **非 draft** 的 GitHub Release，`data/github-releases.json`（`schemaVersion` = **1**）。draft 不采集；缺 `tag` / `publishedAt` 的异常节点在**采集期跳过** + `WARN`（回归护栏，非日常路径）。全量枚举、整体替换：Release 量级小，无增量语义。
+
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| `repository` | string | ✅ | 仓库全名 `owner/repo` |
+| `tag` | string | ✅ | tag 名，**原样落盘**（如 `v2.1.0`）——版本展示的权威字段 |
+| `name` | string | ✅ | 发布名称（GitHub release name）；为空落 `''`，展示以 `tag` 为准 |
+| `publishedAt` | string | ✅ | 发布时间（ISO 8601 **时刻**，须匹配 `ISO_INSTANT_PATTERN` 且可解析）——**「最新版本 / 近 90 天」口径的唯一切片依据** |
+| `url` | string | ✅ | Release 页面地址 |
+
+> **写读必须同源**：`contract/entities.ts`（类型）+ `repositories/validators.ts`（`isGithubReleasesFileData`）+ 采集器两个源（`GithubGraphqlSource.fetchReleases` / `GithubFixtureSource.fetchReleases`）+ 本文档须**同批**改动。文件缺失 ≡ GitHub 侧接口返回 `50001`（首次采集前为预期状态，启动自检只 WARN，同 `github-events.json`）。
+
+### 3.14 `GithubReleasesFileData`（`github-releases.json` 的 data）
+
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| `repositories` | `string[]` | ✅ | 采集范围内**全部仓库**（白名单 / 组织枚举的解析结果，采集时固化）。⚠️ 它是「无 Release 仓库 / 总数」口径的**唯一分母**——不能由 `releases` 反推（有 Release 才有记录） |
+| `releases` | `GithubReleaseEvent[]` | ✅ | Release 原子事实（draft 不采集） |
+
+### 3.15 `RepoReleasesData`（`GET /api/repo-releases` 出参，读时派生）
+
+> 全部由 `github-releases.json` 读时派生（`JsonRepoReleaseProvider`），**不落盘**。
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `repos` | `RepoReleaseSummary[]` | 仅含**有 Release** 的组件（`releaseCount > 0`），按 `latest.publishedAt` 倒序；`RepoReleaseSummary = { repoId, releaseCount, latest: { tag, name, publishedAt, url } }`，`latest` 取该仓库 `publishedAt` 最新一条 |
+| `totalInScope` | number | 采集范围内仓库总数 = `repositories.length` |
+| `reposWithoutReleases` | `string[]` | 无 Release 的仓库（repoId 升序）——页面「仅列出有 Release 的组件」的声明行数据 |
+| `recent90dCount` | number | 近 90 天发布次数：「自今起 N 天」同口径（窗口左边界 = 今天零点 UTC − 89 天，宽松含边界当天） |
+| `latestRelease` | object \| null | 最近一次发布 `{ repoId, tag, publishedAt }`；全社区无 Release 时为 `null` |
+| `avgDaysBetweenReleases` | number \| null | 平均发布周期（天，保留 1 位小数）：**各组件内部**相邻发布间隔的均值（`span / (count-1)`），再按**组件等权**平均；无任一组件 ≥2 次发布时为 `null` |
+| `updatedAt` | string | 数据文件信封的 `updatedAt`（供前端「数据更新于」） |
 
 ---
 
@@ -984,6 +1021,49 @@ erDiagram
 >
 > 采集器由 `npm run collect:github:full`（整体替换）/ `collect:github:incremental`（按 `kind + repository + number` 幂等键追加）写入；`updatedAt` 是**文件**时间戳，组织级投影的 `updatedAt` 直接取它（见 3.2）。**邮箱与 `author.url` 不落盘**（仅用于采集时归属判定），故 `author` 恒为上述四键。
 
+### 4.12 `data/github-releases.json`
+
+> `schemaVersion` 为 **1**（ADR-0019 新文件）。本文件与 `github-events.json` 同为首次采集前可能**不存在**的文件：启动自检只 WARN，GitHub 侧版本发布接口在缺失时返回 `50001`。
+
+```json
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-10-31T02:00:00Z",
+  "data": {
+    "repositories": [
+      "openan-labs/core",
+      "openan-labs/cli",
+      "openan-labs/dashboard"
+    ],
+    "releases": [
+      {
+        "repository": "openan-labs/core",
+        "tag": "v2.1.0",
+        "name": "Core 2.1",
+        "publishedAt": "2026-10-12T08:30:00Z",
+        "url": "https://github.com/openan-labs/core/releases/tag/v2.1.0"
+      },
+      {
+        "repository": "openan-labs/core",
+        "tag": "v2.0.0",
+        "name": "",
+        "publishedAt": "2026-07-01T10:00:00Z",
+        "url": "https://github.com/openan-labs/core/releases/tag/v2.0.0"
+      },
+      {
+        "repository": "openan-labs/cli",
+        "tag": "v1.4.2",
+        "name": "",
+        "publishedAt": "2026-09-20T03:12:00Z",
+        "url": "https://github.com/openan-labs/cli/releases/tag/v1.4.2"
+      }
+    ]
+  }
+}
+```
+
+> 说明：采集器逐仓库**全量枚举** Releases 后**整体替换**本文件（draft 不采集；每次 `collect:github:*` 均刷新，含增量轮）。`repositories` 是采集范围的解析结果（白名单 / 组织枚举），它固化「无 Release 仓库」的分母——上面的样例里 `openan-labs/dashboard` 无 Release，会出现在接口出参的 `reposWithoutReleases` 而非 `repos`。
+
 ---
 
 ## 5. REST 接口契约
@@ -1029,8 +1109,9 @@ erDiagram
 | 18 | DELETE | `/api/identity/claims/:claimId` | 解除认领（账号回池） | 身份匹配控制台 |
 | 19 | GET | `/api/confluence-accounts` | 账号级 Confluence 贡献（个人维度，生效口径，ADR-0010） | 服务端候选池取数源 + Confluence 视图账号榜 |
 | 20 | GET | `/api/repo-contributions` | **仓库维度** GitHub 贡献（按仓库并列，量 / 人数 / 组织数由事件明细派生） | 仓库视角贡献榜（新增，见 5.3.17） |
+| 21 | GET | `/api/repo-releases` | **组件版本发布**汇总（Release 次数 / 最新版本 / 近 90 天 / 发布周期，由 `github-releases.json` 派生） | 版本发布页 `/releases`（ADR-0019，见 5.3.18） |
 
-> 第 10～13 项为**只读**（不鉴权，但响应为 `no-store`，见 5.1 缓存头）；第 14～18 项为**写接口**，统一位于 `/api/identity/*`，需要 `X-Admin-Token`（见 5.1 与 5.3.14）。第 19 项为普通只读接口（缓存策略同 5.1 看板接口），已由 Confluence 视图账号榜直接调用（`useConfluenceAccounts` → `ConfluenceAccountRankCard`），其数据同时由 `CandidateService` 在服务端直接读取（见 5.3.11）。第 4、19 两项均按**生效归属 `effectiveOrgId`** 读时派生（人工认领优先，ADR-0010）。第 3、8、20 三项同属 **GitHub 事件明细派生族**（原子事实 `github-events.json`，见 3.12），三段数字恒等；它们与第 1 项的 `externalDeveloperCount` 一样，在事件文件缺失 / 结构非法时一并返回 `50001`。
+> 第 10～13 项为**只读**（不鉴权，但响应为 `no-store`，见 5.1 缓存头）；第 14～18 项为**写接口**，统一位于 `/api/identity/*`，需要 `X-Admin-Token`（见 5.1 与 5.3.14）。第 19 项为普通只读接口（缓存策略同 5.1 看板接口），已由 Confluence 视图账号榜直接调用（`useConfluenceAccounts` → `ConfluenceAccountRankCard`），其数据同时由 `CandidateService` 在服务端直接读取（见 5.3.11）。第 4、19 两项均按**生效归属 `effectiveOrgId`** 读时派生（人工认领优先，ADR-0010）。第 3、8、20 三项同属 **GitHub 事件明细派生族**（原子事实 `github-events.json`，见 3.12），三段数字恒等；它们与第 1 项的 `externalDeveloperCount` 一样，在事件文件缺失 / 结构非法时一并返回 `50001`。第 21 项同属 **GitHub Release 派生族**（原子事实 `github-releases.json`，见 3.13），文件缺失 / 结构非法时返回 `50001`。
 
 ### 5.3 接口详细定义
 
@@ -1777,6 +1858,35 @@ erDiagram
 
 **失败场景**：`50001` —— **`github-events.json`** 缺失 / 结构损坏，或 `github-accounts.json` / `identity-claims.json` / `persons.json` 任一不可读（本端点同样注入账号档案仓库，用于姓名 / 头像展示与 bot 判定；档案缺失时由事件 `author` 快照兜底合成）。⚠️ 首次 `collect:github:full` 之前**必然** `50001`；且事件文件是**整文件级** fail-fast（一条坏事件即全文件不可读，见 3.12），故本端点与 5.3.1 首页汇总、5.3.2 组织列表、5.3.3、5.3.8 **同生共死**。前端按失败卡渲染（见 02 文档）。
 
+#### 5.3.18 `GET /api/repo-releases` —— 组件版本发布
+
+**语义**：版本发布页（`/releases`，ADR-0019）的唯一数据源。汇总采集范围内各 GitHub 仓库的 **Release 发布情况**：每个组件的最新版本 / 累计次数 / 最近发布时间 + 全社区口径（有 Release 组件占比、近 90 天次数、最近一次发布、平均发布周期）。⚠️ **不落盘、不新增派生文件**：结果完全由 `github-releases.json`（3.13 / 3.14）读时派生（`JsonRepoReleaseProvider`）。
+
+**请求参数（Query）**：无（页面无筛选需求；排序 / 搜索由前端在已获取数据上本地完成，同 5.1「排序」约定）。
+
+**响应 `data`**：`RepoReleasesData`（`contract/entities.ts`；字段逐一见 3.15）：
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `repos` | `RepoReleaseSummary[]` | 仅含**有 Release** 的组件（`releaseCount > 0`），按 `latest.publishedAt` 倒序（同值 `repoId` 升序）。页面「组件发布明细」表只消费它 |
+| `totalInScope` | number | 采集范围内仓库总数 |
+| `reposWithoutReleases` | `string[]` | 无 Release 的仓库（升序）——页面表尾声明行（「其余 N 个仓库暂无 Release：…」）数据 |
+| `recent90dCount` | number | 近 90 天发布次数（「自今起 N 天」同口径） |
+| `latestRelease` | object \| null | 最近一次发布（全社区无 Release 时为 `null`，卡片回落「暂无发布」） |
+| `avgDaysBetweenReleases` | number \| null | 平均发布周期（天，1 位小数）：各组件内部发布间隔均值、再按**组件等权**平均 |
+| `updatedAt` | string | 数据文件信封的 `updatedAt` |
+
+> **口径说明**：
+>
+> - 「最新版本」按 `publishedAt` **最新**取，**不按 tag 名字符串排序**（跨仓库命名不规范，semver 排序不可靠）；tag 原样展示；
+> - 「距今天数 / 天前」由前端按服务器下发的 `publishedAt` 以整日口径现算（与 `daysUntil` 同思路）；
+> - 仅统计 **非 draft** Release（draft 采集期即过滤）；prerelease 不剔除（GitHub 语义上是正式发布的预发版本，次数照计）；
+> - 平均发布周期需某组件 ≥2 次发布才可计算，否则该组件不参与平均、全社区无合格组件时为 `null`。
+
+**校验规则**：无入参，无 `40000` / `40002` 场景。
+
+**失败场景**：`50001` —— **`github-releases.json`** 缺失 / 结构损坏（`JsonFileEnvelope` / `isGithubReleasesFileData` fail-fast，见 3.13）。⚠️ 首次 `collect:github:full` 之前**必然** `50001`（启动自检只 WARN 不阻断，同 `github-events.json`）；文件为**整文件级**校验，一条非法记录即全接口失败。前端按失败卡渲染（见 02 文档）。
+
 ---
 
 ## 6. 契约治理
@@ -1821,6 +1931,8 @@ erDiagram
 | `GithubContributionEvent.author.githubId = null` | 数据缺失 / 采集失败 | **Bot（GitHub App）本就没有 `databaseId`**：GraphQL 的 `... on User` 片段不匹配 Bot，响应里该键**缺席**，采集边界一律归一为 `null`（**键必须存在**，见 §3.12）。人物口径靠 `isBotAccount` 排除；派生层再把 `null` 归一为 `0` 以命中 bot 信号之一（见 §5.3.8） |
 | `GithubContributionEvent.author = null` | 作者信息丢失 | **已注销账号**：事件照常落盘，四项量计入仓库 / 组织桶，但**不进人物口径**（无 login 可归账号） |
 | `RepoContribution.repoId` | 组织 / 自然人主键 | **仓库全名** `owner/repo`（即事件的 `repository`），不是档案 slug，不可拿它查组织档案（见 §5.3.17） |
+| `RepoReleasesData.repos` | 采集范围内全部组件 | **仅含有 Release** 的组件（`releaseCount > 0`）；无 Release 仓库在 `reposWithoutReleases` 声明。分母 `totalInScope` 由文件的 `repositories` 清单提供，**不能由 releases 反推**（见 §3.14 / §5.3.18） |
+| `RepoReleaseSummary.latest` | tag 名最大的版本 | **publishedAt 最新**的版本——跨仓库命名不规范，禁止按 tag 字符串排序（见 §3.15） |
 | `github-events.json` 不存在 | 数据为空 / 故障 | 首次 `collect:github:full` 之前的**预期状态**：启动自检只 WARN 不阻断，GitHub 侧**全部**派生端点（首页汇总 / 组织列表 / 组织贡献 / 个人排行 / 仓库维度）返回 `50001`（见 §1.1 / §3.12） |
 | `effectiveOrgId` | 恒等于落盘 `orgId` / 仅 Confluence 侧有 | 认领边派生的 `Person.orgId` **优先**；未认领才回落到落盘 `orgId` / 伪组织 `unattributed`。**GitHub（ADR-0017）与 Confluence（ADR-0010）两侧同构**，共用 `common/effective-org.ts` 的兜底链语义；改认领后下一个请求即生效（`JsonRepository` 按 mtime 失效缓存） |
 | `ConfluenceAccount.orgSource` | 只可能是 `'claim'` | 落盘仅 `'alias' \| 'space' \| 'unattributed'`；`'claim'` 只出现在接口出参（读时覆写） |

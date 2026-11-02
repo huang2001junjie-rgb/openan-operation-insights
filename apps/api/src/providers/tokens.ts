@@ -5,6 +5,8 @@ export const CONTRIBUTION_PORT = Symbol('CONTRIBUTION_PORT');
 export const CONTRIBUTOR_CONTRIBUTION_PORT = Symbol('CONTRIBUTOR_CONTRIBUTION_PORT');
 /** 仓库维度贡献（github-events.json 读时派生，不落盘） */
 export const REPO_CONTRIBUTION_PORT = Symbol('REPO_CONTRIBUTION_PORT');
+/** 组件版本发布汇总（github-releases.json 读时派生，不落盘，ADR-0019） */
+export const REPO_RELEASE_PORT = Symbol('REPO_RELEASE_PORT');
 export const WIKI_PORT = Symbol('WIKI_PORT');
 export const CONFLUENCE_ACCOUNT_PORT = Symbol('CONFLUENCE_ACCOUNT_PORT');
 export const SUMMIT_PORT = Symbol('SUMMIT_PORT');

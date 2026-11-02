@@ -3,6 +3,7 @@ import {
   AccountGithubMetrics,
   Contributor,
   GithubContributionEvent,
+  GithubReleasesFileData,
   Organization,
   OrganizationContribution,
 } from '../../contract/entities';
@@ -11,6 +12,7 @@ import {
   CONTRIBUTIONS_REPOSITORY,
   CONTRIBUTORS_REPOSITORY,
   GITHUB_EVENTS_REPOSITORY,
+  GITHUB_RELEASES_REPOSITORY,
   ORGANIZATIONS_REPOSITORY,
 } from '../../repositories/repository.tokens';
 import { ORG_UNATTRIBUTED, UNATTRIBUTED_DISPLAY_NAME } from '../collector.constants';
@@ -47,6 +49,8 @@ export interface GithubCollectOutcome {
   totals: { pullRequests: number; commits: number; issues: number; linesChanged: number };
   /** 事件文件（github-events.json）落盘统计：total=写后总数，appended=本轮新增，skipped=幂等键去重跳过 */
   events: { total: number; appended: number; skipped: number };
+  /** Releases 通道（ADR-0019）统计；数据源不支持 / 本轮未采集时为 null（不落 github-releases.json） */
+  releases: { total: number; reposWithReleases: number } | null;
   written: string[];
 }
 
@@ -104,6 +108,8 @@ export class GithubCollectorService {
     private readonly contributors: JsonRepository<Contributor[]>,
     @Inject(GITHUB_EVENTS_REPOSITORY)
     private readonly events: JsonRepository<GithubContributionEvent[]>,
+    @Inject(GITHUB_RELEASES_REPOSITORY)
+    private readonly releases: JsonRepository<GithubReleasesFileData>,
     private readonly syncState: GithubSyncStateStore,
   ) {}
 
@@ -135,6 +141,10 @@ export class GithubCollectorService {
     this.logger.log(
       `采集到 ${fetched.records.length} 条记录（请求 ${fetched.requestCount} 次，剩余配额 ${String(fetched.rateLimitRemaining)}）`,
     );
+
+    // Releases 通道（ADR-0019）：与贡献数据同一轮拉取，失败（含配额触底）即整体中止——
+    // 与贡献数据的既有策略一致：本轮什么都不落盘，保留上一次成功的结果
+    const releaseResult = await this.source.fetchReleases();
 
     // 时间戳是区间口径唯一的切片依据（ADR-0018 决策 4），故缺时间的记录**整条拒绝**：
     // 既不落事件文件也不进聚合（否则基线快照会与事件派生结果漂移），WARN + 计数暴露，不静默丢
@@ -174,6 +184,12 @@ export class GithubCollectorService {
       emailAttributedCount,
       totals,
       events: { total: 0, appended: 0, skipped: 0 },
+      releases: releaseResult
+        ? {
+            total: releaseResult.releases.length,
+            reposWithReleases: new Set(releaseResult.releases.map((release) => release.repository)).size,
+          }
+        : null,
       written: [],
     };
 
@@ -200,6 +216,18 @@ export class GithubCollectorService {
     this.logger.log(
       `事件落盘：共 ${outcome.events.total} 条（本轮新增 ${outcome.events.appended}，幂等跳过 ${outcome.events.skipped}）`,
     );
+
+    // Releases 落盘（ADR-0019）：每次采集整体替换（无增量语义）；数据源未提供时跳过，保留既有文件
+    if (releaseResult) {
+      await this.releases.write({
+        repositories: releaseResult.repositories,
+        releases: releaseResult.releases.map((release) => ({ ...release })),
+      });
+      outcome.written.push('github-releases.json');
+      this.logger.log(
+        `Releases 落盘：共 ${releaseResult.releases.length} 条，覆盖 ${outcome.releases?.reposWithReleases ?? 0} 个仓库`,
+      );
+    }
 
     const nextState: GithubSyncState = {
       ...previousState,

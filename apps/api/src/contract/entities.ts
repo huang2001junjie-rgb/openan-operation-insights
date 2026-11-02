@@ -491,3 +491,68 @@ export interface ClaimDeleteResult {
   source: IdentitySource;
   accountKey: string;
 }
+
+// ---------------------------------------------------------------------------
+// 版本发布（04 §3.13～§3.15 / §5.3.18，ADR-0019）
+// ---------------------------------------------------------------------------
+
+/** github-releases.json 落盘条目：GitHub Release 原子事实 */
+export interface GithubReleaseEvent {
+  /** 仓库全名 owner/repo */
+  repository: string;
+  /** tag 名，原样落盘（如 `v2.1.0`）——版本展示的权威字段 */
+  tag: string;
+  /** 发布名称（GitHub release name；与 tag 不同时仅作参考展示） */
+  name: string;
+  /** 发布时间 publishedAt（ISO 8601 UTC）——「最新版本」排序的唯一依据 */
+  publishedAt: string;
+  /** Release 页面地址 */
+  url: string;
+}
+
+/** github-releases.json 的 data 结构：采集范围内仓库清单 + Release 原子事实 */
+export interface GithubReleasesFileData {
+  /**
+   * 采集范围内全部仓库（白名单 / 组织枚举的解析结果，采集时固化）；
+   * 「无 Release 仓库」的口径分母由它提供，不能由 releases 反推（有 Release 才有记录）
+   */
+  repositories: string[];
+  /** Release 原子事实（draft 不采集，每个一条） */
+  releases: GithubReleaseEvent[];
+}
+
+/** 单组件发布摘要（读时派生） */
+export interface RepoReleaseSummary {
+  /** 仓库全名 owner/repo */
+  repoId: string;
+  /** 累计发布次数 */
+  releaseCount: number;
+  /** 最近一次发布（按 publishedAt 最新） */
+  latest: {
+    tag: string;
+    name: string;
+    publishedAt: string;
+    url: string;
+  };
+}
+
+/** `GET /api/repo-releases` 的响应 data */
+export interface RepoReleasesData {
+  /** 有 Release 的组件（按最近发布倒序） */
+  repos: RepoReleaseSummary[];
+  /** 采集范围内仓库总数 */
+  totalInScope: number;
+  /** 无 Release 的仓库（repoId 升序） */
+  reposWithoutReleases: string[];
+  /** 近 90 天（与「自今起 N 天」同口径，宽松含边界当天）发布次数 */
+  recent90dCount: number;
+  /** 最近一次发布（无则 null） */
+  latestRelease: {
+    repoId: string;
+    tag: string;
+    publishedAt: string;
+  } | null;
+  /** 平均发布周期（天，保留 1 位小数）：各组件内部发布间隔均值、再按组件等权平均；无任一组件 ≥2 次发布时为 null */
+  avgDaysBetweenReleases: number | null;
+  updatedAt: string;
+}

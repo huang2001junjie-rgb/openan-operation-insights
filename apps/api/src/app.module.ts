@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { ActivityModule } from './modules/activity/activity.module';
 import { HomeModule } from './modules/home/home.module';
 import { MeetingModule } from './modules/meeting/meeting.module';
+import { ReleaseModule } from './modules/release/release.module';
 import { SummitModule } from './modules/summit/summit.module';
 import { OrganizationModule } from './modules/organization/organization.module';
 import { IdentityModule } from './modules/identity/identity.module';
@@ -27,6 +28,7 @@ import { RepositoriesModule } from './repositories/repositories.module';
     HomeModule,
     OrganizationModule,
     ActivityModule,
+    ReleaseModule,
     SummitModule,
     MeetingModule,
     IdentityModule,

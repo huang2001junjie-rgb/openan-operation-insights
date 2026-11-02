@@ -3,6 +3,7 @@ import { JsonConfluenceAccountProvider } from './json/json-confluence-account.pr
 import { JsonContributionProvider } from './json/json-contribution.provider';
 import { JsonContributorContributionProvider } from './json/json-contributor-contribution.provider';
 import { JsonRepoContributionProvider } from './json/json-repo-contribution.provider';
+import { JsonRepoReleaseProvider } from './json/json-repo-release.provider';
 import { JsonHomeMetricProvider } from './json/json-home-metric.provider';
 import { JsonWikiProvider } from './json/json-wiki.provider';
 import { JsonMeetingAttendanceProvider } from './json/json-meeting-attendance.provider';
@@ -13,6 +14,7 @@ import {
   CONTRIBUTION_PORT,
   CONTRIBUTOR_CONTRIBUTION_PORT,
   REPO_CONTRIBUTION_PORT,
+  REPO_RELEASE_PORT,
   HOME_METRIC_PORT,
   WIKI_PORT,
   MEETING_ATTENDANCE_PORT,
@@ -40,6 +42,8 @@ import {
     { provide: CONTRIBUTOR_CONTRIBUTION_PORT, useClass: JsonContributorContributionProvider },
     // 仓库维度贡献（D1）：github-events.json 读时派生，恒为 JSON 读实现
     { provide: REPO_CONTRIBUTION_PORT, useClass: JsonRepoContributionProvider },
+    // 组件版本发布（ADR-0019）：github-releases.json 读时派生，恒为 JSON 读实现
+    { provide: REPO_RELEASE_PORT, useClass: JsonRepoReleaseProvider },
     { provide: WIKI_PORT, useClass: JsonWikiProvider },
     // 账号级 Confluence 事实（ADR-0008）：与组织级 WIKI_PORT 平行，恒为 JSON 读实现
     { provide: CONFLUENCE_ACCOUNT_PORT, useClass: JsonConfluenceAccountProvider },
@@ -53,6 +57,7 @@ import {
     CONTRIBUTION_PORT,
     CONTRIBUTOR_CONTRIBUTION_PORT,
     REPO_CONTRIBUTION_PORT,
+    REPO_RELEASE_PORT,
     WIKI_PORT,
     CONFLUENCE_ACCOUNT_PORT,
     SUMMIT_PORT,

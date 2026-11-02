@@ -33,6 +33,7 @@
 | --- | --- | --- | --- |
 | `/` | `HomePage` | 首页 | 指标卡 + 贡献组织 + 下一次峰会横幅 |
 | `/activity` | `ActivityPage` | 社区活跃度情况 | 个人贡献排行 + 组织贡献分布 + 明细表 |
+| `/releases` | `ReleasesPage` | 版本发布 | 汇总指标卡（有 Release 组件占比 / 近 90 天发布 / 最近发布 / 平均发布周期）+ 组件发布明细表（ADR-0019） |
 | `/summits` | `SummitsPage` | 社区参展 | 时间线 + 峰会详情表格 |
 | `/meetings` | `MeetingsPage` | 例会参会情况 | 例会参会矩阵（人 × 日期） |
 | `/admin/identity` | `IdentityConsolePage` | 身份匹配 | 双模式控制台（组织↔开发者 / 自然人↔账号），支持 `?source=` 预选候选池分组 |
