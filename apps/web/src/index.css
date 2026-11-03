@@ -140,6 +140,16 @@
     animation: shimmer 1.8s linear infinite;
   }
 
+  /* ── 原生下拉弹层 ─────────────────────────────────── */
+  /* select 本体是半透明白底（`bg-white/[0.04]`），而浏览器会把它的 background-color
+     带到弹出列表上：4% 白叠在弹层自身的白底上≈纯白，文字又是 `text-slate-100`，
+     于是「白底白字」。选项与分组必须自带实色深底，不能靠继承。
+     规则放在共享 Select 上，新增下拉自动继承，无需逐条 `<option>` 手写。 */
+  .select-control option,
+  .select-control optgroup {
+    @apply bg-ink-850 text-slate-100;
+  }
+
   /* 表格样式 */
   .data-table {
     @apply w-full border-collapse text-sm;

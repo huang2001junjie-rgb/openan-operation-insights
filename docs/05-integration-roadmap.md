@@ -248,7 +248,7 @@ flowchart LR
 | 增量 | **暂不做，恒全量重算**。聚合是"按 orgId 整体重写"的全量替换语义，只取增量页面会把未变更页面的计数一起洗掉；安全增量需按页账本，页面量级（数十~数百）尚不值当 |
 | 认证 | Bearer PAT，存于 `CONFLUENCE_TOKEN`；日志绝不输出 token 与完整响应体 |
 | 状态文件 | **独立** `data/.sync-state.confluence.json`：GitHub 的 `GithubSyncStateStore.write()` 会整体覆盖 `.sync-state.json`，复用会清掉 GitHub 游标 |
-| 离线自检 | `npm run collect:wiki:check`（固定 fixture + 合成档案，73 项断言，不联网） |
+| 离线自检 | `npm run collect:wiki:check`（固定 fixture + 合成档案，91 项断言，不联网；含 ADR-0021 需求级事实） |
 
 ### 3.3 与 GitHub 采集的差异
 
@@ -257,11 +257,11 @@ flowchart LR
 | 限流 | 明确配额（5000/h），需主动管理 | 无公开硬配额，但仍需串行与退避 |
 | 分页 | Cursor / Link 头 | `_links.next` 游标 |
 | 数据形态 | 天然结构化（PR/Issue） | 半结构化，计数藏在**正文结构**（表格列名、段名、层级）中 |
-| **落盘粒度** | **事件级**（`github-events.json`，一条 = 一个已合并 PR / 一条 Issue，各带 `timestamp`） | **账号级累计计数**（`confluence-accounts.json` v4：`requirements` / `topicShares` / `edits`，**无日期字段**） |
+| **落盘粒度** | **事件级**（`github-events.json`，一条 = 一个已合并 PR / 一条 Issue，各带 `timestamp`） | **账号级累计计数**（`confluence-accounts.json` v4：`requirements` / `topicShares` / `edits`，**无日期字段**）；**例外（ADR-0021）**：需求口径另有**需求行级原子事实** `confluence-requirements.json`（无时间戳、恒全历史，唯一读路径是个人模式需求明细） |
 | **时间口径** | **可切区间**（ADR-0018 读时切片，`from` / `to` 生效） | **恒为全量口径**：`from` / `to` 接受但**恒不过滤**（见下方遗留债） |
 | 主要风险 | 限流、作者归属 | **正文结构改版**（列名/段名/层级一变即解析不到）；归属依赖"人 → 组织"档案的完备度 |
 
-> ⚠️ **遗留债：Confluence 事件级事实缺失**（ADR-0018 决策 5 / 遗留债 1，登记于 `07` §4）。
+> ⚠️ **遗留债：Confluence 事件级事实缺失**（ADR-0018 决策 5 / 遗留债 1，登记于 `07` §4）。**部分进展（ADR-0021，2026-11-03）**：「需求页 @」已落成**需求行级事实** `confluence-requirements.json`（恒全历史、无时间戳）并接通个人模式需求明细（04 §5.3.21）；但 A3 / A7 组织级 / 账号级口径**仍读账号级累计计数**，议题分享 / 版本作者两类事实仍缺——债未清，仅「需求」一类有了行级原子事实。
 > 原始抓取的 53 页确实跨 `2026-05-29` ～ `2026-09-22`，但采集器**没有把页级时间落成事实**——ADR-0009 / 0011 的口径是「结构选页 + 正文取数 + 版本作者计数」，时间从来不在其中，落盘的是**账号级累计计数**。
 > 后果：活跃度页的区间筛选**永远**只作用于 GitHub 侧，同一张表里 GitHub 列随区间变、Confluence 列不变。当前处置是让差异**可见**（Confluence 视图禁用筛选器 + GitHub 视图给 Confluence 列打「全历史」角标 + 个人榜卡注明「全历史累计」），**不报错也不隐藏**。
 > 补法：把「需求页 @ / 议题分享 @ / 版本作者」三类事实落成**带时间的事件**（各一条、带页级时间），与 GitHub 侧 `github-events.json` **同构**，之后 Confluence 侧才能参与区间筛选并享受同一套读时派生。
@@ -410,11 +410,12 @@ flowchart LR
 ```bash
 npm run build -w @openan/api
 npm run collect:github:check -w @openan/api # GitHub，期望输出：76/76 通过
-npm run collect:wiki:check -w @openan/api   # Confluence，期望输出：全部通过（73 项）
+npm run collect:wiki:check -w @openan/api   # Confluence，期望输出：全部通过（91 项，含需求级事实）
 npm run identity:check -w @openan/api       # 身份 / 认领 / 生效归属 / 区间口径，期望输出：68/68 通过
+npm run person:check -w @openan/api         # 个人模式端点，期望输出：全部通过（66 项）
 ```
 
-> ⚠️ 期望数字随断言增删而变（ADR-0017 落地后 GitHub 由 46 → 50、身份由 38 → 50；仓库维度 / 事件明细落地后 GitHub 50 → 63、补 Bot 作者与校验器断言后 63 → 70、身份 50 → 58；**ADR-0018 区间口径落地后 GitHub 70 → `76`（新增场景 [8] 缺时间戳整条拒绝）、身份 58 → `68`（新增场景 [7] 区间口径）**；Confluence 仍 73）。数字对不上时先看脚本尾部的 FAIL 行，别只改文档。
+> ⚠️ 期望数字随断言增删而变（ADR-0017 落地后 GitHub 由 46 → 50、身份由 38 → 50；仓库维度 / 事件明细落地后 GitHub 50 → 63、补 Bot 作者与校验器断言后 63 → 70、身份 50 → 58；**ADR-0018 区间口径落地后 GitHub 70 → `76`（新增场景 [8] 缺时间戳整条拒绝）、身份 58 → `68`（新增场景 [7] 区间口径）**；Confluence 仍 73；**ADR-0021 需求级事实落地后 Confluence 73 → `91`（新增场景：需求行事实 / 幂等折叠 / 恒等自检 / 排序 / release 解析），并新增 `person:check` 个人模式校验（`66` 项）**）。数字对不上时先看脚本尾部的 FAIL 行，别只改文档。
 
 - 合成种子刻意与仓库 `data/` 解耦：真实 `data/` 会随每次线上采集而变化，若直接作为校验输入，断言将随数据漂移而失效；脚本结尾会逐字节比对，确认真实 `data/` 与种子均未被改动。⚠️ 种子的 `schemaVersion` **必须与 `repositories.module.ts` 的期望值同步**（现 `home.json`、`github-accounts.json` 与 **`github-events.json`（ADR-0018 起为 2）** 均为 **2**）：不同步**不会让断言变红**，只在启动自检日志里留 WARN「数据结构版本不兼容」，属静默劣化。
 - 固定记录中的 `commitEmail`（PR 首提交作者邮箱）与 `author.email`（账户公开资料邮箱）**仅用于内存归属判定**，脚本会断言其未出现在任何落盘文件中。
@@ -426,7 +427,7 @@ npm run identity:check -w @openan/api       # 身份 / 认领 / 生效归属 / �
 - 覆盖的**区间口径**场景（`identity-check.mjs` 场景 **[7]**，ADR-0018，10 项）：① **半开边界**——造 4 条事件夹住 `2026-07-01T16:00:00Z`（北京 7 月 1 日零点）两侧，`15:59:59Z` 不命中、`16:00:00Z` 命中，只中 **#2、#3**；② **无区间 ≡ 全量**——`filterEventsByRange(events, undefined)` 断言**同一引用**（`===`），证明「不带区间 ≡ 全量口径」是实现事实而非语义约定；③ **单侧无界**（只给 `from` ⇒ 上界开放，命中 3）；④ **空区间**（`from == to` 命中 **0**，且不报错）；⑤ `isWithinRange` **三态**（命中 / 早于下界 / 不可解析时间一律 `false`）；⑥ 7 月窗口 `commits` **8** vs 全量 **15**；⑦ **同区间恒等式**——组织级 ≡ 账号级 ≡ 仓库级求和在同一区间下仍成立；⑧ **空区间的桶形状**——3 个 0 值桶且 `views` / `repos` 为空（枚举桶不消失，聚合结果消失）；⑨ 7 月窗口 `repos` 收缩到 `core` + `kernel`（行收缩可观测）；⑩ 校验器正负向对照（`null` / 纯日期 / 垃圾串拒，`+08:00` 通过）。
 > ⚠️ **`collector-check` 的 D1 恒等式比对只在全量口径下成立**：基线快照 `github-organizations.json` 是采集器写死的累计值、不带任何区间，拿它去对区间切片后的事件合计必然「漂移」——那不是数据坏了，是口径错了。区间口径下的同一条恒等式由 `identity-check` 场景 **[7]** ⑦ 覆盖（脚本内已就地加注）。
 
-**Confluence 自检**：固定页面记录（含 `bodies` 覆盖正文口径、`views` 覆盖渲染视图取展示名、`users` 覆盖账号查询兜底）在 `apps/api/scripts/fixtures/confluence-records.sample.json`，空结果反例在 `confluence-records.none.json`；`scripts/confluence-check.mjs` 用 `CONFLUENCE_FIXTURE` 指向它们跑**编译产物**，**73 项断言**覆盖：
+**Confluence 自检**：固定页面记录（含 `bodies` 覆盖正文口径、`views` 覆盖渲染视图取展示名、`users` 覆盖账号查询兜底）在 `apps/api/scripts/fixtures/confluence-records.sample.json`（需求级事实场景在 `confluence-records.requirements.sample.json`，ADR-0021），空结果反例在 `confluence-records.none.json`；`scripts/confluence-check.mjs` 用 `CONFLUENCE_FIXTURE` 指向它们跑**编译产物**，**91 项断言**覆盖：
 
 - **结构选页**：标题 + 祖先链命中 `Requirement Proposal`（且排除 `Releases` 下的同名模板页）、纪要页父页/标题正则命中；
 - **两个取数口径**：`Contacts` 列每个 @ 各 1 条（含一行两位联系人）、`Agenda` 段**内** @（段落里的与表格行里的都算）按期去重，同页出席签到段与行动项的 @ 一律不计；
@@ -437,6 +438,15 @@ npm run identity:check -w @openan/api       # 身份 / 认领 / 生效归属 / �
 - 幂等（连续两次全量重算结果一致）、`--dry-run` 不落盘；
 - 空值兜底：无页命中口径 / 全部纪要页无 `Agenda` 段 / 有 `Agenda` 段却 0 个议题分享人时以非 0 退出、保留既有 `confluence-organizations.json`、状态标记 `failed`；
 - 未配置 `CONFLUENCE_SPACES` 时快速失败；脚本结尾比对哈希，确认仓库真实 `data/` 未被触碰。
+
+**个人模式自检**（`scripts/person-check.mjs`，`npm run person:check`，**66 项断言**，ADR-0020/0021）：以合成种子（多认领 / org 兜底 / bot / 半开边界 / 双键账号）跑 dist + 临时 DATA_DIR，覆盖：
+
+- **画像恒等式**：人物级四项 ≡ 名下账号求和、`repos` = `repoIds` 并集大小、仓库分解合计 ≡ 指标四项、Confluence 三项求和；
+- **半开边界**：`from` 含 / `to` 不含的事件切片、`from > to` 拒 `40002`、自然人不存在 `40403`；
+- **多认领**：认领边 many-to-many 全并（量在每个自然人下全额计入）、`personId` / `account` 二选一违例 `40001`、login / githubId 双键命中；
+- **归属口径**：`orgSource: 'person' | 'account'`、未归属伪组织 `orgName=null`、生效归属回落；
+- **明细**：事件 `url` 读时派生、截断 + `truncated`、需求事实 `release=null` 显式给出、baseUrl 未配置时 `url` 空串；
+- **降级**：`confluence-requirements.json` 缺失 → 空数组 + `updatedAt=null`（待采集，非 500）；候选池含未认领 / 多认领账号、GitHub 认领 `githubId→login` 读时映射。
 
 ---
 

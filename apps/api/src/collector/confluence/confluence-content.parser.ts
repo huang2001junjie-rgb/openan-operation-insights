@@ -242,6 +242,24 @@ export function parseRequirementContacts(
   return EMPTY_REQUIREMENT_RESULT;
 }
 
+/**
+ * 从页面祖先链提取需求所属 release（ADR-0021）：取「Release Planning」的**下一级**
+ * （即 Requirement Proposal 页的直接父页名）。匹配规则与页面选择（selectRequirementPages）
+ * 一致：大小写不敏感、忽略首尾空白；取不到（页直接挂在 Release Planning 下 / 链中无该层）返回 null。
+ *
+ * `ancestorTitles` 方向：顶层在前、直接父页在后（Confluence ancestors 扩展返回顺序）。
+ */
+export function resolveRequirementRelease(
+  ancestorTitles: string[],
+  planningTitle: string,
+): string | null {
+  const wanted = planningTitle.trim().toLowerCase();
+  const index = ancestorTitles.findIndex((title) => title.trim().toLowerCase() === wanted);
+  if (index < 0) return null;
+  const release = ancestorTitles[index + 1]?.trim();
+  return release ? release : null;
+}
+
 // ── 口径 2：议题分享（会议纪要 Agenda 段内的 @）─────────────────
 
 export interface AgendaShareParseResult {

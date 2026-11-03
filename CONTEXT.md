@@ -19,11 +19,17 @@ _Avoid_: 工单, 任务, issue
 **议题分享 (Topic Share)**: 会议纪要页（标题匹配 `^\d{4}-\d{2}-\d{2} TSC Minutes$` 且父页匹配 `^\d{4} - TSC Minutes$`）`Agenda` 段**内**的全部 @ 提及（段落里的与表格行里的都算，实测分享人写在「议题标题 + @分享人」的段落里），**同一期同一账号最多算 1 次**（≈ 参加了几期会议的议题分享）。**只取该段**：同页 `Attendees & Representation` 段的 @ 是出席签到（占全页 80%），计入会得到"出席次数"。取代原先恒 0 的 `bestPractices`。见 ADR-0009 及其「后续修订」。
 _Avoid_: 分享, 演讲, 议题, best practice
 
+**需求级事实 (Requirement-level Fact)**: 需求口径的**行级原子事实**：「某账号在某页某需求行的 `Contacts` 列被 @ 提及」，一条 = 一行 × 一个提及账号（幂等键 `pageId+rowIndex+accountId`，行内重复提及折叠）。落盘 `data/confluence-requirements.json`（ADR-0021），**唯一读路径是个人模式的需求明细**（恒全历史、无时间维度）；与「需求 (Requirement)」的**账号级累计计数**并存但口径独立——组织级 / 账号级仍读 `confluence-accounts.json`。`release` 解析不到为 `null`（显式「—」不 guess）；页面 URL **不落盘**，读时按 `confluence.baseUrl + pageId` 派生；文件缺失是「**待采集**」态（空数组 + `updatedAt=null`），非错误。
+_Avoid_: 需求明细（未点明与账号级计数的并存差异）, 需求事件
+
 **认领 (Claim)**: 运营人工把某个来源账号（GitHub `githubId` / Confluence `accountId` / 例会人名原文）判定为某个自然人，结果作为一条**认领边**写入人工维护的 `data/identity-claims.json`（由 `source` + `accountKey` 指称来源账号）。采集器只读该表，不做自动匹配。**解除认领 = 物理删除该边**，账号随即回到候选池。
 _Avoid_: 绑定, 关联, 自动匹配, 合并
 
 **自然人 (Person)**: 跨来源被认定为同一个人的身份根，由不可变的人工分配标识 `personId` 指称（取可读 slug，重名时末尾加数字）；档案存于 `data/persons.json`，含展示名 `displayName` 与归属组织 `orgId`（可空）。一经创建仅可改名与调整归属，删除为不可逆物理删除（仅限误建）。
 _Avoid_: 用户, 账号, contributor
+
+**个人模式 (Person Mode)**: 活跃度页的第二种视角（与「组织视角」并列，URL `?mode=person`）：选**自然人**看跨来源**统一画像**（GitHub 四项 + 仓库并集 + Confluence 三项 + 名下账号分解），或选**单个账号**直接下钻对应来源的明细（GitHub 事件 / Confluence 需求事实）。全部数字**服务端读时派生**（`/api/person-*` 四端点），前端只展示；`repos` 取名下账号 `repoIds` **并集**（非求和）；认领 many-to-many **全并**、无跨人物去重；画像**恒全历史**——面板内时间区间**只作用于 GitHub 事件明细**（ADR-0020）。候选池含未认领 / 多认领账号。
+_Avoid_: 用户模式, 个人视角（与「认领目标」的左栏语境混淆时）
 
 **贡献者 (Contributor)**: **GitHub 账号维度**的个人档案（**账号档案**），存于 `data/github-accounts.json`，主键 `contributorId`（≈ GitHub login 小写）、稳定键 `githubId`。是「人工档案（`joinedAt`/`description`）+ 采集回填指标（`github`）」的混合实体，但自**事件明细**上线后读路径只取**展示与归属字段**（`name` / `avatarUrl` / `githubId` / 采集口径 `orgId`），其 `github` 指标与 `repoIds` 降级为**基线快照**（对外数字一律由事件派生）。**不是**自然人：多个 Contributor 可认领为同一 Person，一个 Contributor 只对一个 GitHub 账号。与「自然人 (Person)」严格区分，勿混用「用户/成员」指代。⚠️ 有档案但本轮无事件的账号**不进任何出参**；反之事件里有、档案里没有的 login 由派生层用事件 `author` 快照**兜底合成**（不会丢）。
 _Avoid_: 用户, 成员, 自然人

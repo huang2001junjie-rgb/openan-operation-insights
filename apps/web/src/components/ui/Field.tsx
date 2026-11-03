@@ -35,6 +35,11 @@ const CONTROL_CLASSES =
   'placeholder:text-slate-500 hover:border-white/20 hover:bg-white/[0.06] focus:border-brand-400/60 focus:bg-white/[0.07] ' +
   'focus:outline-none focus:ring-2 focus:ring-brand-500/25 disabled:cursor-not-allowed disabled:opacity-50';
 
+/**
+ * 原生下拉。`select-control` 是弹出列表配色的唯一来源（见 `index.css`）：
+ * 浏览器会把 select 的半透明底带到选项列表上，不显式指定就会「白底白字」。
+ * 调用方**不要**再给 `<option>` 逐个写底色 —— 那是一处已修复缺陷的结论沉淀，勿删。
+ */
 export function Select({
   className,
   children,
@@ -42,7 +47,10 @@ export function Select({
 }: SelectHTMLAttributes<HTMLSelectElement> & { children: ReactNode }) {
   return (
     <span className="relative block">
-      <select className={cn(CONTROL_CLASSES, 'cursor-pointer appearance-none pr-9', className)} {...rest}>
+      <select
+        className={cn(CONTROL_CLASSES, 'select-control cursor-pointer appearance-none pr-9', className)}
+        {...rest}
+      >
         {children}
       </select>
       <IconChevronDown

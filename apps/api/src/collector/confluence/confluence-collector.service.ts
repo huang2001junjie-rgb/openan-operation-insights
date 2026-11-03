@@ -4,6 +4,7 @@ import {
   ConfluenceAccount,
   ConfluenceMetrics,
   ConfluenceOrgSource,
+  ConfluenceRequirementEvent,
   IdentityClaim,
   Organization,
   OrganizationWiki,
@@ -13,6 +14,7 @@ import { buildConfluenceClaimIndex, type ConfluenceClaimIndex } from '../../comm
 import { JsonRepository } from '../../repositories/json-repository';
 import {
   CONFLUENCE_ACCOUNTS_REPOSITORY,
+  CONFLUENCE_REQUIREMENTS_REPOSITORY,
   IDENTITY_CLAIMS_REPOSITORY,
   ORGANIZATIONS_REPOSITORY,
   PERSONS_REPOSITORY,
@@ -31,7 +33,11 @@ import {
   DEFAULT_REQUIREMENT_TITLE_COLUMN,
 } from './confluence.constants';
 import { CONFLUENCE_SOURCE } from '../collector.tokens';
-import { parseAgendaShares, parseRequirementContacts } from './confluence-content.parser';
+import {
+  parseAgendaShares,
+  parseRequirementContacts,
+  resolveRequirementRelease,
+} from './confluence-content.parser';
 import type {
   ConfluencePageRecord,
   ConfluencePageVersionRecord,
@@ -76,6 +82,8 @@ export interface ConfluenceCollectOutcome {
   minutesWithoutAgendaCount: number;
   /** 需求表格的数据行数（不参与计数，仅观测） */
   requirementRowCount: number;
+  /** 需求级事实条数（confluence-requirements.json，ADR-0021；恒等于需求提及数） */
+  requirementFactCount: number;
   /** 版本历史总条数（含创建版本与无法归属的版本，仅观测；口径见 ADR-0011） */
   editVersionCount: number;
   /** 有版本历史的页面数（仅观测） */
@@ -127,6 +135,8 @@ interface ParsedContent {
   pageEditors: Map<string, string[]>;
   requirementRowCount: number;
   requirementContactCount: number;
+  /** 需求级事实（ADR-0021）：与 requirementContactCount 恒等，落 confluence-requirements.json */
+  requirementFacts: ConfluenceRequirementEvent[];
   topicShareCount: number;
   /** 版本历史总条数（含无法归属的版本） */
   editVersionCount: number;
@@ -186,6 +196,8 @@ export class ConfluenceCollectorService {
     private readonly wiki: JsonRepository<OrganizationWiki[]>,
     @Inject(CONFLUENCE_ACCOUNTS_REPOSITORY)
     private readonly accounts: JsonRepository<ConfluenceAccount[]>,
+    @Inject(CONFLUENCE_REQUIREMENTS_REPOSITORY)
+    private readonly requirements: JsonRepository<ConfluenceRequirementEvent[]>,
     @Inject(IDENTITY_CLAIMS_REPOSITORY)
     private readonly identityClaims: JsonRepository<IdentityClaim[]>,
     @Inject(PERSONS_REPOSITORY)
@@ -314,6 +326,7 @@ export class ConfluenceCollectorService {
       minutesPageCount: minutesPages.length,
       minutesWithoutAgendaCount: parsed.minutesWithoutAgenda.length,
       requirementContactCount: parsed.requirementContactCount,
+      requirementFacts: parsed.requirementFacts,
       topicShareCount: parsed.topicShareCount,
       editVersionCount: parsed.editVersionCount,
       attributableEditCount: parsed.attributableEditCount,
@@ -331,6 +344,7 @@ export class ConfluenceCollectorService {
       minutesPageCount: minutesPages.length,
       minutesWithoutAgendaCount: parsed.minutesWithoutAgenda.length,
       requirementRowCount: parsed.requirementRowCount,
+      requirementFactCount: parsed.requirementFacts.length,
       editVersionCount: parsed.editVersionCount,
       editedPageCount: parsed.editedPageCount,
       totals: this.sumTotals(nextWiki),
@@ -374,6 +388,8 @@ export class ConfluenceCollectorService {
               title: pageTitleById.get(pageId) ?? '',
               editors,
             })),
+            // 需求级事实（ADR-0021）：与 confluence-requirements.json 同一份，快照留档便于口径复核
+            requirementFacts: parsed.requirementFacts,
           },
         }),
       );
@@ -382,6 +398,10 @@ export class ConfluenceCollectorService {
     // 先落账号级（原子事实）、再落组织级（派生投影）：任一步失败，下一轮全量重跑即可收敛
     await this.accounts.write(resolved.accounts);
     outcome.written.push(this.accounts.label);
+
+    // 需求级事实与账号级同轮整体替换（ADR-0021）：排序稳定，保证重复采集输出可 diff
+    await this.requirements.write(ConfluenceCollectorService.sortRequirementFacts(parsed.requirementFacts));
+    outcome.written.push(this.requirements.label);
 
     await this.wiki.write(nextWiki);
     outcome.written.push(this.wiki.label);
@@ -400,6 +420,7 @@ export class ConfluenceCollectorService {
       spaces,
       requirementPageCount: requirementPages.length,
       minutesPageCount: minutesPages.length,
+      requirementFactCount: parsed.requirementFacts.length,
       editVersionCount: parsed.editVersionCount,
       minutesWithoutAgenda: parsed.minutesWithoutAgenda.slice(0, CONFLUENCE_UNATTRIBUTED_LIMIT),
       unattributedAccounts: resolved.unattributedAccounts.slice(0, CONFLUENCE_UNATTRIBUTED_LIMIT),
@@ -625,6 +646,8 @@ export class ConfluenceCollectorService {
     const missingBodies: string[] = [];
     let requirementRowCount = 0;
     let requirementContactCount = 0;
+    const requirementFacts: ConfluenceRequirementEvent[] = [];
+    const factKeys = new Set<string>();
     let topicShareCount = 0;
     let topicShareMentionCount = 0;
     let editVersionCount = 0;
@@ -677,6 +700,34 @@ export class ConfluenceCollectorService {
 
       for (const accountId of parsed.contactAccountIds) {
         bump(accountId, 'requirements', page.spaceKey);
+      }
+
+      // 需求级事实（ADR-0021）：一行每个命中账号一条（同行同账号 parseRequirementContacts 已去重），
+      // 幂等键 = pageId + rowIndex + accountId。release 取「Release Planning」的下一级（直接父页）。
+      const release = resolveRequirementRelease(
+        page.ancestorTitles,
+        criteria.requirementAncestorTitle,
+      );
+      if (release === null) {
+        this.logger.warn(
+          `需求页「${page.title}」（${page.pageId}）祖先链未解析到「${criteria.requirementAncestorTitle}」的下一级 release，` +
+            '该页需求事实的 release 置空',
+        );
+      }
+      for (const row of parsed.rows) {
+        for (const accountId of row.accountIds) {
+          const factKey = `${page.pageId}|${row.rowIndex}|${accountId}`;
+          if (factKeys.has(factKey)) continue;
+          factKeys.add(factKey);
+          requirementFacts.push({
+            accountId,
+            requirementTitle: row.title,
+            pageId: page.pageId,
+            pageTitle: page.title,
+            release,
+            rowIndex: row.rowIndex,
+          });
+        }
       }
 
       // 有 @ 文本却没解析出账号的行：暴露给运营去把纯文本改成真正的提及（不猜、不丢）
@@ -755,6 +806,7 @@ export class ConfluenceCollectorService {
       pageEditors,
       requirementRowCount,
       requirementContactCount,
+      requirementFacts,
       topicShareCount,
       topicShareMentionCount,
       editVersionCount,
@@ -811,6 +863,7 @@ export class ConfluenceCollectorService {
               title: pageTitleById.get(pageId) ?? '',
               editors,
             })),
+            requirementFacts: parsed.requirementFacts,
           },
         }),
       );
@@ -825,6 +878,7 @@ export class ConfluenceCollectorService {
       minutesPageCount: minutesPages.length,
       minutesWithoutAgendaCount: parsed.minutesWithoutAgenda.length,
       requirementRowCount: parsed.requirementRowCount,
+      requirementFactCount: parsed.requirementFacts.length,
       editVersionCount: parsed.editVersionCount,
       editedPageCount: parsed.editedPageCount,
       // report-only 不做归属，totals 给的是"正文/版本解析出的量"，不是组织级合计
@@ -1173,6 +1227,16 @@ export class ConfluenceCollectorService {
     );
   }
 
+  /** 需求级事实的稳定排序（ADR-0021）：账号 → 页 → 行，保证重复采集输出可 diff */
+  private static sortRequirementFacts(facts: ConfluenceRequirementEvent[]): ConfluenceRequirementEvent[] {
+    return [...facts].sort(
+      (a, b) =>
+        a.accountId.localeCompare(b.accountId) ||
+        a.pageId.localeCompare(b.pageId) ||
+        a.rowIndex - b.rowIndex,
+    );
+  }
+
   // ── 校验（05 文档 §5.1）──────────────────────────────────────
 
   /**
@@ -1191,6 +1255,7 @@ export class ConfluenceCollectorService {
     minutesPageCount: number;
     minutesWithoutAgendaCount: number;
     requirementContactCount: number;
+    requirementFacts: ConfluenceRequirementEvent[];
     topicShareCount: number;
     /** 版本历史总条数（含无法归属的版本），仅观测 */
     editVersionCount: number;
@@ -1207,6 +1272,7 @@ export class ConfluenceCollectorService {
       minutesPageCount,
       minutesWithoutAgendaCount,
       requirementContactCount,
+      requirementFacts,
       topicShareCount,
       editVersionCount,
       attributableEditCount,
@@ -1252,6 +1318,25 @@ export class ConfluenceCollectorService {
       problems.push(
         `账号级需求合计 ${accountTotals.requirements} 与正文解析出的联系人提及数 ${requirementContactCount} 不一致`,
       );
+    }
+
+    // 需求级事实恒等（ADR-0021）：事实总数 ≡ 提及数；按账号分组 ≡ 账号级 requirements 计数
+    if (requirementFacts.length !== requirementContactCount) {
+      problems.push(
+        `需求级事实 ${requirementFacts.length} 条与联系人提及数 ${requirementContactCount} 不一致：幂等键 pageId+rowIndex+accountId 应一一对应`,
+      );
+    }
+    const factCountByAccount = new Map<string, number>();
+    for (const fact of requirementFacts) {
+      factCountByAccount.set(fact.accountId, (factCountByAccount.get(fact.accountId) ?? 0) + 1);
+    }
+    for (const account of accounts) {
+      const factCount = factCountByAccount.get(account.accountId) ?? 0;
+      if (factCount !== account.confluence.requirements) {
+        problems.push(
+          `账号 ${account.accountId} 的需求级事实 ${factCount} 条与账号级 requirements 计数 ${account.confluence.requirements} 不一致`,
+        );
+      }
     }
     if (accountTotals.topicShares !== topicShareCount) {
       problems.push(
@@ -1376,11 +1461,12 @@ export class ConfluenceCollectorService {
         `${parsed.unresolvedContacts.length} 处正文写了纯文本 @人（无法解析为账号），已记入状态文件待运营修正，例如：` +
           parsed.unresolvedContacts
             .slice(0, 3)
-            .map((item) =>
-              item.source === 'minutes'
-                ? `「${item.pageTitle}」Agenda 段 ${item.handles.join(' ')}`
-                : `「${item.requirementTitle || item.pageTitle}」行 ${String(item.rowIndex)} ${item.handles.join(' ')}`,
-            )
+            .map((item) => {
+              const handles = item.handles.map((handle) => `@${handle}`).join(' ');
+              return item.source === 'minutes'
+                ? `「${item.pageTitle}」Agenda 段 ${handles}`
+                : `「${item.requirementTitle || item.pageTitle}」行 ${String(item.rowIndex)} ${handles}`;
+            })
             .join('；'),
       );
     }
@@ -1413,6 +1499,7 @@ export class ConfluenceCollectorService {
     this.logger.log('── 采集结果 ──────────────────────────────');
     this.logger.log(`页面总数    : ${outcome.pageCount}`);
     this.logger.log(`需求页/行/条: ${outcome.requirementPageCount} 页 / ${outcome.requirementRowCount} 行 / ${outcome.totals.requirements} 条`);
+    this.logger.log(`需求级事实  : ${outcome.requirementFactCount} 条（confluence-requirements.json）`);
     this.logger.log(
       `会议页      : ${outcome.minutesPageCount} 页${outcome.minutesWithoutAgendaCount > 0 ? `（其中 ${outcome.minutesWithoutAgendaCount} 页无 Agenda 段）` : ''}`,
     );

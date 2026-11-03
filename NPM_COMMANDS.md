@@ -56,7 +56,7 @@ npm run collect:github -w @openan/api
 | `npm run collect:wiki:dev` | 用 ts-node 直接运行源码做增量采集 |
 | `npm run collect:wiki:probe` | 只读探测（`--report-only`，仅输出报告不落盘） |
 | `npm run collect:wiki:dev:probe` | 用 ts-node 直接运行源码做只读探测 |
-| `npm run collect:wiki:check` | Confluence 采集链路离线自检（固定 fixture + 合成档案，73 项断言，不联网） |
+| `npm run collect:wiki:check` | Confluence 采集链路离线自检（固定 fixture + 合成档案，91 项断言，不联网；含 ADR-0021 需求级事实 14 项） |
 
 ### 数据维护与检查
 
@@ -64,6 +64,7 @@ npm run collect:github -w @openan/api
 | --- | --- |
 | `npm run collect:meetings` | 导入例会台账：将 `data/source/meetings.xlsx` 全量重算为 `data/meetings.json`（失败时保留旧数据） |
 | `npm run identity:check` | 账号身份 / 认领关系检查（`scripts/identity-check.mjs`） |
+| `npm run person:check` | 个人模式端点离线校验（`scripts/person-check.mjs`，66 项断言：画像恒等 / 区间边界 / 多认领 / 待采集降级 / 候选池） |
 | `npm run smoke` | 冒烟测试（`scripts/smoke.mjs`） |
 
 ## 前端脚本（`@openan/web` · React 18 + Vite）
@@ -81,7 +82,8 @@ npm run collect:github -w @openan/api
 # 构建后端并做两条采集链路的离线自检
 npm run build -w @openan/api
 npm run collect:github:check -w @openan/api   # 期望：46/46 通过
-npm run collect:wiki:check -w @openan/api     # 期望：全部通过（73 项）
+npm run collect:wiki:check -w @openan/api     # 期望：全部通过（91 项）
+npm run person:check -w @openan/api           # 期望：全部通过（66 项，个人模式）
 
 # 运维护例：更新例会台账后重新生成 meetings.json
 npm run collect:meetings -w @openan/api

@@ -49,7 +49,43 @@ export const queryKeys = {
   identityClaims: ['identity', 'claims'] as const,
   identityCandidates: ['identity', 'candidates'] as const,
   identityRoster: ['identity', 'org-roster'] as const,
+
+  // 个人模式（ADR-0020）：候选池 / 画像 / 两类明细，全部由后端读时派生
+  personCandidates: ['person', 'candidates'] as const,
+  personContributions: (params: PersonContributionsParams) =>
+    ['person', 'contributions', { personId: params.personId, from: params.from ?? '', to: params.to ?? '' }] as const,
+  personGithubEvents: (params: PersonGithubEventsParams) =>
+    [
+      'person',
+      'github-events',
+      { personId: params.personId ?? '', account: params.account ?? '', from: params.from ?? '', to: params.to ?? '', limit: params.limit ?? null },
+    ] as const,
+  personConfluenceRequirements: (params: PersonConfluenceRequirementsParams) =>
+    ['person', 'confluence-requirements', { personId: params.personId ?? '', account: params.account ?? '' }] as const,
 };
+
+export interface PersonContributionsParams {
+  personId: string;
+  from?: string;
+  to?: string;
+}
+
+export interface PersonGithubEventsParams {
+  /** personId 与 account 二选一（契约 40001） */
+  personId?: string;
+  account?: string;
+  from?: string;
+  to?: string;
+  limit?: number;
+}
+
+export interface PersonConfluenceRequirementsParams {
+  personId?: string;
+  account?: string;
+}
 
 /** 身份匹配相关查询的统一前缀，用于写操作后失效（保证两模式共享归属即时同步） */
 export const IDENTITY_ROOT_KEY = ['identity'] as const;
+
+/** 个人模式查询统一前缀：身份认领/人物档案写操作后同样需失效（画像归属、候选池都读认领边） */
+export const PERSON_ROOT_KEY = ['person'] as const;

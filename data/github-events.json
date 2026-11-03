@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "updatedAt": "2026-11-02T03:14:55.130Z",
+  "updatedAt": "2026-11-03T03:35:43.580Z",
   "data": [
     {
       "kind": "pullRequest",
@@ -2411,6 +2411,76 @@
       "commitCount": 24
     },
     {
+      "kind": "pullRequest",
+      "repository": "project-openan/a2a-t-sdk-java",
+      "number": 207,
+      "author": {
+        "login": "zhangwenjun-huawei",
+        "githubId": 293838403,
+        "name": "WenjunZhang",
+        "avatarUrl": "https://avatars.githubusercontent.com/u/293838403?v=4"
+      },
+      "linesChanged": 397,
+      "timestamp": "2026-11-02T08:18:38Z",
+      "commitCount": 1
+    },
+    {
+      "kind": "pullRequest",
+      "repository": "project-openan/a2a-t-sdk-java",
+      "number": 208,
+      "author": {
+        "login": "zhangwenjun-huawei",
+        "githubId": 293838403,
+        "name": "WenjunZhang",
+        "avatarUrl": "https://avatars.githubusercontent.com/u/293838403?v=4"
+      },
+      "linesChanged": 3583,
+      "timestamp": "2026-11-02T09:44:11Z",
+      "commitCount": 1
+    },
+    {
+      "kind": "pullRequest",
+      "repository": "project-openan/a2a-t-sdk-java",
+      "number": 209,
+      "author": {
+        "login": "zhangwenjun-huawei",
+        "githubId": 293838403,
+        "name": "WenjunZhang",
+        "avatarUrl": "https://avatars.githubusercontent.com/u/293838403?v=4"
+      },
+      "linesChanged": 2276,
+      "timestamp": "2026-11-02T11:58:31Z",
+      "commitCount": 1
+    },
+    {
+      "kind": "pullRequest",
+      "repository": "project-openan/a2a-t-sdk-java",
+      "number": 210,
+      "author": {
+        "login": "zhangwenjun-huawei",
+        "githubId": 293838403,
+        "name": "WenjunZhang",
+        "avatarUrl": "https://avatars.githubusercontent.com/u/293838403?v=4"
+      },
+      "linesChanged": 323,
+      "timestamp": "2026-11-02T13:56:51Z",
+      "commitCount": 1
+    },
+    {
+      "kind": "pullRequest",
+      "repository": "project-openan/a2a-t-sdk-java",
+      "number": 211,
+      "author": {
+        "login": "zhangwenjun-huawei",
+        "githubId": 293838403,
+        "name": "WenjunZhang",
+        "avatarUrl": "https://avatars.githubusercontent.com/u/293838403?v=4"
+      },
+      "linesChanged": 1226,
+      "timestamp": "2026-11-02T14:11:32Z",
+      "commitCount": 1
+    },
+    {
       "kind": "issue",
       "repository": "project-openan/a2a-t-sdk-java",
       "number": 75,
@@ -4637,6 +4707,34 @@
       "commitCount": 2
     },
     {
+      "kind": "pullRequest",
+      "repository": "project-openan/openan-demo",
+      "number": 32,
+      "author": {
+        "login": "guofei66",
+        "githubId": 169223219,
+        "name": null,
+        "avatarUrl": "https://avatars.githubusercontent.com/u/169223219?u=7a1edcfdc48e79f17c1cbc76c5f0e1e548191568&v=4"
+      },
+      "linesChanged": 503,
+      "timestamp": "2026-11-02T12:12:41Z",
+      "commitCount": 1
+    },
+    {
+      "kind": "pullRequest",
+      "repository": "project-openan/openan-demo",
+      "number": 33,
+      "author": {
+        "login": "guofei66",
+        "githubId": 169223219,
+        "name": null,
+        "avatarUrl": "https://avatars.githubusercontent.com/u/169223219?u=7a1edcfdc48e79f17c1cbc76c5f0e1e548191568&v=4"
+      },
+      "linesChanged": 2671,
+      "timestamp": "2026-11-02T12:12:31Z",
+      "commitCount": 21
+    },
+    {
       "kind": "issue",
       "repository": "project-openan/openan-demo",
       "number": 1,
@@ -5712,6 +5810,118 @@
       },
       "linesChanged": 972,
       "timestamp": "2026-11-02T02:17:10Z",
+      "commitCount": 1
+    },
+    {
+      "kind": "pullRequest",
+      "repository": "project-openan/openan-portal",
+      "number": 56,
+      "author": {
+        "login": "guofei66",
+        "githubId": 169223219,
+        "name": null,
+        "avatarUrl": "https://avatars.githubusercontent.com/u/169223219?u=7a1edcfdc48e79f17c1cbc76c5f0e1e548191568&v=4"
+      },
+      "linesChanged": 497,
+      "timestamp": "2026-11-02T03:17:11Z",
+      "commitCount": 1
+    },
+    {
+      "kind": "pullRequest",
+      "repository": "project-openan/openan-portal",
+      "number": 57,
+      "author": {
+        "login": "guofei66",
+        "githubId": 169223219,
+        "name": null,
+        "avatarUrl": "https://avatars.githubusercontent.com/u/169223219?u=7a1edcfdc48e79f17c1cbc76c5f0e1e548191568&v=4"
+      },
+      "linesChanged": 472,
+      "timestamp": "2026-11-02T04:17:11Z",
+      "commitCount": 1
+    },
+    {
+      "kind": "pullRequest",
+      "repository": "project-openan/openan-portal",
+      "number": 58,
+      "author": {
+        "login": "guofei66",
+        "githubId": 169223219,
+        "name": null,
+        "avatarUrl": "https://avatars.githubusercontent.com/u/169223219?u=7a1edcfdc48e79f17c1cbc76c5f0e1e548191568&v=4"
+      },
+      "linesChanged": 2,
+      "timestamp": "2026-11-02T05:17:10Z",
+      "commitCount": 1
+    },
+    {
+      "kind": "pullRequest",
+      "repository": "project-openan/openan-portal",
+      "number": 59,
+      "author": {
+        "login": "guofei66",
+        "githubId": 169223219,
+        "name": null,
+        "avatarUrl": "https://avatars.githubusercontent.com/u/169223219?u=7a1edcfdc48e79f17c1cbc76c5f0e1e548191568&v=4"
+      },
+      "linesChanged": 4,
+      "timestamp": "2026-11-02T06:17:09Z",
+      "commitCount": 1
+    },
+    {
+      "kind": "pullRequest",
+      "repository": "project-openan/openan-portal",
+      "number": 60,
+      "author": {
+        "login": "guofei66",
+        "githubId": 169223219,
+        "name": null,
+        "avatarUrl": "https://avatars.githubusercontent.com/u/169223219?u=7a1edcfdc48e79f17c1cbc76c5f0e1e548191568&v=4"
+      },
+      "linesChanged": 742,
+      "timestamp": "2026-11-02T07:17:11Z",
+      "commitCount": 1
+    },
+    {
+      "kind": "pullRequest",
+      "repository": "project-openan/openan-portal",
+      "number": 61,
+      "author": {
+        "login": "guofei66",
+        "githubId": 169223219,
+        "name": null,
+        "avatarUrl": "https://avatars.githubusercontent.com/u/169223219?u=7a1edcfdc48e79f17c1cbc76c5f0e1e548191568&v=4"
+      },
+      "linesChanged": 531,
+      "timestamp": "2026-11-02T08:17:10Z",
+      "commitCount": 1
+    },
+    {
+      "kind": "pullRequest",
+      "repository": "project-openan/openan-portal",
+      "number": 62,
+      "author": {
+        "login": "guofei66",
+        "githubId": 169223219,
+        "name": null,
+        "avatarUrl": "https://avatars.githubusercontent.com/u/169223219?u=7a1edcfdc48e79f17c1cbc76c5f0e1e548191568&v=4"
+      },
+      "linesChanged": 525,
+      "timestamp": "2026-11-02T09:17:09Z",
+      "commitCount": 1
+    },
+    {
+      "kind": "pullRequest",
+      "repository": "project-openan/openan-portal",
+      "number": 63,
+      "author": {
+        "login": "guofei66",
+        "githubId": 169223219,
+        "name": null,
+        "avatarUrl": "https://avatars.githubusercontent.com/u/169223219?u=7a1edcfdc48e79f17c1cbc76c5f0e1e548191568&v=4"
+      },
+      "linesChanged": 629,
+      "timestamp": "2026-11-02T12:17:10Z",
       "commitCount": 1
     },
     {

@@ -17,6 +17,7 @@
 | `data/confluence-organizations.json` | `JsonFileEnvelope<OrganizationWiki[]>` | wiki 维度贡献（Confluence） | 数十 |
 | `data/github-accounts.json` | `JsonFileEnvelope<Contributor[]>` | 个人贡献者**账号档案**（GitHub 账号维度：姓名 / 头像 / `githubId` / 采集口径 `orgId`）；⚠️ 其 `github` 指标已降级为**基线快照**，读路径不再消费（见 3.7） | 数百 |
 | `data/confluence-accounts.json` | `JsonFileEnvelope<ConfluenceAccount[]>` | Confluence 账号级事实（账号 × 三个维度：需求 / 议题分享 / 编辑；组织级的求和来源，ADR-0010） | 数十～数百 |
+| `data/confluence-requirements.json` | `JsonFileEnvelope<ConfluenceRequirementEvent[]>` | Confluence **需求级原子事实**（Requirement Proposal 表格：联系人 × 需求行，幂等键 `pageId+rowIndex+accountId`；个人模式需求明细的唯一来源，ADR-0021）。首次 `collect:wiki` 前可缺失（降级为空 + `updatedAt=null`） | 数十～数百 |
 | `data/summits.json` | `JsonFileEnvelope<SummitDetail[]>` | 峰会时间线与详情 | 十余 |
 | `data/meetings.json` | `JsonFileEnvelope<MeetingAttendanceMatrix>` | 例会参会矩阵（人 × 日期） | 1 |
 | `data/persons.json` | `JsonFileEnvelope<Person[]>` | 自然人档案（身份匹配控制台的**点**） | 数十 |
@@ -54,6 +55,7 @@
 > | `github-accounts.json` | **2** | v2 在 `github` 下新增**必填** `repoIds`（仓库清单，ADR-0017 决策 15）：组织级 `repos` 是去重数，只能由账号级清单取并集得出。⚠️ 事件明细上线后该文件的 `github` 指标已不参与读路径（降级为基线快照，见 3.7），但版本号仍为 **2** |
 > | `github-events.json` | **2** | v1 新文件（GitHub 侧**唯一原子事实**，见 3.12）；**v2** 把 `timestamp` 由 `string \| null` 升为**必填 `string`**——它是区间口径的唯一切片依据，可空会让同一份文件在「全量 / 区间」两种读法下给出两个总量（ADR-0018 决策 4）。存量数据用 `npm run migrate:github-events-v2` 抬信封版本（**只改信封、记录逐条不动**）。⚠️ 它**刻意不在** `seed-data/` 里：首次 `collect:github:full` 之前磁盘上不存在，属预期状态而非故障，启动自检只 WARN（见下方 ⚠️ 段） |
 > | `github-releases.json` | **1** | v1 新文件（ADR-0019）：`releases` 原子事实 + `repositories` 采集范围清单。与 `github-events.json` 同为首次采集前可能缺失的文件，启动自检只 WARN |
+> | `confluence-requirements.json` | **1** | v1 新文件（ADR-0021）：需求级原子事实。与上述两文件不同，**缺失不是错误而是「待采集」态**：读侧降级为空数组 + `updatedAt=null`，个人模式前端渲染「待采集」空态，自检只 WARN |
 > | 其余（`organizations` / `github-organizations` / `summits` / `meetings` / `persons` / `identity-claims`） | **1** | 未发生不兼容变更 |
 >
 > ⚠️ 提升版本必须**同批原子切换**：`entities.ts`（落盘类型）+ `validators.ts`（结构校验）+ `repositories.module.ts`（期望值）+ `data/*.json`（信封）+ `apps/api/scripts/fixtures/seed-data/*.json`（离线自检的合成种子）。
@@ -524,6 +526,21 @@ erDiagram
 | `latestRelease` | object \| null | 最近一次发布 `{ repoId, tag, publishedAt }`；全社区无 Release 时为 `null` |
 | `avgDaysBetweenReleases` | number \| null | 平均发布周期（天，保留 1 位小数）：**各组件内部**相邻发布间隔的均值（`span / (count-1)`），再按**组件等权**平均；无任一组件 ≥2 次发布时为 `null` |
 | `updatedAt` | string | 数据文件信封的 `updatedAt`（供前端「数据更新于」） |
+
+### 3.16 `ConfluenceRequirementEvent`（Confluence 需求级原子事实，ADR-0021）
+
+> 由 `collect:wiki` 从 **Requirement Proposal** 页正文表格两阶段提取（见 ADR-0021 与 collector 实现）：表格「Contacts」列的 `@accountId` 提及 × 所在需求行，一行一条。
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `accountId` | string | 提及的 Confluence 账号（`@` 提及；纯文本联系人不产事实，只进 `unresolvedContacts`） |
+| `requirementTitle` | string | 需求行标题（行首单元格去空白） |
+| `pageId` | string | 所在页 id（URL 派生与幂等键的组成部分） |
+| `pageTitle` | string | 所在页标题（冗余落盘，明细展示用） |
+| `release` | string \| null | ancestor chain 中位于 **“Release Planning” 之下的一级**；解析不到为 `null`（事实照常落盘，明细给「—」供人工核对，不做 guess） |
+| `rowIndex` | number | 需求行在页内表格中的行号（排序键 + 幂等键组成部分） |
+
+**幂等键**：`pageId+rowIndex+accountId`——同一页同一行同一账号重复提及只记一条；**页面整体替换语义**：重采时以 `factKeys` 去重后整体落盘。写入前校验恒等式：`requirementFacts` 条数 ≡ 采集期解析出的有效提及数（不等即拒绝写盘）。
 
 ---
 
@@ -1064,6 +1081,37 @@ erDiagram
 
 > 说明：采集器逐仓库**全量枚举** Releases 后**整体替换**本文件（draft 不采集；每次 `collect:github:*` 均刷新，含增量轮）。`repositories` 是采集范围的解析结果（白名单 / 组织枚举），它固化「无 Release 仓库」的分母——上面的样例里 `openan-labs/dashboard` 无 Release，会出现在接口出参的 `reposWithoutReleases` 而非 `repos`。
 
+### 4.13 `data/confluence-requirements.json`
+
+> `schemaVersion` 为 **1**（ADR-0021 新文件）。与 `github-events.json` / `github-releases.json` 同为首次采集前可能**不存在**的文件，但**缺失语义不同**：它不是错误，而是「待采集」态——读侧（5.3.21）降级为空数组 + `updatedAt=null`，前端渲染「待采集」空态（提示运行 `collect:wiki`），启动自检只 WARN。
+
+```json
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-11-03T02:30:00Z",
+  "data": [
+    {
+      "accountId": "acct-rf-1",
+      "requirementTitle": "Support Multiple UPFs",
+      "pageId": "900101",
+      "pageTitle": "OpenAN 26.4 Requirement Proposal",
+      "release": "26.4",
+      "rowIndex": 3
+    },
+    {
+      "accountId": "acct-rf-2",
+      "requirementTitle": "UL CL enhancement",
+      "pageId": "900102",
+      "pageTitle": "OpenAN 27.1 Requirement Proposal",
+      "release": null,
+      "rowIndex": 5
+    }
+  ]
+}
+```
+
+> 说明：记录按 `pageId → rowIndex → accountId` 排序落盘（读侧二分 / 调试 diff 友好）；`release` 解析不到时为 `null`（事实照常落盘，见 3.16）。⚠️ 采集期**不落盘页面 URL**：需求行的 Confluence 深链由读时派生端点按 `confluence.baseUrl + pageId` 拼出（5.3.21），baseUrl 未配置时 `url` 为空串、前端退化为纯文本。
+
 ---
 
 ## 5. REST 接口契约
@@ -1110,8 +1158,12 @@ erDiagram
 | 19 | GET | `/api/confluence-accounts` | 账号级 Confluence 贡献（个人维度，生效口径，ADR-0010） | 服务端候选池取数源 + Confluence 视图账号榜 |
 | 20 | GET | `/api/repo-contributions` | **仓库维度** GitHub 贡献（按仓库并列，量 / 人数 / 组织数由事件明细派生） | 仓库视角贡献榜（新增，见 5.3.17） |
 | 21 | GET | `/api/repo-releases` | **组件版本发布**汇总（Release 次数 / 最新版本 / 近 90 天 / 发布周期，由 `github-releases.json` 派生） | 版本发布页 `/releases`（ADR-0019，见 5.3.18） |
+| 22 | GET | `/api/person-contributions` | **自然人跨来源统一画像**（GitHub 聚合 + Confluence 全历史 + 名下账号分解，全部读时派生） | 社区活跃度 · 个人模式（ADR-0020，见 5.3.19） |
+| 23 | GET | `/api/person-github-events` | **GitHub 事件明细**下钻（自然人名下账号并集 / 单账号；半开区间 + `truncated`） | 社区活跃度 · 个人模式（ADR-0020，见 5.3.20） |
+| 24 | GET | `/api/person-confluence-requirements` | **Confluence 需求级事实**明细（恒全历史；文件缺失降级「待采集」） | 社区活跃度 · 个人模式（ADR-0020/0021，见 5.3.21） |
+| 25 | GET | `/api/person-candidates` | 个人模式**候选池**（有任一来源贡献的自然人 + 全部账号，供选择器） | 社区活跃度 · 个人模式（ADR-0020，见 5.3.22） |
 
-> 第 10～13 项为**只读**（不鉴权，但响应为 `no-store`，见 5.1 缓存头）；第 14～18 项为**写接口**，统一位于 `/api/identity/*`，需要 `X-Admin-Token`（见 5.1 与 5.3.14）。第 19 项为普通只读接口（缓存策略同 5.1 看板接口），已由 Confluence 视图账号榜直接调用（`useConfluenceAccounts` → `ConfluenceAccountRankCard`），其数据同时由 `CandidateService` 在服务端直接读取（见 5.3.11）。第 4、19 两项均按**生效归属 `effectiveOrgId`** 读时派生（人工认领优先，ADR-0010）。第 3、8、20 三项同属 **GitHub 事件明细派生族**（原子事实 `github-events.json`，见 3.12），三段数字恒等；它们与第 1 项的 `externalDeveloperCount` 一样，在事件文件缺失 / 结构非法时一并返回 `50001`。第 21 项同属 **GitHub Release 派生族**（原子事实 `github-releases.json`，见 3.13），文件缺失 / 结构非法时返回 `50001`。
+> 第 10～13 项为**只读**（不鉴权，但响应为 `no-store`，见 5.1 缓存头）；第 14～18 项为**写接口**，统一位于 `/api/identity/*`，需要 `X-Admin-Token`（见 5.1 与 5.3.14）。第 19 项为普通只读接口（缓存策略同 5.1 看板接口），已由 Confluence 视图账号榜直接调用（`useConfluenceAccounts` → `ConfluenceAccountRankCard`），其数据同时由 `CandidateService` 在服务端直接读取（见 5.3.11）。第 4、19 两项均按**生效归属 `effectiveOrgId`** 读时派生（人工认领优先，ADR-0010）。第 3、8、20 三项同属 **GitHub 事件明细派生族**（原子事实 `github-events.json`，见 3.12），三段数字恒等；它们与第 1 项的 `externalDeveloperCount` 一样，在事件文件缺失 / 结构非法时一并返回 `50001`。第 21 项同属 **GitHub Release 派生族**（原子事实 `github-releases.json`，见 3.13），文件缺失 / 结构非法时返回 `50001`。第 22～25 项为**个人模式（ADR-0020）只读端点**：第 22、23 项属 GitHub 事件派生族（23 与 5.3.3 / 5.3.8 / 5.3.17 同区间口径），第 24 项读 ADR-0021 新增的需求级事实文件（缺失降级「待采集」而非 `50001`）；自然人不存在统一返回 `40403`（`PERSON_NOT_FOUND`）。
 
 ### 5.3 接口详细定义
 
@@ -1886,6 +1938,89 @@ erDiagram
 **校验规则**：无入参，无 `40000` / `40002` 场景。
 
 **失败场景**：`50001` —— **`github-releases.json`** 缺失 / 结构损坏（`JsonFileEnvelope` / `isGithubReleasesFileData` fail-fast，见 3.13）。⚠️ 首次 `collect:github:full` 之前**必然** `50001`（启动自检只 WARN 不阻断，同 `github-events.json`）；文件为**整文件级**校验，一条非法记录即全接口失败。前端按失败卡渲染（见 02 文档）。
+
+#### 5.3.19 `GET /api/person-contributions` —— 自然人跨来源统一画像
+
+**语义**：个人模式（ADR-0020）的核心端点。把**一个自然人**名下的 GitHub 账号（认领边，many-to-many 全并）与 Confluence 账号合并成**一张画像**：GitHub 四项聚合 + 仓库 `repoIds` **并集**（非求和）+ 按仓库分解 + Confluence 三项（恒全历史）+ 名下账号逐个分解。⚠️ **全部数字读时派生、服务端口径唯一**（`PersonInsightService`），前端只展示、不重算；`from` / `to` 接受但**不切片任何字段**（Confluence 无时间维度，GitHub 画像恒全历史——区间只作用于 5.3.20 事件明细，避免同页两套口径，ADR-0020 决策 6）。
+
+**请求参数（Query）**：
+
+| 参数 | 类型 | 必填 | 默认 | 说明 |
+| --- | --- | --- | --- | --- |
+| `personId` | string | ✅ | — | 自然人 id（`persons.json`） |
+| `from` | string (ISO 8601 时刻) | 否 | — | **接受但恒不过滤**（前向兼容占位；区间语义只存在于 5.3.20） |
+| `to` | string (ISO 8601 时刻) | 否 | — | 同上 |
+
+**响应 `data`**：`PersonContributionsData`（`contract/entities.ts`；出参实体，不落盘）：
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `person` | `Person` | 自然人档案原样（3.9） |
+| `orgName` | string \| null | 生效组织名；未归属（伪组织 `unattributed`）时为 `null` |
+| `effectiveOrgId` | string | 读时派生：`person.orgId ?? 'unattributed'` |
+| `orgSource` | `'person' \| 'account'` | 归属口径来源：档案直取 / 档案未填组织按名下账号生效归属回落 |
+| `github.metrics` | `GithubMetrics` | 名下账号四项求和（**含 bot**）+ `repos` = `repoIds` 并集大小 |
+| `github.repoIds` | string[] | 名下账号 `repoIds` 的**并集**（升序）；同一仓库多人协作不重复计 |
+| `github.repoBreakdown` | `PersonRepoBreakdownItem[]` | 按仓库拆分（`github` 为 `Omit<GithubMetrics,'repos'>`），按 `commits` 降序；**合计恒等于 `metrics`** |
+| `github.updatedAt` | string \| null | 事件文件时间戳；名下无 GitHub 事件时为 `null` |
+| `confluence.metrics` | `ConfluenceMetrics` | 名下账号三项求和（恒全历史） |
+| `confluence.updatedAt` | string \| null | 名下账号档案的最新 `updatedAt`；无 Confluence 账号时为 `null` |
+| `accounts` | `PersonAccountItem[]` | 名下账号逐个分解（GitHub / Confluence 可判别 union）：键、展示名、生效归属（含 `orgSource`）、bot 标记、各自来源的指标；GitHub 条目带 `repoIds` |
+
+> **口径与不变量**：
+>
+> - **求和恒等**：`accounts` 中 GitHub 条目四项之和 ≡ `github.metrics` 四项（不含 `repos`——那是并集）；Confluence 同理；
+> - 认领 many-to-many：一个账号可属多个自然人，其量在每个自然人下**全额计入**（不做分数拆分），端到端不做跨人物去重；
+> - **认领 / 解除 / 改 `Person.orgId` 后下一个请求即生效**（`JsonRepository` 按 mtime 失效缓存），与 5.3.8 同；
+> - bot 计数保留在合计里（账号条目以 `isBot` 标注），与 5.3.8 决策 11 同构。
+
+**校验规则**：`from` 晚于 `to` → `40002`；`personId` 缺失 / 超长 → `40000`。
+
+**失败场景**：`40403`（`PERSON_NOT_FOUND`）——自然人不存在；`50001` —— `persons.json` / `identity-claims.json` / `github-accounts.json` / `confluence-accounts.json` / `organizations.json`（解析组织名）/ `github-events.json`（GitHub 聚合）任一缺失或结构损坏。⚠️ 首次 `collect:github:full` 前 GitHub 段必然 `50001`。
+
+#### 5.3.20 `GET /api/person-github-events` —— GitHub 事件明细下钻
+
+**语义**：个人模式的 GitHub 明细层：自然人模式下取**名下账号（含多认领全部边）事件的并集**，账号模式下取**单账号**事件；半开区间 `[from, to)` 切片（ADR-0018 口径），按 `timestamp` 倒序，`limit` 截断并显式 `truncated` 标记。事件 `url` 为**读时派生**（PR → `…/pull/{n}`、Issue → `…/issues/{n}`），前端不再拼链。
+
+**请求参数（Query）**：
+
+| 参数 | 类型 | 必填 | 默认 | 说明 |
+| --- | --- | --- | --- | --- |
+| `personId` | string | 否 | — | 自然人 id；与 `account` **二选一**（都传 / 都不传 → `40001`） |
+| `account` | string | 否 | — | 单账号键：GitHub **login 或 githubId 字符串**双键（账号档案与事件作者两条路径都能命中） |
+| `from` | string (ISO 8601 时刻) | 否 | — | 下界（含）；缺省 ≡ 全量 |
+| `to` | string (ISO 8601 时刻) | 否 | — | 上界（不含） |
+| `limit` | number | 否 | `500` | 返回条数上限（1～1000）；命中超过上限 → `truncated=true` |
+
+**响应 `data`**：`PersonGithubEventsData`：`events: PersonGithubEventItem[]`（3.12 条目 + 读时派生 `url`）、`total`（区间命中总数，含被截断部分）、`truncated`、`updatedAt`（事件文件时间戳）。事件键沿用 3.12 的 `repository#number`；**多认领**账号（认领边 >1）以**首条边**归属人物口径并打 WARN（同 5.3.8 派生族规则）。
+
+**校验规则**：`personId` / `account` 二选一违例 → `40001`；`from` 晚于 `to` → `40002`；`limit` 非整数或越界 → `40000`。
+
+**失败场景**：`40403` —— `personId` 不存在；`50001` —— `github-events.json`（整文件 fail-fast）或 `persons.json` / `identity-claims.json` / `github-accounts.json` 任一不可读。账号模式下账号本身不存在**不是错误**：返回空 `events` + `total=0`（账号层不是可寻址实体，同 5.3.8 的空档语义）。
+
+#### 5.3.21 `GET /api/person-confluence-requirements` —— Confluence 需求级事实明细
+
+**语义**：个人模式的 Confluence 明细层（ADR-0021 事实文件的唯一读路径）：自然人 / 单账号名下的**需求行事实**（谁在哪页哪行作为联系人被提及）。**恒全历史**——需求行没有内在日期（页级 `createdDate` 整页共享，挂到行上会误导），故不接受 `from` / `to`；`release` 解析不到的事实**照常给出**、该列显式「—」。
+
+**请求参数（Query）**：`personId` / `account`（Confluence `accountId`）**二选一**（同上，`40001`）；无区间参数。
+
+**响应 `data`**：`PersonConfluenceRequirementsData`：`requirements: PersonConfluenceRequirementItem[]`（3.16 条目 + `displayName`（账号档案展示名）+ 读时派生 `url` = `{confluence.baseUrl}/wiki/pages/viewpage.action?pageId={pageId}`，baseUrl 未配置时为**空串**、前端退化为纯文本）、`total`、`updatedAt`（**文件缺失时为 `null`**——「待采集」态，非错误）。排序：`pageId → rowIndex → accountId`。
+
+**校验规则**：`personId` / `account` 二选一违例 → `40001`。
+
+**失败场景**：`40403` —— `personId` 不存在；`confluence-requirements.json` **缺失 → 不报错**：降级为空数组 + `updatedAt=null`（前端渲染「待采集」空态，提示运行 `collect:wiki`）；文件**存在但结构非法** → `50001`（真故障，不降档）。`confluence-accounts.json` / `persons.json` / `identity-claims.json` 不可读 → `50001`。
+
+#### 5.3.22 `GET /api/person-candidates` —— 个人模式候选池
+
+**语义**：个人模式选择器的数据源。返回**有任一来源贡献**的自然人（`github` / `confluence` 布尔标记）+ **全部**来源账号（含未认领与多认领；认领关系 many-to-many 全列）。候选集与区间无关（GitHub 侧按全历史判定）。
+
+**请求参数**：无。
+
+**响应 `data`**：`PersonCandidatesData`：`updatedAt`（各来源文件时间戳的最大值）、`persons: PersonCandidateItem[]`（`personId` / `displayName` / `avatarUrl` / `orgId` / `orgName` / `github` / `confluence`）、`githubAccounts` / `confluenceAccounts: PersonAccountCandidateItem[]`（`source` / `accountKey` / `displayName` / `avatarUrl` / `isBot` / `effectiveOrgId` / `orgName` / `persons: { personId, displayName }[]`）。
+
+> ⚠️ **GitHub 认领键是 `githubId`，候选视图按 `login` 键控**：服务读时构建 `githubId → login` 映射（账号档案为主、事件作者兜底）把认领边翻回登录名，两边对不上（档案缺失且事件无该作者）时该认领边**静默不展示**——与 5.3.8 的多认领 WARN 不同，这里是候选视图的最佳努力展示，不影响画像端点的计数口径。
+
+**失败场景**：`50001` —— `persons.json` / `identity-claims.json` / `github-accounts.json` / `confluence-accounts.json` / `github-events.json`（GitHub 侧候选判定）/ `organizations.json`（组织名解析）任一不可读。
 
 ---
 

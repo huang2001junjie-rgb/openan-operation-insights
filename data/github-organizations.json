@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-11-02T03:14:55.116Z",
+  "updatedAt": "2026-11-03T03:35:43.571Z",
   "data": [
     {
       "orgId": "cmcc",
@@ -14,7 +14,7 @@
         "linesChanged": 24440,
         "repos": 3
       },
-      "updatedAt": "2026-11-02T03:14:55.114Z"
+      "updatedAt": "2026-11-03T03:35:43.569Z"
     },
     {
       "orgId": "huawei",
@@ -22,13 +22,13 @@
       "logoUrl": "/logos/huawei.png",
       "homepageUrl": "https://www.huawei.com/",
       "github": {
-        "pullRequests": 502,
-        "commits": 1520,
+        "pullRequests": 517,
+        "commits": 1555,
         "issues": 162,
-        "linesChanged": 1343279,
+        "linesChanged": 1357660,
         "repos": 13
       },
-      "updatedAt": "2026-11-02T03:14:55.114Z"
+      "updatedAt": "2026-11-03T03:35:43.569Z"
     },
     {
       "orgId": "zte",
@@ -42,7 +42,7 @@
         "linesChanged": 4342,
         "repos": 1
       },
-      "updatedAt": "2026-11-02T03:14:55.114Z"
+      "updatedAt": "2026-11-03T03:35:43.569Z"
     },
     {
       "orgId": "unattributed",
@@ -56,7 +56,7 @@
         "linesChanged": 77746,
         "repos": 12
       },
-      "updatedAt": "2026-11-02T03:14:55.114Z"
+      "updatedAt": "2026-11-03T03:35:43.569Z"
     }
   ]
 }

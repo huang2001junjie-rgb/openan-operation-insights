@@ -1,0 +1,318 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-11-03T03:40:00.599Z",
+  "data": [
+    {
+      "accountId": "557058:822eb146-7cd1-4d0a-8772-22d2773be7c5",
+      "requirementTitle": "Independent Code Repository for Prompt Template Hosting",
+      "pageId": "1163362317",
+      "pageTitle": "Requirement Proposal",
+      "release": "OpenAN 26.12",
+      "rowIndex": 12
+    },
+    {
+      "accountId": "557058:822eb146-7cd1-4d0a-8772-22d2773be7c5",
+      "requirementTitle": "High-Value Scenario Prompt Template Definition",
+      "pageId": "1163362317",
+      "pageTitle": "Requirement Proposal",
+      "release": "OpenAN 26.12",
+      "rowIndex": 20
+    },
+    {
+      "accountId": "557058:822eb146-7cd1-4d0a-8772-22d2773be7c5",
+      "requirementTitle": "Support Agent Registration for Different Layers",
+      "pageId": "1163362317",
+      "pageTitle": "Requirement Proposal",
+      "release": "OpenAN 26.12",
+      "rowIndex": 25
+    },
+    {
+      "accountId": "557058:822eb146-7cd1-4d0a-8772-22d2773be7c5",
+      "requirementTitle": "Agent Framework：Carrier-Grade High-Reliability Architecture",
+      "pageId": "1163362317",
+      "pageTitle": "Requirement Proposal",
+      "release": "OpenAN 26.12",
+      "rowIndex": 28
+    },
+    {
+      "accountId": "5da82cb11a43fe0ddbb47e83",
+      "requirementTitle": "Registry Center Supports Heterogeneous Database Adaptation Access",
+      "pageId": "1163362317",
+      "pageTitle": "Requirement Proposal",
+      "release": "OpenAN 26.12",
+      "rowIndex": 1
+    },
+    {
+      "accountId": "5da82cb11a43fe0ddbb47e83",
+      "requirementTitle": "Orchestration Center Supports BPMN Workflow Export",
+      "pageId": "1163362317",
+      "pageTitle": "Requirement Proposal",
+      "release": "OpenAN 26.12",
+      "rowIndex": 2
+    },
+    {
+      "accountId": "5da82cb11a43fe0ddbb47e83",
+      "requirementTitle": "Registry Center Supports Third-Party Integration",
+      "pageId": "1163362317",
+      "pageTitle": "Requirement Proposal",
+      "release": "OpenAN 26.12",
+      "rowIndex": 3
+    },
+    {
+      "accountId": "5da82cb11a43fe0ddbb47e83",
+      "requirementTitle": "Registry Center Supports Third-Party Database Access",
+      "pageId": "1163362317",
+      "pageTitle": "Requirement Proposal",
+      "release": "OpenAN 26.12",
+      "rowIndex": 4
+    },
+    {
+      "accountId": "5da82cb11a43fe0ddbb47e83",
+      "requirementTitle": "Registry Center Supports Agent Heartbeat Detection and Change Broadcast",
+      "pageId": "1163362317",
+      "pageTitle": "Requirement Proposal",
+      "release": "OpenAN 26.12",
+      "rowIndex": 5
+    },
+    {
+      "accountId": "5da82cb11a43fe0ddbb47e83",
+      "requirementTitle": "Registry Center Supports Independent Management Frontend",
+      "pageId": "1163362317",
+      "pageTitle": "Requirement Proposal",
+      "release": "OpenAN 26.12",
+      "rowIndex": 7
+    },
+    {
+      "accountId": "5da82cb11a43fe0ddbb47e83",
+      "requirementTitle": "Support Agent Role-Based Orchestration with Instance Mapping at Execution Time",
+      "pageId": "1163362317",
+      "pageTitle": "Requirement Proposal",
+      "release": "OpenAN 26.12",
+      "rowIndex": 8
+    },
+    {
+      "accountId": "5da82cb11a43fe0ddbb47e83",
+      "requirementTitle": "Support Ontology Construction (Key Step Knowledge for SPG, etc.)",
+      "pageId": "1163362317",
+      "pageTitle": "Requirement Proposal",
+      "release": "OpenAN 26.12",
+      "rowIndex": 9
+    },
+    {
+      "accountId": "5da82cb11a43fe0ddbb47e83",
+      "requirementTitle": "Support Sandbox-Level Verification in the Orchestration Center with Stub Default Agent Verification",
+      "pageId": "1163362317",
+      "pageTitle": "Requirement Proposal",
+      "release": "OpenAN 26.12",
+      "rowIndex": 10
+    },
+    {
+      "accountId": "5da82cb11a43fe0ddbb47e83",
+      "requirementTitle": "Provide a Unified Web Framework (Pluggable Portal)",
+      "pageId": "1163362317",
+      "pageTitle": "Requirement Proposal",
+      "release": "OpenAN 26.12",
+      "rowIndex": 11
+    },
+    {
+      "accountId": "5da82cb11a43fe0ddbb47e83",
+      "requirementTitle": "Support Agent Registration for Different Layers",
+      "pageId": "1163362317",
+      "pageTitle": "Requirement Proposal",
+      "release": "OpenAN 26.12",
+      "rowIndex": 25
+    },
+    {
+      "accountId": "5da82cb11a43fe0ddbb47e83",
+      "requirementTitle": "Support Layer Based Orchestration Constraints",
+      "pageId": "1163362317",
+      "pageTitle": "Requirement Proposal",
+      "release": "OpenAN 26.12",
+      "rowIndex": 26
+    },
+    {
+      "accountId": "5da82cb11a43fe0ddbb47e83",
+      "requirementTitle": "Multi Agent Workflow Engine SDK",
+      "pageId": "1163362317",
+      "pageTitle": "Requirement Proposal",
+      "release": "OpenAN 26.12",
+      "rowIndex": 27
+    },
+    {
+      "accountId": "5da82cb11a43fe0ddbb47e83",
+      "requirementTitle": "Observability SDK &mdash; Three-Layer Observability for Multi-Agent Collaboration",
+      "pageId": "1163362317",
+      "pageTitle": "Requirement Proposal",
+      "release": "OpenAN 26.12",
+      "rowIndex": 30
+    },
+    {
+      "accountId": "5e58b7c15a495e0c91a94b44",
+      "requirementTitle": "Create &ldquo;Participants&rdquo; page for OpenAN partners",
+      "pageId": "1163362317",
+      "pageTitle": "Requirement Proposal",
+      "release": "OpenAN 26.12",
+      "rowIndex": 15
+    },
+    {
+      "accountId": "5e58b7c15a495e0c91a94b44",
+      "requirementTitle": "Add a &ldquo;Best Practice&rdquo; page to show case",
+      "pageId": "1163362317",
+      "pageTitle": "Requirement Proposal",
+      "release": "OpenAN 26.12",
+      "rowIndex": 16
+    },
+    {
+      "accountId": "5e58b7c15a495e0c91a94b44",
+      "requirementTitle": "Add an &ldquo;OpenAN Experience Lab&rdquo; to show the featrues and Valueable scenario of OpenAN",
+      "pageId": "1163362317",
+      "pageTitle": "Requirement Proposal",
+      "release": "OpenAN 26.12",
+      "rowIndex": 17
+    },
+    {
+      "accountId": "5e58b7c15a495e0c91a94b44",
+      "requirementTitle": "OpenAN Demo Project for Typical High-Value Scenario",
+      "pageId": "1163362317",
+      "pageTitle": "Requirement Proposal",
+      "release": "OpenAN 26.12",
+      "rowIndex": 18
+    },
+    {
+      "accountId": "5e58b7c15a495e0c91a94b44",
+      "requirementTitle": "System-Level Installation and Deployment Tooling for OpenAN",
+      "pageId": "1163362317",
+      "pageTitle": "Requirement Proposal",
+      "release": "OpenAN 26.12",
+      "rowIndex": 19
+    },
+    {
+      "accountId": "712020:a0730888-323b-4928-80e4-fd39f1999b8d",
+      "requirementTitle": "Registry Center Supports Knowledge Graph Management and Semantic Retrieval Enhancement",
+      "pageId": "1163362317",
+      "pageTitle": "Requirement Proposal",
+      "release": "OpenAN 26.12",
+      "rowIndex": 6
+    },
+    {
+      "accountId": "712020:c719c77b-af77-4430-9760-4cd1ef4278c3",
+      "requirementTitle": "A2A-T Collaboration Observability",
+      "pageId": "1163362317",
+      "pageTitle": "Requirement Proposal",
+      "release": "OpenAN 26.12",
+      "rowIndex": 13
+    },
+    {
+      "accountId": "712020:c8c42c7b-07b4-4fcc-9b31-d9e2c7210713",
+      "requirementTitle": "Agent Framework：Carrier-Grade High-Reliability Architecture",
+      "pageId": "1163362317",
+      "pageTitle": "Requirement Proposal",
+      "release": "OpenAN 26.12",
+      "rowIndex": 28
+    },
+    {
+      "accountId": "712020:c8f0d540-db5e-42ed-a79a-611184462341",
+      "requirementTitle": "Create Test Automation Framework for Testing A2A-T SDK, Registry Center and Orchestration Center",
+      "pageId": "1163362317",
+      "pageTitle": "Requirement Proposal",
+      "release": "OpenAN 26.12",
+      "rowIndex": 14
+    },
+    {
+      "accountId": "712020:c8f0d540-db5e-42ed-a79a-611184462341",
+      "requirementTitle": "Add an Observability framework to OpenAN project",
+      "pageId": "1163362317",
+      "pageTitle": "Requirement Proposal",
+      "release": "OpenAN 26.12",
+      "rowIndex": 24
+    },
+    {
+      "accountId": "712020:eb69db15-9d15-4a5f-bcd0-2b95a967bf3b",
+      "requirementTitle": "Independent Code Repository for Prompt Template Hosting",
+      "pageId": "1163362317",
+      "pageTitle": "Requirement Proposal",
+      "release": "OpenAN 26.12",
+      "rowIndex": 12
+    },
+    {
+      "accountId": "712020:eb69db15-9d15-4a5f-bcd0-2b95a967bf3b",
+      "requirementTitle": "A2A-T Collaboration Observability",
+      "pageId": "1163362317",
+      "pageTitle": "Requirement Proposal",
+      "release": "OpenAN 26.12",
+      "rowIndex": 13
+    },
+    {
+      "accountId": "712020:eb69db15-9d15-4a5f-bcd0-2b95a967bf3b",
+      "requirementTitle": "High-Value Scenario Prompt Template Definition",
+      "pageId": "1163362317",
+      "pageTitle": "Requirement Proposal",
+      "release": "OpenAN 26.12",
+      "rowIndex": 20
+    },
+    {
+      "accountId": "712020:eb69db15-9d15-4a5f-bcd0-2b95a967bf3b",
+      "requirementTitle": "Enhancement of Negotiation Supporting",
+      "pageId": "1163362317",
+      "pageTitle": "Requirement Proposal",
+      "release": "OpenAN 26.12",
+      "rowIndex": 21
+    },
+    {
+      "accountId": "712020:eb69db15-9d15-4a5f-bcd0-2b95a967bf3b",
+      "requirementTitle": "Supporting for TMF IG1453 v2.1 Authorization-T",
+      "pageId": "1163362317",
+      "pageTitle": "Requirement Proposal",
+      "release": "OpenAN 26.12",
+      "rowIndex": 22
+    },
+    {
+      "accountId": "712020:eb69db15-9d15-4a5f-bcd0-2b95a967bf3b",
+      "requirementTitle": "Enhancing A2A‑T Semantic Alignment Based on Ontology",
+      "pageId": "1163362317",
+      "pageTitle": "Requirement Proposal",
+      "release": "OpenAN 26.12",
+      "rowIndex": 23
+    },
+    {
+      "accountId": "712020:f2d4beb5-2f11-47ca-8063-348bc8ab896f",
+      "requirementTitle": "OpenAN Demo Project for Typical High-Value Scenario",
+      "pageId": "1163362317",
+      "pageTitle": "Requirement Proposal",
+      "release": "OpenAN 26.12",
+      "rowIndex": 18
+    },
+    {
+      "accountId": "712020:f2d4beb5-2f11-47ca-8063-348bc8ab896f",
+      "requirementTitle": "System-Level Installation and Deployment Tooling for OpenAN",
+      "pageId": "1163362317",
+      "pageTitle": "Requirement Proposal",
+      "release": "OpenAN 26.12",
+      "rowIndex": 19
+    },
+    {
+      "accountId": "712020:fd6a8616-70b4-4ce8-b65a-01ca4856875e",
+      "requirementTitle": "Create &ldquo;Participants&rdquo; page for OpenAN partners",
+      "pageId": "1163362317",
+      "pageTitle": "Requirement Proposal",
+      "release": "OpenAN 26.12",
+      "rowIndex": 15
+    },
+    {
+      "accountId": "712020:fd6a8616-70b4-4ce8-b65a-01ca4856875e",
+      "requirementTitle": "Add a &ldquo;Best Practice&rdquo; page to show case",
+      "pageId": "1163362317",
+      "pageTitle": "Requirement Proposal",
+      "release": "OpenAN 26.12",
+      "rowIndex": 16
+    },
+    {
+      "accountId": "712020:fd6a8616-70b4-4ce8-b65a-01ca4856875e",
+      "requirementTitle": "Add an &ldquo;OpenAN Experience Lab&rdquo; to show the featrues and Valueable scenario of OpenAN",
+      "pageId": "1163362317",
+      "pageTitle": "Requirement Proposal",
+      "release": "OpenAN 26.12",
+      "rowIndex": 17
+    }
+  ]
+}

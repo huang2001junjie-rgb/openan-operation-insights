@@ -53,6 +53,7 @@ flowchart TB
 | `OrganizationModule` | `OrganizationController` | `OrganizationService` | `ORGANIZATION_PORT`、`CONTRIBUTION_PORT`、`CONTRIBUTOR_CONTRIBUTION_PORT`、`WIKI_PORT`、`CONFLUENCE_ACCOUNT_PORT` | 组织档案与筛选；`scope=contributing` 需同时取 GitHub 组织级 + 账号级 top3 + Confluence 两维度 |
 | `ActivityModule` | `ActivityController` | `ActivityService` | `CONTRIBUTION_PORT`、`CONTRIBUTOR_CONTRIBUTION_PORT`、`REPO_CONTRIBUTION_PORT`、`WIKI_PORT`、`CONFLUENCE_ACCOUNT_PORT` | 贡献明细、成果洞察、贡献聚合、**仓库维度**；通用排序 / `limit` 在此层（`repo-contributions` 除外，见 4.1） |
 | `IdentityModule` | `IdentityController` 等 | `PersonService` / `CandidateService` / `OrgRosterService` / `IdentityAuditService` | —（**直接注入仓储**，不经端口） | 身份控制台：自然人 / 认领边 / 候选人 / 花名册 / 审计 |
+| `PersonModule` | `PersonController` | `PersonInsightService` | —（**直接注入仓储**，不经端口，同 IdentityModule 先例） | 个人模式（ADR-0020）：统一画像 / GitHub 事件明细 / Confluence 需求明细 / 候选池，**全部读时派生**（04 §5.3.19～22） |
 | `SummitModule` | `SummitController` | `SummitService` | `SUMMIT_PORT` | 峰会列表、时间线、详情 |
 | `MeetingModule` | `MeetingController` | `MeetingService` | `MEETING_ATTENDANCE_PORT` | 例会参会矩阵（**纯透传**，无口径计算） |
 | `ProvidersModule` | — | — | — | 集中声明所有端口 Token → 适配器类的绑定；当前**九个**端口**恒为 JSON 实现**，采集不经此切换（见 2.3 节） |
@@ -435,6 +436,7 @@ export interface JsonRepository<T> {
 | `data/github-accounts.json` | `GithubAccount[]`（**账号档案**：展示名 / 头像 / `githubId` / 采集口径 `orgId` + 指标快照） | 低 | 数十条（现 40） | 🟡 只取展示与归属字段；`github` 指标与 `repoIds` 是**基线快照**（见 06 §2） |
 | `data/github-organizations.json` | `OrganizationContribution[]`（**基线快照**） | 低（阶段三为定时采集） | 现 4 桶 | ⛔ **接口不读**（ADR-0017 后读路径改事件派生） |
 | `data/confluence-accounts.json` | `ConfluenceAccount[]` | 低 | 现 23 条 | ✅ `WIKI_PORT` / `CONFLUENCE_ACCOUNT_PORT` 派生源 |
+| **`data/confluence-requirements.json`** | `ConfluenceRequirementEvent[]`（**需求行级原子事实**，ADR-0021；`schemaVersion` **1**，幂等键 `pageId+rowIndex+accountId`） | 低（与 `collect:wiki` 同轮） | 数十～数百 | ✅ 唯一读路径 `PersonInsightService` 需求明细（04 §5.3.21）；**缺失 = 「待采集」**（读侧降级空数组 + `updatedAt=null`，非 `50001`） |
 | `data/confluence-organizations.json` | `OrganizationWiki[]`（**基线快照**） | 低 | 现 1 桶 | ⛔ **接口不读**（ADR-0010 后改账号级派生） |
 | `data/persons.json` / `identity-claims.json` | 自然人档案 / 认领边 | 中（身份控制台可写） | 现 29 / 46 条 | ✅ 生效归属的第一优先级（`buildGithubClaimIndex`） |
 | `data/summits.json` | `SummitDetail[]` | 极低 | 十余条 | ✅ `SUMMIT_PORT` |
@@ -596,6 +598,7 @@ export class ListSummitsQueryDto {
 | `40400` | 404 | `RESOURCE_NOT_FOUND` | 通用资源不存在 | 展示空态 |
 | `40401` | 404 | `ORGANIZATION_NOT_FOUND` | 组织不存在 | 展示空态 + 返回列表 |
 | `40402` | 404 | `SUMMIT_NOT_FOUND` | 峰会不存在 | 展示空态 + 返回时间线 |
+| `40403` | 404 | `PERSON_NOT_FOUND` | **自然人不存在**（`/api/person-*`，ADR-0020；账号键不存在**不**走此码，返回空结果） | 展示空态 + 返回候选选择 |
 | `50000` | 500 | `INTERNAL_ERROR` | 未预期错误 | 展示错误态 + 重试 |
 | `50001` | 500 | `DATA_CORRUPTED` | JSON 文件结构/版本校验失败 | 展示"数据维护中" |
 | `50002` | 500 | `DATA_WRITE_FAILED` | 数据写入失败 | 提示重试 |
@@ -614,7 +617,7 @@ export class ListSummitsQueryDto {
 | 级别 | `error`（影响功能）、`warn`（可降级）、`log`（关键流程）、`debug`（开发期细节，生产关闭） |
 | 请求日志 | 记录 `method`、`path`、`status`、`durationMs`；**不记录**请求体全文与查询串完整值（避免敏感信息） |
 | 数据访问 | 记录文件名与记录条数，如 `loaded github-organizations.json (23 records)`，**不 dump 内容** |
-| 启动自检（`RepositoriesModule`） | 逐个 `read()` 十一个业务 JSON 文件：全部通过 → `log` 一行清单；有失败 → `warn` 汇总（降级只读，不阻断启动）。⚠️ **分级**：`github-events.json` **文件缺失**属预期状态（首次采集前必然缺失）→ 只 `warn` 并提示「请先运行 `npm run collect:github:full -w @openan/api`」；其余失败（结构 / `schemaVersion` 不符）→ `error` 单条 + `warn` 汇总。对应接口在缺失时返回 `50001`（宁可暴露，不静默为 0） |
+| 启动自检（`RepositoriesModule`） | 逐个 `read()` 十二个业务 JSON 文件：全部通过 → `log` 一行清单；有失败 → `warn` 汇总（降级只读，不阻断启动）。⚠️ **分级**（三个「待采集」文件缺失属预期状态 → 只 `warn` 并提示下一步动作）：`github-events.json` / `github-releases.json`（首次 `collect:github:full` 前必然缺失，对应接口返回 `50001`，宁可暴露不静默为 0）与 `confluence-requirements.json`（ADR-0021，重跑 `collect:wiki` 前可能缺失，**对应接口不报错**：降级空数组 + `updatedAt=null` 待采集空态）——三者的下游语义不同，WARN 文案分别注明；其余失败（结构 / `schemaVersion` 不符）→ `error` 单条 + `warn` 汇总 |
 | 外部调用（`collector/`） | 记录目标资源标识与状态码（如 `GET /repos/openan/x/pulls → 200`），**严禁**记录 Token、Authorization 头、完整响应体 |
 | 异常日志 | 未预期异常记录完整堆栈与请求上下文（路径、参数键名），不回传客户端 |
 | 禁止项 | 任何凭据、个人身份信息、完整数据文件内容 |
@@ -729,7 +732,7 @@ sequenceDiagram
 | 例会矩阵透传 | 单元测试 | `attendance.length !== columns.length` 时抛 `DATA_CORRUPTED`；返回结果保持原序、不被加工 |
 | Controller | e2e 测试（`supertest`） | 参数校验拒绝未知字段、错误码正确、响应信封结构 |
 | 契约一致性 | 类型级校验 | Service 返回类型与 04 文档契约字段逐项对齐（Code Review 清单） |
-| **离线自检脚本**（`apps/api/scripts/`，无需网络 / 无需 token；先 `npm run build -w @openan/api`） | `npm run collect:github:check -w @openan/api`（`collector-check.mjs`，**76** 断言）、`identity:check`（`identity-check.mjs`，**68**）、`collect:wiki:check`（**73**） | 以 `GITHUB_FIXTURE` 跑通采集 → 落盘 → 读路径全链路；⭐ 关键约束是**写读一致性**：脚本直接 `import` 编译产物 `dist/repositories/validators.js` 的 `isGithubContributionEventArray` 校验**落盘结果**（而不是只查字段形状），否则「采集侧写出、读侧拒收」这类缺陷会静默通过——场景 **[7] Bot / 无作者** 即为此而加（临时 fixture + **负向对照**），场景 **[8] 缺时间戳整条拒绝**（ADR-0018）同为此类：另造三条记录的 fixture（有 ts / `null` / 空串），断言只落 1 条事件、聚合只吃 timed、游标 `untimedEvents === 2` 且 `recordCount === 3`、`WARN` 含累计数与样例。⚠️ 脚本内的 **D1 恒等式比对只在全量口径下成立**（基线快照 `github-organizations.json` 不带区间）；区间口径下的恒等式归 `identity-check` 场景 **[7]** |
+| **离线自检脚本**（`apps/api/scripts/`，无需网络 / 无需 token；先 `npm run build -w @openan/api`） | `npm run collect:github:check -w @openan/api`（`collector-check.mjs`，**76** 断言）、`identity:check`（`identity-check.mjs`，**68**）、`collect:wiki:check`（**91**，含 ADR-0021 需求级事实）、`person:check`（`person-check.mjs`，**66**，ADR-0020/0021 个人模式端点） | 以 `GITHUB_FIXTURE` 跑通采集 → 落盘 → 读路径全链路；⭐ 关键约束是**写读一致性**：脚本直接 `import` 编译产物 `dist/repositories/validators.js` 的 `isGithubContributionEventArray` 校验**落盘结果**（而不是只查字段形状），否则「采集侧写出、读侧拒收」这类缺陷会静默通过——场景 **[7] Bot / 无作者** 即为此而加（临时 fixture + **负向对照**），场景 **[8] 缺时间戳整条拒绝**（ADR-0018）同为此类：另造三条记录的 fixture（有 ts / `null` / 空串），断言只落 1 条事件、聚合只吃 timed、游标 `untimedEvents === 2` 且 `recordCount === 3`、`WARN` 含累计数与样例。⚠️ 脚本内的 **D1 恒等式比对只在全量口径下成立**（基线快照 `github-organizations.json` 不带区间）；区间口径下的恒等式归 `identity-check` 场景 **[7]** |
 
 **测试替身约定**：`InMemoryContributionProvider` 等内存实现放在 `test/` 下，**不得**进入 `providers/` 目录，避免与生产适配器混淆。
 
@@ -750,4 +753,4 @@ sequenceDiagram
 - [ ] `ValidationPipe` 开启 `whitelist` + `forbidNonWhitelisted` + `transform`
 - [ ] JSON 写入使用临时文件 + `rename` 原子替换，且按文件串行
 - [ ] 日志中不含任何凭据与完整数据内容
-- [ ] 启动期校验 `DATA_DIR` 存在且**十一个**业务 JSON 文件结构合法（含 `github-events.json`）；缺文件按分级日志（事件文件缺失 → WARN + 下一步提示，其余 → ERROR），且**不阻断启动**（降级只读，由接口返回 `50001`）
+- [ ] 启动期校验 `DATA_DIR` 存在且**十二个**业务 JSON 文件结构合法（含 `github-events.json` / `github-releases.json` / `confluence-requirements.json`）；缺文件按分级日志（三个「待采集」文件缺失 → WARN + 下一步提示，其余 → ERROR），且**不阻断启动**（降级只读，缺失语义分接口：GitHub 侧 `50001`，需求事实待采集空态）

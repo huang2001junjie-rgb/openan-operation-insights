@@ -116,12 +116,13 @@ Routes 结构示意（实现时以此为准）：
 
 | # | 区块 | 组件 | 说明 |
 | --- | --- | --- | --- |
-| 0 | 活跃来源切换器 | `ActivitySourceSwitcher` | **紧贴 Navbar 下方**的分段控件，切换 GitHub / Confluence 两套口径；状态写入 URL query `?source=github\|confluence`（默认 `github`），可分享、刷新不丢 |
-| 1 | 筛选概览栏 | `ActivityFilters` | **起止日期框 + 三个预设按钮（全部时间 / 本年 / 近 90 天）**、组织多选、仓库多选、重置、导出按钮。⚠️ 区间**默认全空 ≡ 全量口径**（ADR-0018，见 §4.2「时间区间筛选」）；Confluence 视图下整块区间筛选器**禁用**并换成说明文案 |
-| 2 | 个人贡献排行 | `ContributorRankCard` | 头像列表 + 指标切换（合并 PR / 提交数 / Issue / 代码行数），默认按提交数取 Top 8（ADR-0004） |
-| 3 | 组织贡献分布 | `ContributionCompositionCard` | 环形图，按提交数统计各组织占比，**列出全部参与组织**，中心显示提交总量（ADR-0013，修订 ADR-0003） |
-| 4 | 贡献明细表格 | `ContributionDetailTable` | 组织 × 指标矩阵，**全量组织**各占一行，表头排序 |
-| 5 | 页脚 | `AppFooter` | 数据更新时间 |
+| 0 | 视角模式切换 | `Segmented` | **最顶行**的分段控件（`Segmented`），切换**组织视角 / 个人视角**（ADR-0020）；状态写入 URL query `?mode=person`（默认组织视角，参数缺省），replace 语义。个人模式下隐藏活跃来源切换器与筛选栏，只渲染个人面板；返回组织视角时清理 `person` / `account` / `acctSrc` 参数 |
+| 1 | 活跃来源切换器 | `ActivitySourceSwitcher` | **组织视角下紧贴视角切换行**的分段控件，切换 GitHub / Confluence 两套口径；状态写入 URL query `?source=github\|confluence`（默认 `github`），可分享、刷新不丢 |
+| 2 | 筛选概览栏 | `ActivityFilters` | **起止日期框 + 三个预设按钮（全部时间 / 本年 / 近 90 天）**、组织多选、仓库多选、重置、导出按钮。⚠️ 区间**默认全空 ≡ 全量口径**（ADR-0018，见 §4.2「时间区间筛选」）；Confluence 视图下整块区间筛选器**禁用**并换成说明文案 |
+| 3 | 个人贡献排行 | `ContributorRankCard` | 头像列表 + 指标切换（合并 PR / 提交数 / Issue / 代码行数），默认按提交数取 Top 8（ADR-0004） |
+| 4 | 组织贡献分布 | `ContributionCompositionCard` | 环形图，按提交数统计各组织占比，**列出全部参与组织**，中心显示提交总量（ADR-0013，修订 ADR-0003） |
+| 5 | 贡献明细表格 | `ContributionDetailTable` | 组织 × 指标矩阵，**全量组织**各占一行，表头排序 |
+| 6 | 页脚 | `AppFooter` | 数据更新时间 |
 
 ### 4.2 字段清单
 
@@ -195,6 +196,30 @@ Routes 结构示意（实现时以此为准）：
 - 导出按钮本期调用 `console` 级别的占位实现（在 UI 上标注"即将支持"），后续接后端导出接口。
 - 个人排行卡使用**独立**的 `isLoading` / `isError` / `onRetry`：个人接口失败只在卡内提示并可单独重试，不阻塞同页环形图与明细表（延续 3.3 的区块级错误约定）。
 - 个人排行头像为 `<img loading="lazy">`，`avatarUrl` 缺失或触发 `onError` 时切换为首字母色块；占比条宽度随指标切换做 700ms 缓动，并在系统「减少动态效果」偏好下取消过渡。
+
+### 4.4 个人模式（`?mode=person`，ADR-0020）
+
+组织视角之外，活跃度页提供**个人视角**：回答「这个人干得怎么样」——跨来源合并到自然人（GitHub + Confluence 双账号、Confluence-only 外包、未认领游离账号、bot）。
+
+**结构**（自上而下，`PersonModePanel`）：
+
+1. **个人面板工具卡**：实体选择器（`PersonEntityPicker`，原生 `<select>` optgroup 分组：自然人 / GitHub 账号 / Confluence 账号；账号条目标注未认领 / 多认领 / bot）+ 起止日期 + 三个预设（全部时间 / 本年 / 近 90 天）。选择状态编码进 URL（`?mode=person&person={id}` 或 `&account={key}&acctSrc=github|confluence`），可深链分享。
+2. **自然人画像卡**（`PersonProfileCard`，仅选自然人）：头像 + 生效组织徽标（`orgName` 为空显示「未归属」，附 `orgSource` 归属口径说明）→ GitHub 指标瓦片（合并 PR / 提交 / Issue / 代码行 / **参与仓库并集**）+ 仓库分解表 → Confluence 指标瓦片（需求 / 议题分享 / 编辑，**「全历史」角标**）→ **名下账号分解**（GitHub 表带 bot 徽标与生效组织列；Confluence 表同理）。
+3. **GitHub 事件明细卡**（`PersonGithubEventsCard`）：时间 / 类型 / 事件（后端派生 `url` 深链，`_blank` + `noopener`）/ 提交 / 代码行；截断时底部显式提示「仅展示前 N 条（共 M 条）：收窄时间区间可看到更多」。
+4. **Confluence 需求事实卡**（`PersonConfluenceRequirementsCard`）：需求 / Release（解析不到显式「—」，带 `title` 说明）/ 所在页（读时 `url` 深链）/ 行号 / 账号；**待采集空态**——`updatedAt=null`（文件缺失）时渲染「Confluence 需求事实待采集：运行 collect:wiki 后可用」，不报错。
+
+**口径与请求纪律**：
+
+| 项 | 前端行为 |
+| --- | --- |
+| 只读渲染 | 四个 `/api/person-*` 端点全部**服务端读时派生**（`PersonInsightService`），前端**只渲染、不重算、不二次聚合**；人物级四项 ≡ 名下账号求和、仓库并集、仓库分解合计 ≡ 指标等恒等式由后端保证（`person-check` 66 项断言守护） |
+| 视图分流 | 选自然人 → 画像卡 + 两类明细卡全渲染；选 GitHub 账号 → 只渲染 GitHub 事件卡；选 Confluence 账号 → 只渲染需求事实卡 |
+| 请求开关 | 个人模式下组织视图的全部查询 `enabled=false`（`isOrgMode` 门控：contributions / summary / contributorContributions / confluenceAccounts / wiki / repoContributions）；明细查询按选中实体类型门控（未选中不请求） |
+| 区间作用域 | 面板内时间区间**只作用于 GitHub 事件明细**（半开 `[from, to)`，与组织模式同一翻译出口 `rangeStartInstant` / `rangeEndInstant`）：画像是全历史累计、Confluence 事实恒全历史（无时间维度），同页不设第二套口径。工具卡底部有口径说明文案 |
+| 缓存键 | `queryKeys.person*`：`personCandidates` 5 分钟 staleTime；画像 / 事件 / 事实各自带完整参数（`personId` / `account` / `from` / `to` / `limit`）入 key |
+| 失效联动 | 身份认领写操作统一失效 `['identity']` 与 `['person']` 两个 query 前缀（`useIdentity.invalidateIdentity`）——认领 / 解除 / 改归属后画像、候选池、明细即时联动，无需手动刷新 |
+| 错误语义 | 区块级错误（沿用 3.3 约定）：自然人不存在 → 后端 `40403`（`PERSON_NOT_FOUND`），卡内失败态可单独重试；需求事实文件缺失**不是错误**（`updatedAt=null` 待采集空态） |
+| 选择器 | 候选池 = 有任一来源贡献的自然人 + 全部账号（含未认领 / 多认领 / bot）；`githubId→login` 映射由服务端读时完成，前端直接用 `accountKey` |
 
 ---
 

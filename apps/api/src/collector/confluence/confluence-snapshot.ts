@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { CONFLUENCE_SNAPSHOT_DIR } from './confluence.constants';
 import { buildConfluenceReport } from './confluence-report';
 import type { ConfluencePageRecord } from './confluence-source.port';
+import type { ConfluenceRequirementEvent } from '../../contract/entities';
 
 /** 快照里附带的抽取结果（行级事实）—— 口径变了可以据此比对，而不必翻正文 */
 export interface ConfluenceSnapshotDerived {
@@ -14,6 +15,8 @@ export interface ConfluenceSnapshotDerived {
    * 编辑量是**全空间**口径（不止需求页/纪要页），故单独留一份；含创建那一次。
    */
   pageEdits: Array<{ pageId: string; title: string; editors: string[] }>;
+  /** 需求级事实（ADR-0021）：与 confluence-requirements.json 同一份，快照留档便于口径复核 */
+  requirementFacts: ConfluenceRequirementEvent[];
 }
 
 /**

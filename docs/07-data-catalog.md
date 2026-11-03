@@ -52,6 +52,10 @@ flowchart LR
 | A7 | Confluence 账号级明细 | 账号 × 三个维度（需求 / 议题分享 / 编辑）的明细，供 Confluence 视图个人区块与候选池取数。⚠️ **恒为全量口径**（同 A3）：`confluence-accounts.json`（v4，23 账号）落的是账号级**累计计数**，无日期字段，故 Confluence 个人榜是「全历史累计」而非「当前区间」（前端榜卡文案已注明）。⚠️ 与 A2（GitHub 个人榜，区间**生效**、区间内无事件者整行不出参）口径**不同**，两者不可直接横向比数 | ✅ | 外部 API（同 A3，落后 `confluence-accounts.json`） |
 | A8 | 活跃来源切换 | 顶部切换 GitHub / Confluence 两套口径，状态写入 URL `?source=` | ➖ | 派生（前端） |
 | A9 | 仓库维度贡献 | 以**仓库**为维度并列展示 GitHub 贡献（已合并 PR / PR 内提交 / Issue / 代码量 + **参与人数** + **参与组织数**），与 A1（组织）、A2（个人）**同源于事件明细**，三段数字恒等可互核；端点 `GET /api/repo-contributions`（04 §5.3.17），刻意不接受 `repoIds` / `orgIds`（行指标不随筛选变化，前端客户端过滤）。⚠️ **必须跟随 A6 区间**（ADR-0018 决策 6）：只让两段切片会让同一页面上两个不同区间的合计互不相等；区间收紧后行数变少，前端把已勾选但区间内无活动的仓库**保留为候选**并标注「区间内无活动」 | ✅ | 派生（P9 事件明细 + P2 档案 + P6 认领边 + P5 自然人；区间入 query key） |
+| A10 | 个人模式 · 自然人统一画像 | 视角切换为「个人」后的画像卡：一个自然人的 GitHub 四项聚合 + 仓库 **`repoIds` 并集**（非求和，ADR-0020 决策 2）+ 仓库分解 + Confluence 三项（恒全历史）+ 名下账号逐个分解（含 bot 徽标、生效归属）。⚠️ 全部数字**服务端读时派生**（`/api/person-contributions`，04 §5.3.19），前端只展示；`from` / `to` 接受但**不切片**（区间只作用于 A11，避免同页两套口径）。未认领 / 多认领账号不在此卡（走 A13 → A11 / A12） | ✅ | 派生（P9 + P2 + **P10** + P6 + P5 + P1） |
+| A11 | 个人模式 · GitHub 事件明细 | 自然人的**名下账号（many-to-many 全并）事件并集**或单账号事件流，半开区间 `[from, to)` 读时切片（A6 同谓词），`timestamp` 倒序 + `limit` 截断 + `truncated` 显式标记；`url` 读时派生深链（`…/pull/{n}` / `…/issues/{n}`）。自然人不存在 → `40403`（`PERSON_NOT_FOUND`） | ✅ | 派生（P9 + P2 + P6 + P5） |
+| A12 | 个人模式 · Confluence 需求事实 | 需求行级事实明细（谁在哪页哪行被 @ 为联系人），**恒全历史**（需求行无内在日期，ADR-0021 决策 3）；`release` 解析不到显式「—」不 guess；页面 URL 不采不落，由读时按 `confluence.baseUrl + pageId` 拼；**文件缺失（首次 `collect:wiki` 前）不是错误**：降级空数组 + `updatedAt=null`，前端「待采集」空态 | ✅ | 派生（**P10** + Confluence 账号档案 + P6 + P5） |
+| A13 | 个人模式 · 候选池与视角切换 | 顶部「组织视角 / 个人视角」Segmented（URL `?mode=person` 可深链）；候选池 = 有任一来源贡献的自然人 + **全部**来源账号（含未认领 / 多认领 / bot，认领 many-to-many 全列）；候选集与区间无关。⚠️ GitHub 认领键为 `githubId`、候选按 `login` 键控，服务读时建 `githubId→login` 映射（档案为主、事件作者兜底） | ✅ | 派生（P5 + P6 + P2 + Confluence 账号档案 + P9） |
 
 ### 1.3 社区参展 `/summits`
 
@@ -82,6 +86,7 @@ flowchart LR
 | P7 | 身份候选池 | 待认领 / 已认领的来源账号池，按来源分组 | ➖ | 派生（P2 贡献者 + M1 例会列名 + Confluence 来源） |
 | P8 | 组织花名册 | 各组织下的开发者清单与人数 | ➖ | 派生（P5 的 `orgId` 分组，非落盘） |
 | P9 | GitHub 事件明细 | **GitHub 侧唯一原子事实**：一条事件 = 一个已合并 PR 或一条 Issue（幂等键 `kind + repository + number`），带作者快照 / 代码量 / 提交数 / **事件时间戳**。组织级（A1）、账号级（A2）、仓库级（A9）三段数字全部由它读时派生。⚠️ `schemaVersion` **2** 起 `timestamp` **必填**（PR 取 `mergedAt`、Issue 取 `createdAt`）——它是 A6 区间口径的唯一切片依据；缺时间的记录在**采集期整条拒绝**（不落盘、不进聚合）+ `WARN` + 游标 `untimedEvents` 累计（ADR-0018 决策 4）。⚠️ **恒存全量**：区间是读时切片，事件不带任何区间属性。⚠️ **刻意不在 `seed-data/`**：首次 `collect:github:full` 之前磁盘上不存在，GitHub 侧派生端点一律返回 `50001`（启动自检只 WARN） | ✅ | 外部 API（GitHub GraphQL；full 整体替换 / incremental 按幂等键追加；存量数据 `npm run migrate:github-events-v2` 抬信封） |
+| P10 | Confluence 需求级事实 | **需求行原子事实**（ADR-0021）：Requirement Proposal 页表格「Contacts」列的 @ 提及 × 所在需求行，一行一条；幂等键 `pageId+rowIndex+accountId`（行内同账号重复提及只记一条），按 `pageId → rowIndex → accountId` 排序落盘；`release` = 祖先链中「Release Planning」之下的一级（解析不到为 `null`，事实照常落盘）。**唯一读路径是个人模式 A12**（组织级 A3 仍读账号级累计计数 A7，两段并存、口径不同）。⚠️ **刻意不落盘页面 URL**：深链由读时按 `confluence.baseUrl + pageId` 拼（baseUrl 未配置则空串）。⚠️ **缺失语义是「待采集」非错误**：读侧降级空数组 + `updatedAt=null`，自检只 WARN——与 P9 的 `50001` 不同 | ✅ | 外部 API（Confluence 正文，与 A3 同轮 `collect:wiki` 写入；采集期恒等自检 `requirementFacts` ≡ 提及数，不等即拒写） |
 
 ## 2. 详细描述
 
@@ -236,6 +241,33 @@ flowchart LR
 - ⚠️ **但必须接受并跟随 `from` / `to`**（ADR-0018 决策 6，见 A6）：本端点与 A1 / A2 **同源于事件**，只让两段切片会让「组织级 ≡ 账号级 ≡ 仓库级求和」在同一页面上对不上——两个不同区间的合计互不相等，正是 ADR-0017 花大力气消除的那类静默漂移。区间内无事件的仓库**整行不出现**（现 13 行是全量口径下的行数）；前端把 `from` / `to` 纳入 **query key**，并把已勾选但区间内无活动的仓库**保留为候选项**、标注「`<owner>` · 区间内无活动」+ 页面琥珀色提示（失效筛选不静默消失，否则勾选状态会变成看不见的幽灵）。
 - **恒等式（三段互核）**：同一批事件下 **仓库级求和 ≡ 账号级求和 ≡ 组织级求和**；2026-10-30 全量实测三段均为 `commits` **1813** / `pullRequests` **618** / `issues` **180** / `linesChanged` **1445781**（唯一非求和字段仍是 `repos`，见 A1）。现测前五行：`a2a-t-sdk-java`（497 commits / 165 PR / 19 Issue / 20 人 / 3 组织）、`workflow-engine-sdk-java`（319 / 62 / 30 / 3 人 / 2 组织）、`orchestration-center`（266 / 116 / 60 / 11 人 / 4 组织）、`a2a-t-sdk-python`（253 / 84 / 8 / 17 人 / 4 组织）、`registry-center`（113 / 46 / 33 / 12 人 / 3 组织）。
 - 未实现需补：① `orgs` 只给**数量**、不给组织清单——若前端要展示「哪些组织参与」需扩展出参（`RepoContribution` 增 `orgIds`，属契约变更，走 04 §6.1）；② 无「按组织下钻到仓库」的服务端聚合（前端可在 A1 / A2 上用 `repoIds` 组合查询替代）。
+
+**A10 个人模式 · 自然人统一画像**
+- 状态：✅ 已实现（ADR-0020）。视角：活跃度页顶部「组织视角 / 个人视角」切换（URL `?mode=person`，replace 语义）后进个人面板，选择自然人后展示。来源：`data/github-events.json`（P9）+ `data/github-accounts.json`（P2，只取展示与归属字段）+ `data/confluence-accounts.json`（A7 账号级）+ `identity-claims.json`（P6 认领边）+ `persons.json`（P5）+ `organizations.json`（P1，解析组织名）；接口 `GET /api/person-contributions`（04 §5.3.19），`PersonInsightService` **读时派生**。
+- 口径：GitHub 四项（`pullRequests` / `commits` / `issues` / `linesChanged`）= 名下账号（认领边 many-to-many **全并**）求和，**含 bot**（bot 账号条目以 `isBot` 标注）；`github.repos` = 名下账号 `repoIds` 的**并集大小**（ADR-0020 决策 2——同一仓库多人协作不重复计；并集恒等 `metrics.repos ≡ repoIds.length`）；`github.repoBreakdown` 按仓库拆分、按 `commits` 降序，**合计恒等于** `metrics` 四项。Confluence 三项 = 名下账号求和，**恒全历史**（同 A3 口径）。求和恒等：`accounts` 中各来源条目之和 ≡ 对应 `metrics`（`repos` 除外）。
+- 归属：`effectiveOrgId = person.orgId ?? 'unattributed'`（读时派生）；`orgSource: 'person' | 'account'`——档案未填组织时按名下账号生效归属**回落**。组织名为 `null`（未归属伪组织）时前端显示「未归属」。
+- ⚠️ **区间口径**：`from` / `to` 接受但**不切片任何字段**（ADR-0020 决策 6）——Confluence 无时间维度、GitHub 画像恒全历史；面板内的时间区间**只作用于 A11 事件明细**，避免同一页面出现两套区间口径。前端画像卡不设区间控件文案误导，区间控件集中于明细卡上方。
+- ⚠️ **认领即时生效**：`JsonRepository` 按 mtime 失效缓存，认领 / 解除 / 改 `Person.orgId` 后下一请求即生效（与 5.3.8 同）；前端身份写操作统一失效 `['person']` query key。
+- 失败语义：`personId` 不存在 → `40403`（`PERSON_NOT_FOUND`，前端按失败卡渲染）；底层文件缺失 / 结构非法 → `50001`（首次 `collect:github:full` 前 GitHub 段必然 50001）。
+- 未实现需补：① 画像的 Confluence 侧仍是账号级累计计数（A7 口径），需求级事实（P10）只在 A12 明细层——若未来要把「需求数」换成事实层重算，须另立 ADR 并处理与 A3 的口径分叉；② 多认领账号的量在每个自然人下**全额计入**（不做分数拆分），端到端无跨人物去重——若运营需要「人头口径」，需另立 ADR。
+
+**A11 个人模式 · GitHub 事件明细**
+- 状态：✅ 已实现（ADR-0020）。来源：同 A10（P9 + P2 + P6 + P5）；接口 `GET /api/person-github-events`（04 §5.3.20）。
+- 口径：自然人模式 = 名下**全部认领边**（many-to-many）的事件**并集**（认领 >1 的账号以**首条边**归属人物口径并打 WARN，与 5.3.8 派生族同规则）；账号模式 = 单账号，`account` 参数接受 **login 或 githubId 字符串双键**（账号档案与事件作者两条路径都能命中）。半开区间 `[from, to)` 切片（A6 同谓词 `filterEventsByRange`），`timestamp` 倒序，`limit`（默认 500、上限 1000）截断并显式 `truncated` + `total`（含被截断部分）。`url` 读时派生：PR → `https://github.com/{repo}/pull/{n}`、Issue → `…/issues/{n}`。
+- 失败语义：`personId` / `account` 二选一违例 → `40001`；`from > to` → `40002`；自然人不存在 → `40403`；**账号不存在不是错误**（空结果 + `total=0`，账号层不是可寻址实体）。
+- 前端：卡片底部按 `truncated` 显式提示「仅展示前 N 条（共 M 条）：收窄时间区间可看到更多」；事件行直出后端 `url` 深链（`_blank` + `noopener`）。
+
+**A12 个人模式 · Confluence 需求事实**
+- 状态：✅ 已实现（ADR-0020 / ADR-0021）。来源：`data/confluence-requirements.json`（P10，ADR-0021 新契约）+ Confluence 账号档案（展示名）+ P6 + P5；接口 `GET /api/person-confluence-requirements`（04 §5.3.21）。
+- 口径：**恒全历史**——需求行没有内在日期（页级 `createdDate` 整页共享，挂到行上会误导，ADR-0021 决策 3），故不接受 `from` / `to`；`release` 解析不到的事实**照常给出**、该列显式「—」（不做 guess）；页面 URL 不采不落，读时按 `confluence.baseUrl + pageId` 拼（baseUrl 未配置 → `url` 空串、前端退化为纯文本）。
+- ⚠️ **缺失语义是「待采集」非错误**：`confluence-requirements.json` 不存在（首次 `collect:wiki` 前）→ 读侧降级空数组 + `updatedAt=null`，前端渲染「待采集」空态（提示运行 `npm run collect:wiki`）；文件存在但结构非法 → `50001`（真故障不降档）。
+- 失败语义：`personId` / `account` 二选一违例 → `40001`；自然人不存在 → `40403`。
+
+**A13 个人模式 · 候选池与视角切换**
+- 状态：✅ 已实现（ADR-2020 → ADR-0020）。来源：`persons.json`（P5）+ `identity-claims.json`（P6）+ `github-accounts.json`（P2）+ Confluence 账号档案 + `github-events.json`（P9，GitHub 侧「有贡献」判定）；接口 `GET /api/person-candidates`（04 §5.3.22）。
+- 口径：自然人候选 = **有任一来源贡献**者（GitHub 侧按全历史判定，带 `github` / `confluence` 布尔标记）；账号候选 = **全部**来源账号（含未认领 / 多认领 / bot，认领关系 many-to-many **全列**为 `{personId, displayName}[]`）。候选集与区间无关。前端选择器用原生 `<select>` optgroup 分组（自然人 / GitHub 账号 / Confluence 账号），选中态编码进 URL（`?mode=person&person=` 或 `&account=&acctSrc=`），可深链分享；返回组织视角时清理个人参数。
+- ⚠️ **GitHub 认领键是 `githubId`、候选视图按 `login` 键控**：服务读时构建 `githubId → login` 映射（账号档案为主、事件作者兜底）把认领边翻回登录名；两边都对不上（档案缺失且事件无该作者）时该认领边**静默不展示**——候选视图是最佳努力展示，不影响画像端点计数口径。
+- 失败语义：`50001`（P5 / P6 / P2 / Confluence 账号档案 / P9 / P1 任一不可读）。
 
 ### 2.3 社区参展 `/summits`
 
@@ -430,7 +462,7 @@ Confluence 归属是**两层**：**采集口径**写入账号级 `confluence-acc
 | 中 | P1 | 补齐组织 `aliases`，提升归属准确率 | 运营录入 |
 | 中 | S2 | 补录峰会 `attendeeCount`；补齐参会组织档案 | 运营录入 / 报名系统 |
 | ~~低~~ | ~~A6~~ | ~~使 `from`/`to` 生效~~ **已由 ADR-0018（v1.28）关闭**：GitHub 侧 A1 / A2 / A5 / A9 四段共用唯一谓词 `filterEventsByRange` 读时切片，半开区间 + 缺省 ≡ 全量口径 + 日界按 `Asia/Shanghai` 由前端翻译。⚠️ 实际改动面**大于**原判断——契约与前端**都改了**（`timestamp` 升必填、`github-events.json` v2、默认区间去硬编码、`to` 改次日零点、仓库表跟随区间） | 已结清 |
-| 中 | A3/A7 | **Confluence 事件级事实缺失**（ADR-0018 遗留债 1）：该侧落的是账号级**累计计数**、无日期字段，故 A6 区间筛选**永远**不适用。补法是把「需求页 @ / 议题分享 @ / 版本作者」三类事实落成**带时间的事件**，与 GitHub 侧 P9 同构，之后 A3 / A7 才能参与区间筛选 | 采集器改造 + `confluence-accounts.json` 再升一级 `schemaVersion`（或新增事件文件）；需另立 ADR |
+| 中 | A3/A7 | **Confluence 事件级事实缺失**（ADR-0018 遗留债 1）：该侧落的是账号级**累计计数**、无日期字段，故 A6 区间筛选**永远**不适用。补法是把「需求页 @ / 议题分享 @ / 版本作者」三类事实落成**带时间的事件**，与 GitHub 侧 P9 同构，之后 A3 / A7 才能参与区间筛选。**部分进展（ADR-0021）**：「需求页 @」已落成**需求行级事实**（P10 `confluence-requirements.json`，恒全历史、无时间戳）并接通个人模式明细 A12——但 A3 / A7 组织级/账号级口径**仍读账号级累计计数**，且议题分享 / 版本作者两类事实仍缺失 | 采集器改造 + `confluence-accounts.json` 再升一级 `schemaVersion`（或新增事件文件）；需另立 ADR |
 | 低 | A5 | `GET /api/contributions/summary` 的 `totals` 是**混合口径**（GitHub 四项跟随区间、Confluence 三项恒全量）但出参**不携带口径标记**（ADR-0018 遗留债 2）。前端已用文案与「全历史」角标兜住；若有第三方消费方需给出参加口径字段 | 契约变更（04 §6.1） |
 | 低 | A6 | 日界时区 `+08:00` 写死在 `apps/web/src/lib/format.ts` 的 `RANGE_TZ_OFFSET`，海外运营者看「今天」会与实际差一天（ADR-0018 遗留债 3）。⚠️ **刻意不提前抽象**——等真有该需求再抽成配置 | 产品确认是否需多时区 |
 | 低 | A6 | `filterEventsByRange` 每请求全量遍历事件（现 798 条，成本可忽略）；事件量级上到十万后需预分桶（按月）或索引（ADR-0018 遗留债 4）。⚠️ 届时**谓词必须仍是唯一实现**，不得在 provider 里另写一份过滤 | 事件量级增长 |

@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { join } from 'node:path';
 import {
   ConfluenceAccount,
+  ConfluenceRequirementEvent,
   Contributor,
   GithubContributionEvent,
   GithubReleasesFileData,
@@ -18,6 +19,7 @@ import {
 import { JsonRepository } from './json-repository';
 import {
   CONFLUENCE_ACCOUNTS_REPOSITORY,
+  CONFLUENCE_REQUIREMENTS_REPOSITORY,
   CONTRIBUTIONS_REPOSITORY,
   CONTRIBUTORS_REPOSITORY,
   GITHUB_EVENTS_REPOSITORY,
@@ -32,6 +34,7 @@ import {
 } from './repository.tokens';
 import {
   isConfluenceAccountArray,
+  isConfluenceRequirementEventArray,
   isContributionArray,
   isContributorArray,
   isGithubContributionEventArray,
@@ -105,6 +108,18 @@ const repositoryProviders = [
       'confluence-accounts.json',
       isConfluenceAccountArray,
       4,
+    ),
+    inject: [ConfigService],
+  },
+  {
+    provide: CONFLUENCE_REQUIREMENTS_REPOSITORY,
+    // 需求级 Confluence 事实（ADR-0021）：个人模式需求明细下钻的原子事实。
+    // 与 github-events 同为「首次采集前可能缺失」的文件（本期新建，重跑 collect:wiki 后落盘），
+    // 自检按「待采集」降级 WARN；读侧接口在缺失时返回空清单 + updatedAt=null（待采集空态），不报错。
+    // v1：{ accountId, requirementTitle, pageId, pageTitle, release, rowIndex }，幂等键 = pageId+rowIndex+accountId
+    useFactory: makeRepository<ConfluenceRequirementEvent[]>(
+      'confluence-requirements.json',
+      isConfluenceRequirementEventArray,
     ),
     inject: [ConfigService],
   },
@@ -183,6 +198,8 @@ export class DataBootstrapService implements OnApplicationBootstrap {
     @Inject(WIKI_REPOSITORY) private readonly wiki: JsonRepository<OrganizationWiki[]>,
     @Inject(CONFLUENCE_ACCOUNTS_REPOSITORY)
     private readonly confluenceAccounts: JsonRepository<ConfluenceAccount[]>,
+    @Inject(CONFLUENCE_REQUIREMENTS_REPOSITORY)
+    private readonly confluenceRequirements: JsonRepository<ConfluenceRequirementEvent[]>,
     @Inject(CONTRIBUTORS_REPOSITORY) private readonly contributors: JsonRepository<Contributor[]>,
     @Inject(GITHUB_EVENTS_REPOSITORY)
     private readonly githubEvents: JsonRepository<GithubContributionEvent[]>,
@@ -203,6 +220,9 @@ export class DataBootstrapService implements OnApplicationBootstrap {
       this.contributions,
       this.wiki,
       this.confluenceAccounts,
+      // confluence-requirements.json 首次上线前可能缺失（需重跑一次 collect:wiki）：
+      // 自检只 WARN 不阻断启动，个人模式需求明细接口在缺失时返回空清单（待采集空态）
+      this.confluenceRequirements,
       this.contributors,
       // github-events.json / github-releases.json 首次上线前可能缺失（需跑一次 collect:github:full）：
       // 自检只 WARN 不阻断启动，GitHub 侧接口在缺失时返回 50001（宁可暴露，不静默为 0）
@@ -215,8 +235,22 @@ export class DataBootstrapService implements OnApplicationBootstrap {
     ] as const;
 
     // github-events.json / github-releases.json 在跑过首次 collect:github:full 之前**必然**缺失，
-    // 属预期状态而非故障：降为 WARN 并给出下一步动作，避免每次启动 / 每次采集都打一条刺眼的 ERROR
-    const pendingCollect = new Set<string>([this.githubEvents.label, this.githubReleases.label]);
+    // confluence-requirements.json 在重跑 collect:wiki（需求级事实层上线后）之前可能缺失，
+    // 均属预期状态而非故障：降为 WARN 并给出下一步动作，避免每次启动 / 每次采集都打一条刺眼的 ERROR
+    const pendingCollect = new Map<string, string>([
+      [
+        this.githubEvents.label,
+        'GitHub 侧接口将返回 50001：请先运行 npm run collect:github:full -w @openan/api 采集一次',
+      ],
+      [
+        this.githubReleases.label,
+        'GitHub 侧接口将返回 50001：请先运行 npm run collect:github:full -w @openan/api 采集一次',
+      ],
+      [
+        this.confluenceRequirements.label,
+        '个人模式需求明细接口将返回空清单（待采集空态）：请重跑 npm run collect:wiki -w @openan/api 采集一次',
+      ],
+    ]);
 
     const results = await Promise.all(
       repositories.map(async (repo) => {
@@ -225,11 +259,9 @@ export class DataBootstrapService implements OnApplicationBootstrap {
           return { label: repo.label, ok: true };
         } catch (error) {
           const message = (error as Error).message;
-          if (pendingCollect.has(repo.label) && message.includes('数据文件缺失')) {
-            this.logger.warn(
-              `${repo.label} 尚未生成（GitHub 侧接口将返回 50001）：` +
-                '请先运行 npm run collect:github:full -w @openan/api 采集一次',
-            );
+          const pendingHint = pendingCollect.get(repo.label);
+          if (pendingHint && message.includes('数据文件缺失')) {
+            this.logger.warn(`${repo.label} 尚未生成（${pendingHint}）`);
           } else {
             this.logger.error(`启动自检失败：${repo.label} → ${message}`);
           }
@@ -256,6 +288,7 @@ export class DataBootstrapService implements OnApplicationBootstrap {
     CONTRIBUTIONS_REPOSITORY,
     WIKI_REPOSITORY,
     CONFLUENCE_ACCOUNTS_REPOSITORY,
+    CONFLUENCE_REQUIREMENTS_REPOSITORY,
     CONTRIBUTORS_REPOSITORY,
     GITHUB_EVENTS_REPOSITORY,
     GITHUB_RELEASES_REPOSITORY,

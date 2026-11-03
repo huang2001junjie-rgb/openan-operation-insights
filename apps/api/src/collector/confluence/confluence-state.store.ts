@@ -62,6 +62,8 @@ export interface ConfluenceSyncState {
   spaces: string[];
   /** 命中的「需求」来源页数（为 0 说明页面结构选择器与实际不符） */
   requirementPageCount: number;
+  /** 需求级事实条数（confluence-requirements.json，ADR-0021；旧状态文件无此字段） */
+  requirementFactCount?: number;
   /** 命中的会议纪要页数（为 0 说明标题/父页模式与实际不符） */
   minutesPageCount: number;
   /** 版本历史总条数（编辑量口径自检：为 0 说明版本接口不可用，见 ADR-0011） */

@@ -13,7 +13,7 @@ import type {
   PersonListItem,
   PersonRef,
 } from '@/types/contract';
-import { IDENTITY_ROOT_KEY, IdentityPersonFilters, queryKeys } from './query-keys';
+import { IDENTITY_ROOT_KEY, IdentityPersonFilters, PERSON_ROOT_KEY, queryKeys } from './query-keys';
 
 type CandidateSourceKey = 'github' | 'confluence' | 'meeting';
 
@@ -75,6 +75,8 @@ function reportSuccess(title: string, description?: string): void {
 
 function invalidateIdentity(queryClient: QueryClient): void {
   queryClient.invalidateQueries({ queryKey: IDENTITY_ROOT_KEY });
+  // 个人模式（ADR-0020）读时派生自认领边/人物档案：认领或档案变更后画像、候选池、明细都要刷新
+  queryClient.invalidateQueries({ queryKey: PERSON_ROOT_KEY });
 }
 
 function snapshotIdentity(queryClient: QueryClient) {

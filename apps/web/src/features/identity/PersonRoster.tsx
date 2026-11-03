@@ -132,14 +132,10 @@ export function PersonRoster({
             value={orgFilter}
             onChange={(event) => onOrgFilterChange(event.target.value)}
           >
-            <option value="" className="bg-ink-850 text-slate-100">
-              全部归属
-            </option>
-            <option value="none" className="bg-ink-850 text-slate-100">
-              未归属
-            </option>
+            <option value="">全部归属</option>
+            <option value="none">未归属</option>
             {orgOptions.map((option) => (
-              <option key={option.orgId} value={option.orgId} className="bg-ink-850 text-slate-100">
+              <option key={option.orgId} value={option.orgId}>
                 {option.name}
               </option>
             ))}

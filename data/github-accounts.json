@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "updatedAt": "2026-11-02T03:14:55.124Z",
+  "updatedAt": "2026-11-03T03:35:43.576Z",
   "data": [
     {
       "contributorId": "wrathwolf",
@@ -182,10 +182,10 @@
       "orgId": "huawei",
       "avatarUrl": "https://avatars.githubusercontent.com/u/293838403?v=4",
       "github": {
-        "pullRequests": 63,
-        "commits": 115,
+        "pullRequests": 68,
+        "commits": 120,
         "issues": 0,
-        "linesChanged": 267019,
+        "linesChanged": 274824,
         "repos": 4,
         "repoIds": [
           "project-openan/a2a-t-sdk-java",
@@ -426,10 +426,10 @@
       "orgId": "huawei",
       "avatarUrl": "https://avatars.githubusercontent.com/u/169223219?u=7a1edcfdc48e79f17c1cbc76c5f0e1e548191568&v=4",
       "github": {
-        "pullRequests": 65,
-        "commits": 92,
+        "pullRequests": 75,
+        "commits": 122,
         "issues": 25,
-        "linesChanged": 304771,
+        "linesChanged": 311347,
         "repos": 4,
         "repoIds": [
           "project-openan/openan-demo",

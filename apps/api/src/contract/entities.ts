@@ -187,6 +187,168 @@ export interface ConfluenceAccountView extends Omit<ConfluenceAccount, 'orgSourc
   personId: string | null;
 }
 
+/**
+ * Confluence 需求级事实（confluence-requirements.json，04 §3.16 / ADR-0021）。
+ *
+ * 一条 = 「某账号在某需求页某一行上作为联系人被提及」：Requirement Proposal 页的行级联系人
+ * 解析结果，与账号级 `requirements` 计数同口径（一行同一账号只记 1 条，恒等成立）。
+ * 需求行本身没有内在日期，页级 createdDate 是整页共享、挂到每行会误导，故恒「全历史」。
+ * 幂等键 = pageId + rowIndex + accountId。页面 URL 不在采集期落盘，由读时派生端点拼（ADR-0020）。
+ */
+export interface ConfluenceRequirementEvent {
+  accountId: string;
+  /** 需求标题（行内「Requirement Title」列；列缺失时为空串） */
+  requirementTitle: string;
+  pageId: string;
+  pageTitle: string;
+  /** 所属 release：祖先链中「Release Planning」的下一级（需求页的直接父页）；取不到为 null（采集告警） */
+  release: string | null;
+  rowIndex: number;
+}
+
+/** GET /api/person-confluence-requirements 出参条目：读时由 confluence.baseUrl + pageId 拼 url（ADR-0020） */
+export interface ConfluenceRequirementView extends ConfluenceRequirementEvent {
+  url: string;
+}
+
+/* ════════════════════════════════════════════════════════════════════
+ * 个人模式（Person Mode）读时派生出参族 —— GET /api/person-* 四个端点（04 §5.3.19-22 / ADR-0020）
+ * 自然人级聚合恒等：名下账号级求和 ≡ 自然人级；repos ≡ 名下账号 repoIds 并集（ADR-0017 决策 15 在自然人维度重申）
+ * ════════════════════════════════════════════════════════════════════ */
+
+/** 自然人视图·名下账号分解条目：单平台账号，只带该平台贡献与生效归属 */
+export type PersonAccountItem =
+  | {
+      source: 'github';
+      /** 账号键 = `contributorId`（login 小写归一），与 A2 排行同键 */
+      accountKey: string;
+      displayName: string;
+      avatarUrl?: string;
+      /** 该账号自身口径的生效归属（claim 优先 → 采集口径 → 未归属） */
+      effectiveOrgId: string;
+      effectiveOrgName: string | null;
+      orgSource: GithubOrgSource;
+      /** 机器人标注（ADR-0017 三信号启发式）；数据照常计入 */
+      isBot: boolean;
+      /** 该账号在区间 [from, to) 内的事件派生指标 */
+      github: AccountGithubMetrics;
+    }
+  | {
+      source: 'confluence';
+      /** 账号键 = `accountId`（小写归一） */
+      accountKey: string;
+      displayName: string;
+      effectiveOrgId: string;
+      effectiveOrgName: string | null;
+      orgSource: ConfluenceEffectiveOrgSource;
+      isBot: false;
+      /** 账号级累计计数，恒全历史（无日期维度，ADR-0018 决策 5） */
+      confluence: ConfluenceMetrics;
+    };
+
+/** 自然人视图·仓库分布条目（GitHub 侧，区间跟随查询参数；shape 同 RepoAggregation.github） */
+export interface PersonRepoBreakdownItem {
+  repoId: string;
+  github: Omit<GithubMetrics, 'repos'>;
+}
+
+/** GET /api/person-contributions 出参：自然人跨来源统一画像（一屏 GitHub + Confluence） */
+export interface PersonContributionsData {
+  /** 自然人档案本体（`Person.orgId` 可空：为空时归属见下方兜底字段） */
+  person: Person;
+  /** 自然人档案 orgId 对应的组织名；未归属为 null */
+  orgName: string | null;
+  /**
+   * 自然人生效归属（读时派生，不落盘）：`Person.orgId` 非空取它（orgSource='person'）；
+   * 为空回落伪组织 `unattributed`（orgSource='account'）——名下各账号在「名下账号分解」中
+   * 各自展示其账号口径归属，卡片归属显示「未指定/多组织」，不强行合并（Round 4 兜底）
+   */
+  effectiveOrgId: string;
+  orgSource: 'person' | 'account';
+  /** GitHub 聚合（事件派生，跟随 from/to；`repos` 为名下账号 repoIds 的并集大小，绝不为各账号求和） */
+  github: {
+    metrics: GithubMetrics;
+    repoIds: string[];
+    repoBreakdown: PersonRepoBreakdownItem[];
+    /** 事件文件时间戳；名下无 GitHub 账号（或区间内无事件）为 null */
+    updatedAt: string | null;
+  };
+  /** Confluence 聚合（账号级计数求和，恒全历史） */
+  confluence: {
+    metrics: ConfluenceMetrics;
+    updatedAt: string | null;
+  };
+  /** 名下账号分解（认领边多对多：同一账号可被多个自然人认领，故分解按所查自然人过滤） */
+  accounts: PersonAccountItem[];
+}
+
+/** GET /api/person-github-events 出参条目：事件 + 读时派生的站内链接 */
+export interface PersonGithubEventItem extends GithubContributionEvent {
+  /** `https://github.com/{repository}/{pull|issues}/{number}`（pullRequest→pull，issue→issues） */
+  url: string;
+}
+
+/** GET /api/person-github-events 出参 */
+export interface PersonGithubEventsData {
+  events: PersonGithubEventItem[];
+  /** 区间命中总数（截断前） */
+  total: number;
+  limit: number;
+  /** 命中数超过 limit，已截断：前端提示「收窄区间」 */
+  truncated: boolean;
+}
+
+/** GET /api/person-confluence-requirements 出参条目：需求级事实 + 读时派生链接 + 账号显示名 */
+export interface PersonConfluenceRequirementItem extends ConfluenceRequirementEvent {
+  /** `{confluence.baseUrl}/wiki/pages/viewpage.action?pageId={pageId}`；未配置 base 为空串 */
+  url: string;
+  /** 账号显示名（confluence-accounts.json；档案缺失回退 accountId） */
+  displayName: string;
+}
+
+/** GET /api/person-confluence-requirements 出参：恒全历史，不接受 from/to */
+export interface PersonConfluenceRequirementsData {
+  requirements: PersonConfluenceRequirementItem[];
+  total: number;
+  /** 需求事实文件时间戳；文件尚未采集（待采集空态）为 null */
+  updatedAt: string | null;
+}
+
+/** GET /api/person-candidates 出参·自然人候选：只列「有贡献」的自然人（名下任一账号在来源数据中出现） */
+export interface PersonCandidateItem {
+  personId: string;
+  displayName: string;
+  avatarUrl: string | null;
+  /** 生效归属（= Person.orgId ?? 'unattributed'） */
+  effectiveOrgId: string;
+  orgName: string | null;
+  /** 名下是否有有贡献的 GitHub / Confluence 账号（至少其一为 true 才会进候选） */
+  github: boolean;
+  confluence: boolean;
+}
+
+/** GET /api/person-candidates 出参·账号候选：单平台账号 + 其认领自然人（多归属全列） */
+export interface PersonAccountCandidateItem {
+  source: 'github' | 'confluence';
+  /** github: contributorId；confluence: accountId（均小写归一） */
+  accountKey: string;
+  displayName: string;
+  avatarUrl: string | null;
+  isBot: boolean;
+  effectiveOrgId: string;
+  orgName: string | null;
+  /** 认领该账号的自然人（多对多，personId 可能多个）；未认领为空数组 */
+  persons: Array<{ personId: string; displayName: string }>;
+}
+
+/** GET /api/person-candidates 出参：个人模式选择器候选（自然人与账号两个选择器的取数面） */
+export interface PersonCandidatesData {
+  persons: PersonCandidateItem[];
+  githubAccounts: PersonAccountCandidateItem[];
+  confluenceAccounts: PersonAccountCandidateItem[];
+  updatedAt: string;
+}
+
 export interface Contributor {
   contributorId: string;
   githubId: number;

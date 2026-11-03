@@ -26,6 +26,9 @@
  *  10. 空值兜底：无一页命中口径时中止写入、保留既有 confluence-organizations.json
  *      与 confluence-accounts.json，并在状态文件标记 failed
  *  11. 仓库真实 data/ 未被触碰
+ *  12. 需求级事实层（ADR-0021，独立 fixture + 独立临时目录）：事实条数 ≡ 账号级 requirements
+ *      （按账号恒等）、release 取「Release Planning」下一级、同行同账号去重、纯文本联系人不落事实、
+ *      release 缺失置空 + 告警、幂等 / dry-run / report-only 不写、空结果保留既有文件
  */
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -50,6 +53,8 @@ const DIST_ENTRY = join(APPS_API, 'dist', 'collector', 'confluence', 'confluence
 const SEED_DIR = join(HERE, 'fixtures', 'seed-data');
 const SAMPLE_FIXTURE = join(HERE, 'fixtures', 'confluence-records.sample.json');
 const NONE_FIXTURE = join(HERE, 'fixtures', 'confluence-records.none.json');
+/** 需求级事实层（ADR-0021）专用 fixture：多行需求页 + 同行同账号重复 + 纯文本联系人 + 无 release 层级页 */
+const REQUIREMENTS_FIXTURE = join(HERE, 'fixtures', 'confluence-records.requirements.sample.json');
 const REAL_DATA_DIR = join(REPO_ROOT, 'data');
 
 const SPACES = 'OPENAN,ORBIT';
@@ -247,6 +252,7 @@ function main() {
   const realWikiHash = hashFile(join(REAL_DATA_DIR, 'confluence-organizations.json'));
   const realStateHash = hashFile(join(REAL_DATA_DIR, '.sync-state.confluence.json'));
   const realAccountsHash = hashFile(join(REAL_DATA_DIR, 'confluence-accounts.json'));
+  const realRequirementsHash = hashFile(join(REAL_DATA_DIR, 'confluence-requirements.json'));
 
   const dataDir = prepareDataDir();
 
@@ -523,6 +529,91 @@ function main() {
   } finally {
     rmSync(dataDir, { recursive: true, force: true });
   }
+
+  // ════════════════════════════════════════════════════════════
+  // 需求级事实层（ADR-0021）：独立 fixture + 独立临时目录，避免与上文断言互相污染
+  // ════════════════════════════════════════════════════════════
+  const reqDataDir = prepareDataDir();
+  const reqFilePath = join(reqDataDir, 'confluence-requirements.json');
+
+  try {
+    // ── 1. 全量采集：事实落盘与口径 ─────────────────────────────
+    const first = runCli(reqDataDir, { fixture: REQUIREMENTS_FIXTURE });
+    check('需求事实：首次全量采集退出码为 0', first.status === 0, `status=${first.status}`);
+    check('需求事实：日志汇总 4 条（行 1 计 1 + 行 2 同账号去重后 2 + 页 2 计 1）',
+      /需求级事实\s*:\s*4 条/.test(first.output.replace(/\u001b\[[0-9;]*m/g, '')));
+    check('需求事实：release 未解析页给出置空告警',
+      first.output.includes('release 置空'));
+    check('需求事实：纯文本联系人走 unresolvedContacts 告警（@plain-ghost 浮现但不计入事实）',
+      first.output.includes('纯文本') && first.output.includes('@plain-ghost'));
+
+    const requirements = JSON.parse(readFileSync(reqFilePath, 'utf8'));
+    check('需求事实：envelope schemaVersion=1', requirements.schemaVersion === 1,
+      `实际 ${requirements.schemaVersion}`);
+    check('需求事实：共 4 条', requirements.data.length === 4,
+      `实际 ${requirements.data.length} 条`);
+
+    const factKeysOf = (accountId) =>
+      requirements.data.filter((fact) => fact.accountId === accountId);
+    const rf1 = factKeysOf('acct-rf-1');
+    const rf2 = factKeysOf('acct-rf-2');
+    const rf3 = factKeysOf('acct-rf-3');
+    check('需求事实：账号 acct-rf-1 两条（第 1、2 行）',
+      rf1.length === 2 && rf1.every((fact) => fact.pageId === '900101') &&
+        rf1.map((fact) => fact.rowIndex).sort().join(',') === '1,2',
+      JSON.stringify(rf1.map((fact) => `${fact.pageId}#${fact.rowIndex}`)));
+    check('需求事实：同行同账号重复只记 1 条（acct-rf-2 仅第 2 行 1 条）',
+      rf2.length === 1 && rf2[0].rowIndex === 2 && rf2[0].requirementTitle === '多卡并行训练',
+      JSON.stringify(rf2));
+    check('需求事实：release 取「Release Planning」下一级（26.12.R1）',
+      rf1.every((fact) => fact.release === '26.12.R1') && rf2[0]?.release === '26.12.R1');
+    check('需求事实：无 release 层级的页置空（acct-rf-3, page 900102）',
+      rf3.length === 1 && rf3[0].release === null && rf3[0].requirementTitle === '边缘部署套件',
+      JSON.stringify(rf3));
+    check('需求事实：纯文本联系人不落事实、模板页（900103）不产生事实',
+      requirements.data.every((fact) => !fact.accountId.includes('plain') && fact.pageId !== '900103'));
+    check('需求事实：每条事实幂等键字段齐全（pageId/pageTitle/rowIndex/requirementTitle）',
+      requirements.data.every((fact) =>
+        typeof fact.pageId === 'string' && typeof fact.pageTitle === 'string' &&
+        Number.isInteger(fact.rowIndex) && typeof fact.requirementTitle === 'string'));
+
+    // ── 2. 恒等：按账号分组的事实数 ≡ 账号级 requirements 计数 ──
+    const reqAccounts = readAccounts(reqDataDir);
+    const factCountByAccount = requirements.data.reduce((acc, fact) => {
+      acc[fact.accountId] = (acc[fact.accountId] ?? 0) + 1;
+      return acc;
+    }, {});
+    check('需求事实：按账号恒等（事实数 ≡ 账号级 requirements）',
+      reqAccounts.data.every((account) =>
+        (factCountByAccount[account.accountId] ?? 0) === account.confluence.requirements),
+      JSON.stringify(factCountByAccount));
+
+    // ── 3. 幂等 / dry-run / report-only 不写 ────────────────────
+    const second = runCli(reqDataDir, { fixture: REQUIREMENTS_FIXTURE });
+    check('需求事实：二次全量结果稳定（去时间戳后哈希一致）',
+      second.status === 0 &&
+        JSON.stringify({ ...JSON.parse(readFileSync(reqFilePath, 'utf8')), updatedAt: '' }) ===
+          JSON.stringify({ ...requirements, updatedAt: '' }));
+
+    const dryHash = hashFile(reqFilePath);
+    const dry = runCli(reqDataDir, { fixture: REQUIREMENTS_FIXTURE, args: ['--dry-run'] });
+    check('需求事实：--dry-run 不写需求事实文件', dry.status === 0 && hashFile(reqFilePath) === dryHash);
+
+    const reportHash = hashFile(reqFilePath);
+    const report = runCli(reqDataDir, { fixture: REQUIREMENTS_FIXTURE, args: ['--report-only'] });
+    check('需求事实：--report-only 不写需求事实文件', report.status === 0 && hashFile(reqFilePath) === reportHash);
+
+    // ── 4. 空值兜底：保留既有需求事实文件 ───────────────────────
+    const beforeEmpty = readFileSync(reqFilePath, 'utf8');
+    const empty = runCli(reqDataDir, { fixture: NONE_FIXTURE });
+    check('需求事实：空结果中止写入、保留既有 confluence-requirements.json',
+      empty.status !== 0 && readFileSync(reqFilePath, 'utf8') === beforeEmpty);
+  } finally {
+    rmSync(reqDataDir, { recursive: true, force: true });
+  }
+
+  check('真实 data/confluence-requirements.json 未被改动',
+    hashFile(join(REAL_DATA_DIR, 'confluence-requirements.json')) === realRequirementsHash);
 
   // ── 输出 ────────────────────────────────────────────────────
   console.log('');

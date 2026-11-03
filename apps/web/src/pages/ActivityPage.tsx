@@ -3,7 +3,9 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { PageHeading } from '@/components/layout/PageHeading';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
+import { Segmented } from '@/components/ui/Segmented';
 import { IconArrowRight } from '@/components/icons';
+import { PersonModePanel } from '@/features/activity/person/PersonModePanel';
 import { ActivityFilters, type ActivityFilterState } from '@/features/activity/ActivityFilters';
 import {
   ActivitySourceSwitcher,
@@ -82,6 +84,23 @@ export function ActivityPage() {
     searchParams.get('source') === 'confluence' ? 'confluence' : 'github';
   const isGithub = source === 'github';
 
+  /** 视角模式（ADR-0020）：组织（默认）/ 个人。个人模式下组织视图的查询全部停发。 */
+  const mode: 'org' | 'person' = searchParams.get('mode') === 'person' ? 'person' : 'org';
+  const isOrgMode = mode === 'org';
+
+  const handleModeChange = (next: 'org' | 'person') => {
+    const params = new URLSearchParams(searchParams);
+    if (next === 'org') {
+      params.delete('mode');
+      params.delete('person');
+      params.delete('account');
+      params.delete('acctSrc');
+    } else {
+      params.set('mode', 'person');
+    }
+    setSearchParams(params, { replace: true });
+  };
+
   const handleSourceChange = (next: ActivitySource) => {
     const params = new URLSearchParams(searchParams);
     if (next === 'github') params.delete('source');
@@ -121,18 +140,18 @@ export function ActivityPage() {
   /** 区间是否真的生效：仅 GitHub 视图、且用户选了区间（用于给 Confluence 列打「全历史」标记） */
   const isRangeActive = isGithub && Boolean(filters.from || filters.to);
 
-  const contributions = useContributions(githubParams, isGithub);
-  const summary = useContributionSummary(githubParams, isGithub);
-  const contributorContributions = useContributorContributions(githubParams, isGithub);
-  const confluenceAccounts = useConfluenceAccounts(params, !isGithub);
+  const contributions = useContributions(githubParams, isGithub && isOrgMode);
+  const summary = useContributionSummary(githubParams, isGithub && isOrgMode);
+  const contributorContributions = useContributorContributions(githubParams, isGithub && isOrgMode);
+  const confluenceAccounts = useConfluenceAccounts(params, !isGithub && isOrgMode);
   // 组织级成果两套视图共用（GitHub 明细表的 Confluence 列 / Confluence 视图的环图与明细表）
-  const wiki = useWiki(params);
+  const wiki = useWiki(params, isOrgMode);
   const organizationOptions = useOrganizationOptions();
   /**
    * 仓库维度明细：**随区间变化**（与组织级 / 账号级同口径，恒等式「仓库级求和 ≡ 组织级」才成立），
    * 但**不随 repoIds 变化**（选仓库 = 客户端挑行）。它同时提供筛选候选，故候选随区间收缩。
    */
-  const repoContributions = useRepoContributions(rangeParams, isGithub);
+  const repoContributions = useRepoContributions(rangeParams, isGithub && isOrgMode);
 
   /**
    * 伪组织展示名替换（本页统一）：用 individual 代替「独立开发者」（见 org-display）。
@@ -249,18 +268,36 @@ export function ActivityPage() {
         description="以组织为单位聚合 GitHub 代码协作与 Confluence 成果文档，衡量各方的共建投入。"
         meta={
           <>
-            <Badge tone="brand">{isGithub ? 'GitHub 协作' : 'Confluence 成果'}</Badge>
+            <Badge tone="brand">
+              {mode === 'person' ? '个人模式' : isGithub ? 'GitHub 协作' : 'Confluence 成果'}
+            </Badge>
             {updatedAt ? (
               <span className="text-xs text-slate-500">数据更新于 {formatDateTime(updatedAt)}</span>
             ) : null}
-            {isFiltersDirty ? <Badge tone="amber">已应用筛选</Badge> : null}
+            {isFiltersDirty && isOrgMode ? <Badge tone="amber">已应用筛选</Badge> : null}
           </>
         }
       />
 
-      <ActivitySourceSwitcher value={source} onChange={handleSourceChange} />
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Segmented
+          aria-label="视角模式"
+          options={[
+            { value: 'org', label: '组织视角' },
+            { value: 'person', label: '个人视角' },
+          ]}
+          value={mode}
+          onChange={handleModeChange}
+        />
+      </div>
 
-      <ActivityFilters
+      {mode === 'person' ? (
+        <PersonModePanel />
+      ) : (
+        <>
+          <ActivitySourceSwitcher value={source} onChange={handleSourceChange} />
+
+          <ActivityFilters
         organizations={organizations}
         repoOptions={isGithub ? repoOptions : undefined}
         value={filters}
@@ -362,6 +399,8 @@ export function ActivityPage() {
             error={wiki.error}
             onRetry={() => void wiki.refetch()}
           />
+        </>
+      )}
         </>
       )}
     </div>

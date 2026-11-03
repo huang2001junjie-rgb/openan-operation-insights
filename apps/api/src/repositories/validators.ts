@@ -1,5 +1,6 @@
 import {
   ConfluenceAccount,
+  ConfluenceRequirementEvent,
   Contributor,
   GithubContributionEvent,
   GithubReleasesFileData,
@@ -24,6 +25,8 @@ const isObject = (value: unknown): value is Record<string, unknown> =>
 const isString = (value: unknown): value is string => typeof value === 'string';
 const isNumber = (value: unknown): value is number =>
   typeof value === 'number' && Number.isFinite(value);
+const isNonNegativeInteger = (value: unknown): value is number =>
+  isNumber(value) && Number.isInteger(value) && value >= 0;
 const isBoolean = (value: unknown): value is boolean => typeof value === 'boolean';
 const isStringArray = (value: unknown): value is string[] =>
   Array.isArray(value) && value.every(isString);
@@ -139,6 +142,30 @@ export function isConfluenceAccount(value: unknown): value is ConfluenceAccount 
 
 export function isConfluenceAccountArray(value: unknown): value is ConfluenceAccount[] {
   return Array.isArray(value) && value.every(isConfluenceAccount);
+}
+
+/**
+ * `confluence-requirements.json` 需求级事实（04 §3.16 / ADR-0021）：
+ * - 幂等键 = pageId + rowIndex + accountId，三键均为必填字符串 / 非负整数；
+ * - `release` 必须显式出现，取值 `string | null`（`null` = 祖先链未取到 release，采集告警）；
+ * - `requirementTitle` 允许空串（标题列缺失的行）。
+ */
+export function isConfluenceRequirementEvent(value: unknown): value is ConfluenceRequirementEvent {
+  if (!isObject(value)) return false;
+  return (
+    isString(value.accountId) &&
+    isString(value.requirementTitle) &&
+    isString(value.pageId) &&
+    isString(value.pageTitle) &&
+    (value.release === null || isString(value.release)) &&
+    isNonNegativeInteger(value.rowIndex)
+  );
+}
+
+export function isConfluenceRequirementEventArray(
+  value: unknown,
+): value is ConfluenceRequirementEvent[] {
+  return Array.isArray(value) && value.every(isConfluenceRequirementEvent);
 }
 
 /**

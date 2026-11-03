@@ -374,6 +374,148 @@ export interface MeetingIdentityCandidate extends IdentityCandidateBase {
   source: 'meeting';
 }
 
+// ── 个人模式（Person Mode，ADR-0020）：`/api/person-*` 契约镜像 ─────────
+// 全部为**读时派生**，前端不做二次聚合：人物级计数/仓库并集/生效归属均由后端给出。
+
+/** GitHub 原子事件镜像（`github-events.json` v2 条目）；`PersonGithubEventItem` 在其上追加读时派生的深链 */
+export interface GithubContributionEvent {
+  kind: 'pullRequest' | 'issue';
+  /** owner/repo 全名 */
+  repository: string;
+  number: number;
+  author: { login: string; githubId: number; name?: string | null; avatarUrl?: string } | null;
+  linesChanged: number;
+  timestamp: string;
+  commitCount: number;
+}
+
+export interface PersonGithubEventItem extends GithubContributionEvent {
+  /** 读时派生：PR → `https://github.com/{repo}/pull/{n}`，Issue → `.../issues/{n}` */
+  url: string;
+}
+
+export interface PersonGithubEventsData {
+  events: PersonGithubEventItem[];
+  /** 区间内的总命中数（含被截断部分） */
+  total: number;
+  /** 因 limit 截断为 true；超过上限被后端封顶时亦为 true */
+  truncated: boolean;
+  updatedAt: string;
+}
+
+/** Confluence 需求级事实镜像（ADR-0021 新契约 `confluence-requirements.json` 条目） */
+export interface ConfluenceRequirementEvent {
+  accountId: string;
+  requirementTitle: string;
+  pageId: string;
+  pageTitle: string;
+  /** ancestor chain 中位于 “Release Planning” 之下的一级；解析不到为 null（明细仍给出，供人工核对） */
+  release: string | null;
+  rowIndex: number;
+}
+
+export interface PersonConfluenceRequirementItem extends ConfluenceRequirementEvent {
+  /** 账号档案展示名（取自 confluence-accounts.json） */
+  displayName: string;
+  /** 读时派生：`{confluence.baseUrl}/wiki/pages/viewpage.action?pageId={pageId}`；baseUrl 未配置时为空串 */
+  url: string;
+}
+
+export interface PersonConfluenceRequirementsData {
+  requirements: PersonConfluenceRequirementItem[];
+  total: number;
+  /** 需求事实文件的时间戳；文件缺失（待采集）时为 null */
+  updatedAt: string | null;
+}
+
+/** 仓库分解条目（`github.repos` 为并集，本表为按仓库拆分；合计 ≡ 画像四项计数） */
+export interface PersonRepoBreakdownItem {
+  repoId: string;
+  github: Omit<GithubMetrics, 'repos'>;
+}
+
+/** 名下账号分解条目：GitHub 与 Confluence 联合（可判别 union） */
+export type PersonAccountItem =
+  | {
+      source: 'github';
+      /** 登录名 */
+      accountKey: string;
+      displayName: string;
+      avatarUrl: string | null;
+      effectiveOrgId: string;
+      orgName: string | null;
+      orgSource: GithubOrgSource | 'claim';
+      isBot: boolean;
+      github: Omit<GithubMetrics, 'repos'> & { repoIds: string[] };
+    }
+  | {
+      source: 'confluence';
+      /** accountId */
+      accountKey: string;
+      displayName: string;
+      avatarUrl: null;
+      effectiveOrgId: string;
+      orgName: string | null;
+      orgSource: ConfluenceEffectiveOrgSource;
+      isBot: false;
+      confluence: ConfluenceMetrics;
+    };
+
+export interface PersonContributionsData {
+  person: Person;
+  /** 生效组织名；未归属（unattributed 伪组织）时为 null */
+  orgName: string | null;
+  /** 读时派生：`person.orgId ?? 'unattributed'` */
+  effectiveOrgId: string;
+  /** 归属口径来源：`'person'` = 取自人物档案；`'account'` = 档案未填组织，回落 */
+  orgSource: 'person' | 'account';
+  github: {
+    metrics: GithubMetrics;
+    /** 名下账号 repoIds 的并集（升序）；并集大小恒等于 metrics.repos */
+    repoIds: string[];
+    /** 按 commits 降序的仓库分解；合计 ≡ metrics */
+    repoBreakdown: PersonRepoBreakdownItem[];
+    /** 事件文件时间戳；名下无 GitHub 事件时为 null */
+    updatedAt: string | null;
+  };
+  confluence: {
+    metrics: ConfluenceMetrics;
+    /** 名下账号的最新 updatedAt；名下无 Confluence 账号时为 null */
+    updatedAt: string | null;
+  };
+  accounts: PersonAccountItem[];
+}
+
+/** 个人模式候选池（选择器用）：有任一来源贡献的自然人与账号 */
+export interface PersonCandidateItem {
+  personId: string;
+  displayName: string;
+  avatarUrl: string | null;
+  orgId: string | null;
+  orgName: string | null;
+  github: boolean;
+  confluence: boolean;
+}
+
+export interface PersonAccountCandidateItem {
+  source: 'github' | 'confluence';
+  accountKey: string;
+  displayName: string | null;
+  avatarUrl: string | null;
+  isBot: boolean;
+  effectiveOrgId: string;
+  orgName: string | null;
+  /** 认领该账号的全部自然人（many-to-many 全列，按认领边顺序） */
+  persons: { personId: string; displayName: string }[];
+}
+
+export interface PersonCandidatesData {
+  updatedAt: string;
+  persons: PersonCandidateItem[];
+  githubAccounts: PersonAccountCandidateItem[];
+  confluenceAccounts: PersonAccountCandidateItem[];
+}
+
 /** 候选池条目（04 §5.3.11）：按 `source` 收窄的判别联合 */
 export type IdentityCandidate =
   | GithubIdentityCandidate

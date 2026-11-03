@@ -30,11 +30,9 @@ export function OrgAssignSelect({
       className={cn(className)}
       onChange={(event) => onChange(event.target.value === '' ? null : event.target.value)}
     >
-      <option value="" className="bg-ink-850 text-slate-100">
-        未归属（独立开发者）
-      </option>
+      <option value="">未归属（独立开发者）</option>
       {options.map((option) => (
-        <option key={option.orgId} value={option.orgId} className="bg-ink-850 text-slate-100">
+        <option key={option.orgId} value={option.orgId}>
           {option.name}
         </option>
       ))}

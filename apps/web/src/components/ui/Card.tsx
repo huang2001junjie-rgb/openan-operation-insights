@@ -20,15 +20,22 @@ export function Card({ className, interactive = false, padded = true, ...rest }:
   );
 }
 
+/** 标题字号档位：`md` 是既有默认（全站其它卡片按它验收过），`lg` 目前只给个人模式三张卡用 */
+const TITLE_SIZE = {
+  md: 'text-[0.95rem]',
+  lg: 'text-lg',
+} as const;
+
 export interface CardTitleProps {
   title: ReactNode;
   description?: ReactNode;
   action?: ReactNode;
   icon?: ReactNode;
+  size?: keyof typeof TITLE_SIZE;
   className?: string;
 }
 
-export function CardTitle({ title, description, action, icon, className }: CardTitleProps) {
+export function CardTitle({ title, description, action, icon, size = 'md', className }: CardTitleProps) {
   return (
     <div className={cn('flex items-start justify-between gap-4', className)}>
       <div className="flex min-w-0 items-start gap-3">
@@ -38,7 +45,7 @@ export function CardTitle({ title, description, action, icon, className }: CardT
           </span>
         ) : null}
         <div className="min-w-0">
-          <h3 className="truncate text-[0.95rem] font-semibold text-white">{title}</h3>
+          <h3 className={cn('truncate font-semibold text-white', TITLE_SIZE[size])}>{title}</h3>
           {description ? (
             <p className="mt-1 text-xs leading-relaxed text-slate-400">{description}</p>
           ) : null}

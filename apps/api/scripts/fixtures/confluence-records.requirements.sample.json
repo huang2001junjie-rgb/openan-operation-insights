@@ -1,0 +1,95 @@
+{
+  "_comment": "需求级事实层（ADR-0021）离线固定数据：与 confluence-records.sample.json 独立，专供 confluence-check.mjs 「需求级事实」段在独立临时目录跑端到端。覆盖：多行需求页（含一行同一账号出现两次 → 同行去重只记 1 条）、纯文本联系人（只进 unresolvedContacts 告警、不落事实）、需求页直接挂在 Release Planning 下（无 release 层级 → release 置空 + 采集告警）、祖先链不含 Release Planning 的同名页（被选择器排除、不产生任何事实）。另含 1 条合规会议纪要页（900104，Agenda 段内 1 个 @）：仅用于满足 validate 的会议纪要自检（0 纪要页 / 0 议题分享人会中止写入），不参与需求事实断言。",
+  "records": [
+    {
+      "pageId": "900101",
+      "title": "Requirement Proposal",
+      "spaceKey": "OPENAN",
+      "status": "current",
+      "labels": [],
+      "creatorAccountId": "acct-rf-0",
+      "creatorDisplayName": "Release Bot",
+      "creatorAccountType": "app",
+      "createdDate": "2026-08-01T02:00:00.000Z",
+      "lastModified": "2026-09-20T02:00:00.000Z",
+      "lastModifiedByAccountId": "acct-rf-1",
+      "lastModifiedByDisplayName": "任飞",
+      "versionNumber": 3,
+      "ancestorTitles": ["OpenAN Project Home", "Releases", "Release Planning", "26.12.R1"],
+      "_case": "标准 release 需求页：release = 「Release Planning」的下一级 26.12.R1；行 2 同一账号出现两次 → 同行去重"
+    },
+    {
+      "pageId": "900102",
+      "title": "Requirement Proposal",
+      "spaceKey": "OPENAN",
+      "status": "current",
+      "labels": [],
+      "creatorAccountId": "acct-rf-3",
+      "creatorDisplayName": "沈默",
+      "creatorAccountType": "atlassian",
+      "createdDate": "2026-08-05T02:00:00.000Z",
+      "lastModified": "2026-08-05T02:00:00.000Z",
+      "lastModifiedByAccountId": "acct-rf-3",
+      "lastModifiedByDisplayName": "沈默",
+      "versionNumber": 1,
+      "ancestorTitles": ["OpenAN Project Home", "Releases", "Release Planning"],
+      "_case": "需求页直接挂在 Release Planning 下（无 release 层级）→ release 置空 + 采集告警"
+    },
+    {
+      "pageId": "900103",
+      "title": "Requirement Proposal",
+      "spaceKey": "OPENAN",
+      "status": "current",
+      "labels": [],
+      "creatorAccountId": "acct-rf-9",
+      "creatorDisplayName": "Ghost",
+      "creatorAccountType": "atlassian",
+      "createdDate": "2026-08-06T02:00:00.000Z",
+      "lastModified": "2026-08-06T02:00:00.000Z",
+      "lastModifiedByAccountId": "acct-rf-9",
+      "lastModifiedByDisplayName": "Ghost",
+      "versionNumber": 1,
+      "ancestorTitles": ["OpenAN Project Home", "Releases"],
+      "_case": "同名但祖先链不含 Release Planning（模板页）→ 被选择器排除，不产生任何事实"
+    },
+    {
+      "pageId": "900104",
+      "title": "2026-09-15 TSC Minutes",
+      "spaceKey": "OPENAN",
+      "status": "current",
+      "labels": ["tsc-minutes"],
+      "creatorAccountId": "acct-rf-1",
+      "creatorDisplayName": "任飞",
+      "creatorAccountType": "atlassian",
+      "createdDate": "2026-09-15T02:00:00.000Z",
+      "lastModified": "2026-09-15T02:00:00.000Z",
+      "lastModifiedByAccountId": "acct-rf-1",
+      "lastModifiedByDisplayName": "任飞",
+      "versionNumber": 1,
+      "ancestorTitles": ["OpenAN Project Home", "Technical Steering Committee", "2026 - TSC Minutes"],
+      "_case": "合规会议纪要页（父页年份模式命中 + Agenda 段内 1 个 @）：满足 validate 的会议纪要自检，使需求事实层 fixture 可独立跑通全量采集"
+    }
+  ],
+  "bodies": {
+    "900101": "<h2>Requirement Proposal · 26.12.R1</h2><table><tbody><tr><th>Requirement Title</th><th>Contacts</th></tr><tr><td>AI 编译加速</td><td><ac:link><ri:user ri:account-id=\"acct-rf-1\" /></ac:link></td></tr><tr><td>多卡并行训练</td><td><ac:link><ri:user ri:account-id=\"acct-rf-2\" /></ac:link> <ac:link><ri:user ri:account-id=\"acct-rf-2\" /></ac:link> <ac:link><ri:user ri:account-id=\"acct-rf-1\" /></ac:link></td></tr><tr><td>量化工具链</td><td>@plain-ghost</td></tr></tbody></table>",
+    "900102": "<h2>Requirement Proposal（未归档 release）</h2><table><tbody><tr><th>Requirement Title</th><th>Contacts</th></tr><tr><td>边缘部署套件</td><td><ac:link><ri:user ri:account-id=\"acct-rf-3\" /></ac:link></td></tr></tbody></table>",
+    "900103": "<h2>模板</h2><table><tbody><tr><th>Requirement Title</th><th>Contacts</th></tr><tr><td>模板行</td><td><ac:link><ri:user ri:account-id=\"acct-rf-9\" /></ac:link></td></tr></tbody></table>",
+    "900104": "<h2>Agenda</h2><table><tbody><tr><th>Topic</th><th>Presenter</th></tr><tr><td>编译器季度复盘</td><td><ac:link><ri:user ri:account-id=\"acct-rf-1\" /></ac:link></td></tr></tbody></table>"
+  },
+  "views": {
+    "900101": "<p>渲染视图：<a class=\"confluence-userlink user-mention\" data-account-id=\"acct-rf-1\" href=\"https://example.atlassian.net/wiki/people/acct-rf-1?ref=confluence\">任飞</a> <a class=\"confluence-userlink user-mention\" data-account-id=\"acct-rf-2\" href=\"https://example.atlassian.net/wiki/people/acct-rf-2?ref=confluence\">林岚</a></p>",
+    "900102": "<p>渲染视图：<a class=\"confluence-userlink user-mention\" data-account-id=\"acct-rf-3\" href=\"https://example.atlassian.net/wiki/people/acct-rf-3?ref=confluence\">沈默</a></p>"
+  },
+  "versions": {
+    "900101": [
+      { "number": 1, "authorId": "acct-rf-0", "createdAt": "2026-08-01T02:00:00.000Z" },
+      { "number": 2, "authorId": "acct-rf-1", "createdAt": "2026-09-01T02:00:00.000Z" }
+    ],
+    "900102": [{ "number": 1, "authorId": "acct-rf-3", "createdAt": "2026-08-05T02:00:00.000Z" }]
+  },
+  "users": {
+    "acct-rf-1": "任飞",
+    "acct-rf-2": "林岚",
+    "acct-rf-3": "沈默"
+  }
+}
