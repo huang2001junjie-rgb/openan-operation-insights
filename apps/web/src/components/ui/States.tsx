@@ -19,11 +19,11 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        'flex flex-col items-center justify-center rounded-xl border border-dashed border-white/10 bg-white/[0.015] px-6 py-12 text-center',
+        'flex flex-col items-center justify-center rounded-xl border border-dashed border-ink-950/10 bg-ink-950/[0.015] px-6 py-12 text-center',
         className,
       )}
     >
-      <span className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-slate-400">
+      <span className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl border border-ink-950/10 bg-ink-950/[0.04] text-slate-400">
         {icon ?? <IconInbox width={22} height={22} />}
       </span>
       <p className="text-sm font-medium text-slate-200">{title}</p>
@@ -76,16 +76,16 @@ export function ErrorState({
         className,
       )}
     >
-      <div className="flex items-center gap-2.5 text-rose-200">
+      <div className="flex items-center gap-2.5 text-rose-600">
         <IconAlert width={18} height={18} />
         <span className="text-sm font-semibold">{title}</span>
       </div>
-      <p className="text-xs leading-relaxed text-rose-100/70">{hint}</p>
+      <p className="text-xs leading-relaxed text-rose-700/70">{hint}</p>
       {onRetry ? (
         <button
           type="button"
           onClick={onRetry}
-          className="inline-flex items-center gap-2 rounded-lg border border-white/12 bg-white/[0.05] px-3 py-1.5 text-xs font-medium text-slate-200 transition hover:border-white/25 hover:bg-white/[0.09]"
+          className="inline-flex items-center gap-2 rounded-lg border border-ink-950/12 bg-ink-950/[0.05] px-3 py-1.5 text-xs font-medium text-slate-200 transition hover:border-ink-950/25 hover:bg-ink-950/[0.09]"
         >
           <IconRefresh width={14} height={14} />
           重新加载

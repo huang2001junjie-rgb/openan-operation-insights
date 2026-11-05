@@ -5,12 +5,12 @@ import type { OrganizationType } from '@/types/contract';
 export type BadgeTone = 'neutral' | 'brand' | 'accent' | 'violet' | 'amber' | 'rose';
 
 const TONE_CLASSES: Record<BadgeTone, string> = {
-  neutral: 'border-white/10 bg-white/[0.05] text-slate-300',
-  brand: 'border-brand-400/30 bg-brand-500/12 text-brand-200',
-  accent: 'border-accent-400/30 bg-accent-500/12 text-accent-300',
-  violet: 'border-violet-400/30 bg-violet-500/12 text-violet-300',
-  amber: 'border-amber-400/30 bg-amber-500/12 text-amber-200',
-  rose: 'border-rose-400/30 bg-rose-500/12 text-rose-200',
+  neutral: 'border-ink-950/10 bg-ink-950/[0.05] text-slate-300',
+  brand: 'border-brand-400/30 bg-brand-500/12 text-brand-700',
+  accent: 'border-accent-400/30 bg-accent-500/12 text-accent-600',
+  violet: 'border-violet-400/30 bg-violet-500/12 text-violet-600',
+  amber: 'border-amber-400/30 bg-amber-500/12 text-amber-700',
+  rose: 'border-rose-400/30 bg-rose-500/12 text-rose-600',
 };
 
 export interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {

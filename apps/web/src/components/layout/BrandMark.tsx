@@ -1,7 +1,7 @@
 export function BrandMark({ size = 34 }: { size?: number }) {
   return (
     <span
-      className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-ink-850 shadow-[0_10px_30px_-16px_rgba(36,114,245,0.8)]"
+      className="inline-flex items-center justify-center rounded-xl border border-ink-950/10 bg-ink-850 shadow-[0_10px_30px_-16px_rgba(36,114,245,0.8)]"
       style={{ width: size, height: size }}
     >
       <svg viewBox="0 0 32 32" width={size * 0.62} height={size * 0.62} aria-hidden>

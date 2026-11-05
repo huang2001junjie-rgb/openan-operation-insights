@@ -124,7 +124,7 @@ export function RepoReleaseTable({
           emptyHint={keyword ? '试试其他关键词。' : '需先运行一次 collect:github:full 采集 Releases。'}
           skeleton={<SkeletonTable rows={6} />}
         >
-          <div className="overflow-x-auto rounded-xl border border-white/[0.07]">
+          <div className="overflow-x-auto rounded-xl border border-ink-950/[0.07]">
             <table className="data-table min-w-[860px]">
               <thead>
                 <tr>
@@ -142,7 +142,7 @@ export function RepoReleaseTable({
                           className={cn(
                             'inline-flex items-center gap-1.5 transition-colors hover:text-slate-100',
                             column.align === 'right' && 'flex-row-reverse',
-                            active && 'text-brand-200',
+                            active && 'text-brand-700',
                           )}
                         >
                           {column.label}
@@ -177,7 +177,7 @@ export function RepoReleaseTable({
                                 href={`https://github.com/${row.repoId}/releases`}
                                 target="_blank"
                                 rel="noreferrer noopener"
-                                className="truncate font-medium text-slate-100 transition hover:text-brand-300"
+                                className="truncate font-medium text-slate-100 transition hover:text-brand-600"
                               >
                                 {shortName(row.repoId)}
                               </a>
@@ -189,7 +189,7 @@ export function RepoReleaseTable({
                       <td className="numeric text-right">{formatNumber(row.releaseCount)}</td>
                       <td className="numeric text-right">{formatDateTime(latest.publishedAt)}</td>
                       <td className="text-right">
-                        <code className="rounded bg-white/[0.06] px-1.5 py-0.5 text-[0.72rem] text-brand-200">
+                        <code className="rounded bg-ink-950/[0.06] px-1.5 py-0.5 text-[0.72rem] text-brand-700">
                           {latest.tag}
                         </code>
                         {showName ? (
@@ -205,7 +205,7 @@ export function RepoReleaseTable({
               </tbody>
 
               <tfoot>
-                <tr className="bg-white/[0.02]">
+                <tr className="bg-ink-950/[0.02]">
                   <td className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
                     合计（当前视图）
                   </td>

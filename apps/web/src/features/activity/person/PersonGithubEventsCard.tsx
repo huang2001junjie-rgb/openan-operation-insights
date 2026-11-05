@@ -47,7 +47,7 @@ export function PersonGithubEventsCard({
         >
           {data ? (
             <>
-              <div className="overflow-x-auto rounded-xl border border-white/[0.07]">
+              <div className="overflow-x-auto rounded-xl border border-ink-950/[0.07]">
                 <table className="data-table min-w-[720px]">
                   <thead>
                     <tr>
@@ -67,7 +67,7 @@ export function PersonGithubEventsCard({
                         <td>
                           <span className="inline-flex items-center gap-1.5 text-xs text-slate-400">
                             {event.kind === 'pullRequest' ? (
-                              <IconPullRequest width={13} height={13} className="text-brand-300" />
+                              <IconPullRequest width={13} height={13} className="text-brand-600" />
                             ) : (
                               <IconIssue width={13} height={13} className="text-amber-300" />
                             )}
@@ -79,12 +79,12 @@ export function PersonGithubEventsCard({
                             href={event.url}
                             target="_blank"
                             rel="noreferrer noopener"
-                            className="group inline-flex max-w-full items-center gap-1.5 text-slate-200 transition-colors hover:text-brand-300"
+                            className="group inline-flex max-w-full items-center gap-1.5 text-slate-200 transition-colors hover:text-brand-600"
                           >
                             <span className="truncate font-medium">
                               {event.repository}#{event.number}
                             </span>
-                            <IconExternal width={12} height={12} className="shrink-0 text-slate-500 transition-colors group-hover:text-brand-300" />
+                            <IconExternal width={12} height={12} className="shrink-0 text-slate-500 transition-colors group-hover:text-brand-600" />
                           </a>
                         </td>
                         <td className="numeric text-right">{formatNumber(event.commitCount)}</td>

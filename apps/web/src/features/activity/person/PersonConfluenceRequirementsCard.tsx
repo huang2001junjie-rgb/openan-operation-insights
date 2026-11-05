@@ -58,7 +58,7 @@ export function PersonConfluenceRequirementsCard({
           ) : null}
           {data && data.total > 0 ? (
             <>
-              <div className="overflow-x-auto rounded-xl border border-white/[0.07]">
+              <div className="overflow-x-auto rounded-xl border border-ink-950/[0.07]">
                 <table className="data-table min-w-[760px]">
                   <thead>
                     <tr>
@@ -75,7 +75,7 @@ export function PersonConfluenceRequirementsCard({
                         <td className="font-medium text-slate-100">{fact.requirementTitle}</td>
                         <td>
                           {fact.release ? (
-                            <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[0.7rem] text-slate-300">
+                            <span className="rounded-full border border-ink-950/10 bg-ink-950/[0.04] px-2 py-0.5 text-[0.7rem] text-slate-300">
                               {fact.release}
                             </span>
                           ) : (
@@ -90,10 +90,10 @@ export function PersonConfluenceRequirementsCard({
                               href={fact.url}
                               target="_blank"
                               rel="noreferrer noopener"
-                              className="group inline-flex max-w-full items-center gap-1.5 text-slate-200 transition-colors hover:text-brand-300"
+                              className="group inline-flex max-w-full items-center gap-1.5 text-slate-200 transition-colors hover:text-brand-600"
                             >
                               <span className="truncate">{fact.pageTitle}</span>
-                              <IconExternal width={12} height={12} className="shrink-0 text-slate-500 transition-colors group-hover:text-brand-300" />
+                              <IconExternal width={12} height={12} className="shrink-0 text-slate-500 transition-colors group-hover:text-brand-600" />
                             </a>
                           ) : (
                             <span className="text-slate-400">{fact.pageTitle}</span>

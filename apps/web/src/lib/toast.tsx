@@ -44,9 +44,9 @@ function getSnapshot(): ToastItem[] {
 }
 
 const TONE_STYLES: Record<ToastTone, string> = {
-  success: 'border-accent-400/30 bg-accent-500/[0.12] text-accent-300',
-  error: 'border-rose-400/30 bg-rose-500/[0.12] text-rose-200',
-  info: 'border-brand-400/30 bg-brand-500/[0.12] text-brand-200',
+  success: 'border-accent-400/30 bg-accent-500/[0.12] text-accent-600',
+  error: 'border-rose-400/30 bg-rose-500/[0.12] text-rose-600',
+  info: 'border-brand-400/30 bg-brand-500/[0.12] text-brand-700',
 };
 
 const TONE_ICON: Record<ToastTone, typeof IconCheck> = {

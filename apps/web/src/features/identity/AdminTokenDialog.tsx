@@ -59,11 +59,11 @@ export function AdminTokenDialog({ open, onClose }: AdminTokenDialogProps) {
       >
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-brand-400/25 bg-brand-500/12 text-brand-200">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-brand-400/25 bg-brand-500/12 text-brand-700">
               <IconShield width={19} height={19} />
             </span>
             <div>
-              <h2 className="text-[0.95rem] font-semibold text-white">管理令牌</h2>
+              <h2 className="text-[0.95rem] font-semibold text-slate-50">管理令牌</h2>
               <p className="mt-1 text-xs leading-relaxed text-slate-400">
                 令牌仅存于当前会话，用于为写操作签名；关闭标签页即失效，绝不写入地址栏。
               </p>
@@ -73,7 +73,7 @@ export function AdminTokenDialog({ open, onClose }: AdminTokenDialogProps) {
             type="button"
             aria-label="关闭"
             onClick={onClose}
-            className="rounded-lg p-1 text-slate-400 transition hover:bg-white/[0.06] hover:text-white"
+            className="rounded-lg p-1 text-slate-400 transition hover:bg-ink-950/[0.06] hover:text-slate-50"
           >
             <IconX width={16} height={16} />
           </button>

@@ -46,10 +46,10 @@ export function OrganizationRosterPanel({
     <section className="glass-card flex min-h-0 flex-col p-4">
       <header className="flex items-center justify-between gap-2">
         <div>
-          <h2 className="text-[0.95rem] font-semibold text-white">组织</h2>
+          <h2 className="text-[0.95rem] font-semibold text-slate-50">组织</h2>
           <p className="mt-0.5 text-xs text-slate-500">取自既有组织档案，仅读</p>
         </div>
-        <span className="numeric rounded-lg border border-white/10 bg-white/[0.04] px-2 py-0.5 text-xs text-slate-300">
+        <span className="numeric rounded-lg border border-ink-950/10 bg-ink-950/[0.04] px-2 py-0.5 text-xs text-slate-300">
           {entries.length}
         </span>
       </header>
@@ -65,7 +65,7 @@ export function OrganizationRosterPanel({
           type="button"
           aria-pressed={onlyWithMembers}
           onClick={() => setOnlyWithMembers((value) => !value)}
-          className={cn('chip-interactive shrink-0 whitespace-nowrap', onlyWithMembers && 'border-brand-400/40 bg-brand-500/12 text-brand-100')}
+          className={cn('chip-interactive shrink-0 whitespace-nowrap', onlyWithMembers && 'border-brand-400/40 bg-brand-500/12 text-brand-800')}
         >
           仅有成员
         </button>
@@ -95,7 +95,7 @@ export function OrganizationRosterPanel({
                   'relative flex w-full items-center gap-3 overflow-hidden rounded-xl border px-3 py-2.5 text-left transition-[transform,border-color,background-color] duration-200',
                   active
                     ? 'border-brand-400/45 bg-brand-500/[0.09]'
-                    : 'border-white/[0.07] bg-white/[0.02] hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/[0.045]',
+                    : 'border-ink-950/[0.07] bg-ink-950/[0.02] hover:-translate-y-0.5 hover:border-ink-950/20 hover:bg-ink-950/[0.045]',
                 )}
               >
                 {active ? (
@@ -118,7 +118,7 @@ export function OrganizationRosterPanel({
                 <span
                   className={cn(
                     'numeric shrink-0 text-xs',
-                    entry.memberCount > 0 ? 'text-accent-300' : 'text-slate-500',
+                    entry.memberCount > 0 ? 'text-accent-600' : 'text-slate-500',
                   )}
                 >
                   已收纳 {entry.memberCount} 人

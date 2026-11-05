@@ -108,7 +108,7 @@ export function ActivityTable({
           emptyHint={keyword ? '试试其他关键词。' : '调整筛选条件后再看。'}
           skeleton={<SkeletonTable rows={6} />}
         >
-          <div className="overflow-x-auto rounded-xl border border-white/[0.07]">
+          <div className="overflow-x-auto rounded-xl border border-ink-950/[0.07]">
             <table className="data-table min-w-[1040px]">
               <thead>
                 <tr>
@@ -125,13 +125,13 @@ export function ActivityTable({
                           onClick={() => handleSort(column.key)}
                           className={cn(
                             'inline-flex items-center gap-1.5 transition-colors hover:text-slate-100',
-                            active && 'text-brand-200',
+                            active && 'text-brand-700',
                           )}
                         >
                           {column.label}
                           {rangeActive && column.allTime ? (
                             <span
-                              className="rounded border border-white/10 bg-white/[0.04] px-1 py-px text-[0.55rem] font-normal leading-tight text-slate-500"
+                              className="rounded border border-ink-950/10 bg-ink-950/[0.04] px-1 py-px text-[0.55rem] font-normal leading-tight text-slate-500"
                               title="Confluence 侧无时间维度明细，此列为全历史累计，不参与区间筛选"
                             >
                               全历史
@@ -174,7 +174,7 @@ export function ActivityTable({
                                 href={row.homepageUrl}
                                 target="_blank"
                                 rel="noreferrer noopener"
-                                className="text-slate-500 transition hover:text-brand-300"
+                                className="text-slate-500 transition hover:text-brand-600"
                                 aria-label={`打开 ${row.orgName} 主页`}
                               >
                                 <IconExternal width={13} height={13} />
@@ -202,7 +202,7 @@ export function ActivityTable({
               </tbody>
 
               <tfoot>
-                <tr className="bg-white/[0.02]">
+                <tr className="bg-ink-950/[0.02]">
                   <td className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
                     合计（当前视图）
                   </td>

@@ -89,11 +89,11 @@ export function OrgMemberPanel({
     <section className="glass-card flex min-h-0 flex-col p-4">
       <header className="flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="truncate text-[0.95rem] font-semibold text-white">
+          <h2 className="truncate text-[0.95rem] font-semibold text-slate-50">
             收纳进「{entry.organization.name}」
           </h2>
           <p className="mt-0.5 text-xs text-slate-500">
-            当前已收纳 <span className="numeric text-accent-300">{entry.memberCount}</span> 人（派生）
+            当前已收纳 <span className="numeric text-accent-600">{entry.memberCount}</span> 人（派生）
           </p>
         </div>
         {bulkCandidates.length > 0 ? (
@@ -147,7 +147,7 @@ export function OrgMemberPanel({
                 key={person.personId}
                 className={cn(
                   'flex items-center gap-3 rounded-xl border px-3 py-2.5 transition-colors duration-200',
-                  checked ? 'border-brand-400/40 bg-brand-500/[0.07]' : 'border-white/[0.07] bg-white/[0.02]',
+                  checked ? 'border-brand-400/40 bg-brand-500/[0.07]' : 'border-ink-950/[0.07] bg-ink-950/[0.02]',
                   inThisOrg && 'opacity-65',
                 )}
               >

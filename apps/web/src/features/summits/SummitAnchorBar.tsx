@@ -40,13 +40,13 @@ export function SummitAnchorBar({
                 'group inline-flex shrink-0 items-center gap-2 rounded-xl border px-3 py-2 text-xs transition-all duration-300',
                 active
                   ? 'border-brand-400/45 bg-brand-500/[0.12] text-white shadow-[0_14px_30px_-22px_rgba(36,114,245,0.95)]'
-                  : 'border-white/[0.07] bg-white/[0.02] text-slate-400 hover:border-white/[0.16] hover:bg-white/[0.05] hover:text-slate-100',
+                  : 'border-ink-950/[0.07] bg-ink-950/[0.02] text-slate-400 hover:border-ink-950/[0.16] hover:bg-ink-950/[0.05] hover:text-slate-100',
               )}
             >
               <span
                 className={cn(
                   'numeric text-[0.68rem] font-semibold',
-                  active ? 'text-brand-200' : 'text-slate-500 group-hover:text-slate-400',
+                  active ? 'text-brand-700' : 'text-slate-500 group-hover:text-slate-400',
                 )}
               >
                 {anchorLabel(summit.startDate)}

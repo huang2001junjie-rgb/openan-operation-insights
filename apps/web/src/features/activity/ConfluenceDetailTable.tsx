@@ -85,7 +85,7 @@ export function ConfluenceDetailTable({ rows, isLoading, isError, error, onRetry
           emptyHint={keyword ? '试试其他关键词。' : '调整筛选条件后再看。'}
           skeleton={<SkeletonTable rows={6} />}
         >
-          <div className="overflow-x-auto rounded-xl border border-white/[0.07]">
+          <div className="overflow-x-auto rounded-xl border border-ink-950/[0.07]">
             <table className="data-table min-w-[640px]">
               <thead>
                 <tr>
@@ -98,7 +98,7 @@ export function ConfluenceDetailTable({ rows, isLoading, isError, error, onRetry
                           onClick={() => handleSort(column.key)}
                           className={cn(
                             'inline-flex items-center gap-1.5 transition-colors hover:text-slate-100',
-                            active && 'text-brand-200',
+                            active && 'text-brand-700',
                           )}
                         >
                           {column.label}
@@ -138,7 +138,7 @@ export function ConfluenceDetailTable({ rows, isLoading, isError, error, onRetry
                               href={row.homepageUrl}
                               target="_blank"
                               rel="noreferrer noopener"
-                              className="text-slate-500 transition hover:text-brand-300"
+                              className="text-slate-500 transition hover:text-brand-600"
                               aria-label={`打开 ${row.orgName} 主页`}
                             >
                               <IconExternal width={13} height={13} />
@@ -158,7 +158,7 @@ export function ConfluenceDetailTable({ rows, isLoading, isError, error, onRetry
               </tbody>
 
               <tfoot>
-                <tr className="bg-white/[0.02]">
+                <tr className="bg-ink-950/[0.02]">
                   <td className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
                     合计（当前视图）
                   </td>

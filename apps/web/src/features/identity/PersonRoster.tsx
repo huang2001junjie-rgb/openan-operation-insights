@@ -86,10 +86,10 @@ export function PersonRoster({
     <section className="glass-card flex min-h-0 flex-col p-4">
       <header className="flex items-center justify-between gap-2">
         <div>
-          <h2 className="text-[0.95rem] font-semibold text-white">自然人</h2>
+          <h2 className="text-[0.95rem] font-semibold text-slate-50">自然人</h2>
           <p className="mt-0.5 text-xs text-slate-500">身份匹配的最基本单位</p>
         </div>
-        <span className="numeric rounded-lg border border-white/10 bg-white/[0.04] px-2 py-0.5 text-xs text-slate-300">
+        <span className="numeric rounded-lg border border-ink-950/10 bg-ink-950/[0.04] px-2 py-0.5 text-xs text-slate-300">
           {totalCount ?? '—'}
         </span>
       </header>
@@ -165,7 +165,7 @@ export function PersonRoster({
                   'relative overflow-hidden rounded-xl border transition-[transform,border-color,background-color] duration-200',
                   active
                     ? 'border-brand-400/45 bg-brand-500/[0.09]'
-                    : 'border-white/[0.07] bg-white/[0.02] hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/[0.05]',
+                    : 'border-ink-950/[0.07] bg-ink-950/[0.02] hover:-translate-y-0.5 hover:border-ink-950/20 hover:bg-ink-950/[0.05]',
                 )}
               >
                 {active ? (
@@ -197,7 +197,7 @@ export function PersonRoster({
                     title="详情"
                     aria-label={`查看 ${person.displayName} 详情`}
                     onClick={() => onOpenDetail(person.personId)}
-                    className="rounded-lg border border-white/10 bg-white/[0.06] p-1.5 text-slate-300 transition hover:border-brand-400/40 hover:text-brand-200"
+                    className="rounded-lg border border-ink-950/10 bg-ink-950/[0.06] p-1.5 text-slate-300 transition hover:border-brand-400/40 hover:text-brand-700"
                   >
                     <IconChevronRight width={14} height={14} />
                   </button>

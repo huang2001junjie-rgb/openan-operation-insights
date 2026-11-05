@@ -70,10 +70,10 @@ export function PersonDetailDrawer({
         aria-label={`${person.displayName} 详情`}
         className="glass-card relative flex h-full w-full max-w-md flex-col overflow-hidden rounded-l-2xl rounded-r-none animate-fade-in"
       >
-        <header className="flex items-start gap-3 border-b border-white/[0.07] p-5">
+        <header className="flex items-start gap-3 border-b border-ink-950/[0.07] p-5">
           <PersonAvatar name={person.displayName} size="lg" />
           <div className="min-w-0 flex-1">
-            <h2 className="truncate text-base font-semibold text-white">{person.displayName}</h2>
+            <h2 className="truncate text-base font-semibold text-slate-50">{person.displayName}</h2>
             <p className="mt-0.5 truncate text-xs text-slate-500">{person.personId}</p>
             <div className="mt-2 flex flex-wrap items-center gap-1.5">
               <Badge tone="neutral">已认领 {person.claimCount}</Badge>
@@ -83,7 +83,7 @@ export function PersonDetailDrawer({
             type="button"
             aria-label="关闭"
             onClick={onClose}
-            className="rounded-lg p-1 text-slate-400 transition hover:bg-white/[0.06] hover:text-white"
+            className="rounded-lg p-1 text-slate-400 transition hover:bg-ink-950/[0.06] hover:text-slate-50"
           >
             <IconX width={16} height={16} />
           </button>
@@ -124,7 +124,7 @@ export function PersonDetailDrawer({
             <p className="text-[0.7rem] font-semibold uppercase tracking-wider text-slate-500">已认领账号</p>
             <div className="mt-2.5 space-y-2">
               {claims.length === 0 ? (
-                <p className="rounded-xl border border-dashed border-white/10 px-3 py-4 text-center text-xs text-slate-500">
+                <p className="rounded-xl border border-dashed border-ink-950/10 px-3 py-4 text-center text-xs text-slate-500">
                   尚未认领任何账号，请在右侧候选池中认领。
                 </p>
               ) : (
@@ -133,7 +133,7 @@ export function PersonDetailDrawer({
                   return (
                     <div
                       key={claim.claimId}
-                      className="flex items-center gap-3 rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2.5"
+                      className="flex items-center gap-3 rounded-xl border border-ink-950/[0.07] bg-ink-950/[0.02] px-3 py-2.5"
                     >
                       <PersonAvatar
                         name={candidate?.displayName ?? claim.displayName ?? claim.accountKey}
@@ -154,7 +154,7 @@ export function PersonDetailDrawer({
                         aria-label="解除认领"
                         disabled={isMutating}
                         onClick={() => onUnclaim(claim.claimId)}
-                        className="rounded-lg border border-white/10 bg-white/[0.05] p-1.5 text-slate-300 transition hover:border-rose-400/40 hover:text-rose-200 disabled:opacity-40"
+                        className="rounded-lg border border-ink-950/10 bg-ink-950/[0.05] p-1.5 text-slate-300 transition hover:border-rose-400/40 hover:text-rose-600 disabled:opacity-40"
                       >
                         <IconUnlink width={14} height={14} />
                       </button>
@@ -166,11 +166,11 @@ export function PersonDetailDrawer({
           </div>
         </div>
 
-        <footer className="space-y-3 border-t border-white/[0.07] p-5">
+        <footer className="space-y-3 border-t border-ink-950/[0.07] p-5">
           <p className="text-[0.7rem] font-semibold uppercase tracking-wider text-rose-300/80">危险操作</p>
           {confirmHard ? (
             <div className="space-y-2 rounded-xl border border-rose-400/30 bg-rose-500/[0.07] px-3 py-3">
-              <p className="text-xs leading-relaxed text-rose-100/85">
+              <p className="text-xs leading-relaxed text-rose-700/85">
                 物理删除不可恢复，且会解绑其全部认领记录。确认删除「{person.displayName}」？
               </p>
               <div className="flex items-center gap-2">
@@ -194,7 +194,7 @@ export function PersonDetailDrawer({
           ) : (
             <Button
               variant="ghost"
-              className="w-full border-rose-400/20 text-rose-200 hover:border-rose-400/40 hover:bg-rose-500/[0.08]"
+              className="w-full border-rose-400/20 text-rose-600 hover:border-rose-400/40 hover:bg-rose-500/[0.08]"
               disabled={isMutating}
               onClick={() => setConfirmHard(true)}
             >

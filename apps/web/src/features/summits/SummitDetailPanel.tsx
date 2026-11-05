@@ -8,9 +8,9 @@ import type { SummitDetail } from '@/types/contract';
 
 function StatPill({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-white/[0.07] bg-white/[0.025] px-3.5 py-3">
+    <div className="rounded-xl border border-ink-950/[0.07] bg-ink-950/[0.025] px-3.5 py-3">
       <p className="text-[0.68rem] font-medium uppercase tracking-wider text-slate-500">{label}</p>
-      <p className="numeric mt-1.5 text-base font-semibold text-white">{value}</p>
+      <p className="numeric mt-1.5 text-base font-semibold text-slate-50">{value}</p>
     </div>
   );
 }
@@ -103,8 +103,8 @@ export function SummitDetailPanel({
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
-        <BulletList title="议程亮点" items={summit.agendaHighlights} icon={<IconCheck width={14} height={14} className="text-brand-300" />} />
-        <BulletList title="峰会成果" items={summit.outcomes} icon={<IconCheck width={14} height={14} className="text-accent-300" />} />
+        <BulletList title="议程亮点" items={summit.agendaHighlights} icon={<IconCheck width={14} height={14} className="text-brand-600" />} />
+        <BulletList title="峰会成果" items={summit.outcomes} icon={<IconCheck width={14} height={14} className="text-accent-600" />} />
       </div>
 
       <div className="mt-7">
@@ -116,7 +116,7 @@ export function SummitDetailPanel({
         {summit.attendingOrganizations.length === 0 ? (
           <p className="mt-3 text-xs text-slate-500">暂无参会组织记录</p>
         ) : (
-          <div className="mt-3 overflow-hidden rounded-xl border border-white/[0.07]">
+          <div className="mt-3 overflow-hidden rounded-xl border border-ink-950/[0.07]">
             <table className="data-table">
               <thead>
                 <tr>
@@ -153,7 +153,7 @@ export function SummitDetailPanel({
             href={summit.websiteUrl}
             target="_blank"
             rel="noreferrer noopener"
-            className="inline-flex items-center gap-2 rounded-xl border border-white/12 bg-white/[0.04] px-3.5 py-2 text-xs font-medium text-slate-200 transition hover:border-white/25 hover:bg-white/[0.08]"
+            className="inline-flex items-center gap-2 rounded-xl border border-ink-950/12 bg-ink-950/[0.04] px-3.5 py-2 text-xs font-medium text-slate-200 transition hover:border-ink-950/25 hover:bg-ink-950/[0.08]"
           >
             <IconExternal width={14} height={14} />
             峰会主页
@@ -164,7 +164,7 @@ export function SummitDetailPanel({
             href={summit.minutesUrl}
             target="_blank"
             rel="noreferrer noopener"
-            className="inline-flex items-center gap-2 rounded-xl border border-white/12 bg-white/[0.04] px-3.5 py-2 text-xs font-medium text-slate-200 transition hover:border-white/25 hover:bg-white/[0.08]"
+            className="inline-flex items-center gap-2 rounded-xl border border-ink-950/12 bg-ink-950/[0.04] px-3.5 py-2 text-xs font-medium text-slate-200 transition hover:border-ink-950/25 hover:bg-ink-950/[0.08]"
           >
             <IconFile width={14} height={14} />
             峰会纪要

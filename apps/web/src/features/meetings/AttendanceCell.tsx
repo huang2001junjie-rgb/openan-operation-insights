@@ -13,13 +13,13 @@ export function AttendanceCell({ present, person, date }: AttendanceCellProps) {
   const label = `${person} 于 ${date} ${present ? '出席' : '缺席'}`;
 
   return (
-    <td className="border-b border-white/[0.05] px-2.5 py-2 text-center align-middle transition-colors duration-200 group-hover:bg-white/[0.03]">
+    <td className="border-b border-ink-950/[0.05] px-2.5 py-2 text-center align-middle transition-colors duration-200 group-hover:bg-ink-950/[0.03]">
       {present ? (
         <span
           role="img"
           aria-label={label}
           title={label}
-          className="inline-flex h-6 w-6 items-center justify-center rounded-md border border-accent-400/30 bg-accent-500/12 text-accent-300"
+          className="inline-flex h-6 w-6 items-center justify-center rounded-md border border-accent-400/30 bg-accent-500/12 text-accent-600"
         >
           <IconCheck width={14} height={14} />
         </span>

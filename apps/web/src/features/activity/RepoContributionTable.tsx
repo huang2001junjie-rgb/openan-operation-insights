@@ -134,7 +134,7 @@ export function RepoContributionTable({
           emptyHint={keyword ? '试试其他关键词。' : '需先运行一次全量采集生成事件明细。'}
           skeleton={<SkeletonTable rows={6} />}
         >
-          <div className="overflow-x-auto rounded-xl border border-white/[0.07]">
+          <div className="overflow-x-auto rounded-xl border border-ink-950/[0.07]">
             <table className="data-table min-w-[900px]">
               <thead>
                 <tr>
@@ -151,7 +151,7 @@ export function RepoContributionTable({
                           onClick={() => handleSort(column.key)}
                           className={cn(
                             'inline-flex items-center gap-1.5 transition-colors hover:text-slate-100',
-                            active && 'text-brand-200',
+                            active && 'text-brand-700',
                           )}
                         >
                           {column.label}
@@ -184,7 +184,7 @@ export function RepoContributionTable({
                               href={`https://github.com/${row.repoId}`}
                               target="_blank"
                               rel="noreferrer noopener"
-                              className="shrink-0 text-slate-500 transition hover:text-brand-300"
+                              className="shrink-0 text-slate-500 transition hover:text-brand-600"
                               aria-label={`打开 ${row.repoId} 仓库`}
                             >
                               <IconExternal width={13} height={13} />
@@ -205,7 +205,7 @@ export function RepoContributionTable({
               </tbody>
 
               <tfoot>
-                <tr className="bg-white/[0.02]">
+                <tr className="bg-ink-950/[0.02]">
                   <td className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
                     合计（当前视图）
                   </td>

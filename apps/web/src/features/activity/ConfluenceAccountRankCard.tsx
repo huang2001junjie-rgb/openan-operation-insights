@@ -111,14 +111,14 @@ export function ConfluenceAccountRankCard({
 
               return (
                 <li key={item.accountId}>
-                  <div className="group flex items-center gap-3 rounded-xl px-2 py-2 transition-colors duration-200 hover:bg-white/[0.045] motion-reduce:transition-none">
+                  <div className="group flex items-center gap-3 rounded-xl px-2 py-2 transition-colors duration-200 hover:bg-ink-950/[0.045] motion-reduce:transition-none">
                     <span
                       className={cn(
                         'numeric w-5 shrink-0 text-center text-xs font-semibold',
                         index === 0
-                          ? 'text-brand-200'
+                          ? 'text-brand-700'
                           : index < 3
-                            ? 'text-brand-300/80'
+                            ? 'text-brand-600/80'
                             : 'text-slate-500',
                       )}
                     >
@@ -126,7 +126,7 @@ export function ConfluenceAccountRankCard({
                     </span>
 
                     <span
-                      className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/12 bg-gradient-to-br from-brand-400/25 to-violet-400/20 text-[0.7rem] font-semibold tracking-wide text-brand-100"
+                      className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-ink-950/12 bg-gradient-to-br from-brand-400/25 to-violet-400/20 text-[0.7rem] font-semibold tracking-wide text-brand-800"
                       title={item.displayName}
                     >
                       {initialsOf(item.displayName, item.accountId)}
@@ -149,7 +149,7 @@ export function ConfluenceAccountRankCard({
                           className={cn(
                             'shrink-0 truncate text-[0.68rem]',
                             isUnattributed
-                              ? 'rounded-full border border-white/10 bg-white/[0.04] px-1.5 py-px text-slate-400'
+                              ? 'rounded-full border border-ink-950/10 bg-ink-950/[0.04] px-1.5 py-px text-slate-400'
                               : 'text-slate-500',
                           )}
                           title={orgLabel}
@@ -158,7 +158,7 @@ export function ConfluenceAccountRankCard({
                         </span>
                       </div>
 
-                      <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-white/[0.06]">
+                      <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-ink-950/[0.06]">
                         <div
                           className="h-full rounded-full bg-gradient-to-r from-brand-600 to-accent-400 transition-[width] duration-700 ease-out group-hover:from-brand-500 group-hover:to-accent-400 motion-reduce:transition-none"
                           style={{ width: `${Math.max(ratio, 2)}%` }}
@@ -167,7 +167,7 @@ export function ConfluenceAccountRankCard({
                     </div>
 
                     <div className="shrink-0 text-right">
-                      <div className="numeric text-sm font-semibold text-white">
+                      <div className="numeric text-sm font-semibold text-slate-50">
                         {formatNumber(value)}
                       </div>
                       <div className="text-[0.66rem] text-slate-500">{METRIC_UNIT[metric]}</div>
@@ -180,7 +180,7 @@ export function ConfluenceAccountRankCard({
         </AsyncState>
       </div>
 
-      <p className="mt-4 border-t border-white/[0.06] pt-3 text-[0.68rem] leading-relaxed text-slate-500">
+      <p className="mt-4 border-t border-ink-950/[0.06] pt-3 text-[0.68rem] leading-relaxed text-slate-500">
         口径：Confluence 成果按账号聚合，归属为生效归属（人工认领优先于采集口径）；未归属账号归入「{UNATTRIBUTED_LABEL}」；本榜为全历史累计——该侧落盘的是账号级计数、无时间维度明细，区间筛选不生效。
         {updatedAt ? <span className="ml-1">数据更新于 {formatDateTime(updatedAt)}。</span> : null}
       </p>

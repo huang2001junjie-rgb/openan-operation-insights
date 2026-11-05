@@ -61,11 +61,11 @@ export function OrgConflictDialog({
       >
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-amber-400/25 bg-amber-500/12 text-amber-200">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-amber-400/25 bg-amber-500/12 text-amber-700">
               <IconAlert width={19} height={19} />
             </span>
             <div>
-              <h2 className="text-[0.95rem] font-semibold text-white">归属不一致</h2>
+              <h2 className="text-[0.95rem] font-semibold text-slate-50">归属不一致</h2>
               <p className="mt-1 text-xs leading-relaxed text-slate-400">
                 账号「{accountLabel}」的自动匹配归属与所选自然人的归属不同，认领后两套口径将保持不一致（不自动仲裁）。
               </p>
@@ -75,13 +75,13 @@ export function OrgConflictDialog({
             type="button"
             aria-label="关闭"
             onClick={onCancel}
-            className="rounded-lg p-1 text-slate-400 transition hover:bg-white/[0.06] hover:text-white"
+            className="rounded-lg p-1 text-slate-400 transition hover:bg-ink-950/[0.06] hover:text-slate-50"
           >
             <IconX width={16} height={16} />
           </button>
         </div>
 
-        <div className="mt-5 space-y-2 rounded-xl border border-white/[0.07] bg-white/[0.03] p-3.5 text-xs">
+        <div className="mt-5 space-y-2 rounded-xl border border-ink-950/[0.07] bg-ink-950/[0.03] p-3.5 text-xs">
           <p className="flex items-center gap-2 text-slate-300">
             <IconBuilding width={13} height={13} className="shrink-0 text-slate-500" />
             账号「{accountLabel}」· 自动匹配归属

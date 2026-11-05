@@ -19,7 +19,7 @@ export function AppShell() {
         <Outlet />
       </main>
 
-      <footer className="mt-6 border-t border-white/[0.06]">
+      <footer className="mt-6 border-t border-ink-950/[0.06]">
         <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-2 px-4 py-6 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
           <p>OpenAN 社区运营洞察平台 · 数据契约 v1（schemaVersion 1）</p>
           <p className="flex flex-wrap items-center gap-x-3 gap-y-1">

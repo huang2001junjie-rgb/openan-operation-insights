@@ -61,7 +61,7 @@ export function MeetingAttendanceMatrix({
         action={
           <span className="hidden items-center gap-3 text-[0.7rem] text-slate-500 sm:inline-flex">
             <span className="inline-flex items-center gap-1.5">
-              <IconCheck width={13} height={13} className="text-accent-300" />
+              <IconCheck width={13} height={13} className="text-accent-600" />
               出席
             </span>
             <span className="numeric">— 缺席</span>
@@ -87,7 +87,7 @@ export function MeetingAttendanceMatrix({
                 <tr>
                   <th
                     scope="col"
-                    className="sticky left-0 top-0 z-30 min-w-[7.5rem] border-b border-r border-white/[0.08] bg-ink-900/95 px-3 py-2.5 text-left text-[0.7rem] font-semibold uppercase tracking-wider text-slate-400 backdrop-blur-md"
+                    className="sticky left-0 top-0 z-30 min-w-[7.5rem] border-b border-r border-ink-950/[0.08] bg-ink-900/95 px-3 py-2.5 text-left text-[0.7rem] font-semibold uppercase tracking-wider text-slate-400 backdrop-blur-md"
                   >
                     日期
                   </th>
@@ -97,7 +97,7 @@ export function MeetingAttendanceMatrix({
                       <th
                         key={`${column}-${index}`}
                         scope="col"
-                        className="sticky top-0 z-20 min-w-[6.25rem] border-b border-white/[0.08] bg-ink-900/95 px-2.5 py-2 text-center align-bottom backdrop-blur-md"
+                        className="sticky top-0 z-20 min-w-[6.25rem] border-b border-ink-950/[0.08] bg-ink-900/95 px-2.5 py-2 text-center align-bottom backdrop-blur-md"
                       >
                         <span
                           className="block max-w-[9rem] truncate text-xs font-semibold text-slate-300"
@@ -113,7 +113,7 @@ export function MeetingAttendanceMatrix({
                             {member.name}
                           </span>
                         ) : null}
-                        <span className="numeric mt-0.5 block text-[0.66rem] font-normal text-accent-300/80">
+                        <span className="numeric mt-0.5 block text-[0.66rem] font-normal text-accent-600/80">
                           {toPercent(rates[index] ?? 0)}
                         </span>
                       </th>
@@ -128,7 +128,7 @@ export function MeetingAttendanceMatrix({
                     <tr key={row.date} className="group">
                       <th
                         scope="row"
-                        className="sticky left-0 z-10 whitespace-nowrap border-b border-r border-white/[0.06] bg-ink-900/95 px-3 py-2 text-left backdrop-blur-md transition-colors duration-200 group-hover:bg-ink-850/95"
+                        className="sticky left-0 z-10 whitespace-nowrap border-b border-r border-ink-950/[0.06] bg-ink-900/95 px-3 py-2 text-left backdrop-blur-md transition-colors duration-200 group-hover:bg-ink-850/95"
                       >
                         <span className="numeric block text-[0.78rem] font-medium text-slate-200">{row.date}</span>
                         <span className="numeric mt-0.5 block text-[0.64rem] font-normal text-slate-500">
@@ -150,7 +150,7 @@ export function MeetingAttendanceMatrix({
             </table>
           </div>
 
-          <p className="mt-4 border-t border-white/[0.06] pt-3 text-[0.68rem] leading-relaxed text-slate-500">
+          <p className="mt-4 border-t border-ink-950/[0.06] pt-3 text-[0.68rem] leading-relaxed text-slate-500">
             出席率 = 该成员出席场次 ÷ 台账总场次（{meetingCount} 场）；空白格按缺席计入分母。横向可滚动，
             行头与列头在滚动时保持可见。
           </p>

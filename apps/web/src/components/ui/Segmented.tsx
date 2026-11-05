@@ -26,7 +26,7 @@ export function Segmented<T extends string>({
     <div
       role="tablist"
       className={cn(
-        'inline-flex items-center gap-1 rounded-xl border border-white/10 bg-white/[0.03] p-1',
+        'inline-flex items-center gap-1 rounded-xl border border-ink-950/10 bg-ink-950/[0.03] p-1',
         className,
       )}
     >
@@ -44,7 +44,7 @@ export function Segmented<T extends string>({
               size === 'sm' ? 'px-2.5 py-1 text-xs' : 'px-3.5 py-1.5 text-[0.8rem]',
               active
                 ? 'bg-gradient-to-b from-brand-500/85 to-brand-600/85 text-white shadow-[0_8px_20px_-12px_rgba(36,114,245,0.9)]'
-                : 'text-slate-400 hover:bg-white/[0.05] hover:text-slate-100',
+                : 'text-slate-400 hover:bg-ink-950/[0.05] hover:text-slate-100',
             )}
           >
             {option.label}
@@ -52,7 +52,7 @@ export function Segmented<T extends string>({
               <span
                 className={cn(
                   'numeric rounded-md px-1.5 py-px text-[0.68rem]',
-                  active ? 'bg-white/20 text-white' : 'bg-white/[0.07] text-slate-400',
+                  active ? 'bg-ink-950/20 text-slate-50' : 'bg-ink-950/[0.07] text-slate-400',
                 )}
               >
                 {option.count}

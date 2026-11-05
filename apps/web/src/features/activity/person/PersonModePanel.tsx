@@ -156,8 +156,8 @@ export function PersonModePanel() {
                 aria-pressed={activePreset === preset.key}
                 className={
                   activePreset === preset.key
-                    ? 'inline-flex h-10 items-center rounded-xl border border-brand-400/40 bg-brand-500/15 px-3 text-xs font-medium text-brand-200 transition'
-                    : 'inline-flex h-10 items-center rounded-xl border border-white/12 bg-white/[0.04] px-3 text-xs text-slate-300 transition hover:border-white/25 hover:bg-white/[0.08]'
+                    ? 'inline-flex h-10 items-center rounded-xl border border-brand-400/40 bg-brand-500/15 px-3 text-xs font-medium text-brand-700 transition'
+                    : 'inline-flex h-10 items-center rounded-xl border border-ink-950/12 bg-ink-950/[0.04] px-3 text-xs text-slate-300 transition hover:border-ink-950/25 hover:bg-ink-950/[0.08]'
                 }
               >
                 {preset.label}
@@ -166,7 +166,7 @@ export function PersonModePanel() {
           </div>
         </div>
 
-        <p className="border-t border-white/[0.06] px-5 py-3 text-[0.7rem] text-slate-500 sm:px-6">
+        <p className="border-t border-ink-950/[0.06] px-5 py-3 text-[0.7rem] text-slate-500 sm:px-6">
           口径：区间沿用半开 [from, to)，但仅作用于 GitHub 事件明细；画像是全历史累计，Confluence 事实恒全历史（无可切片时间维度）。
         </p>
       </Card>

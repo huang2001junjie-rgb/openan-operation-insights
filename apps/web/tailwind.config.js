@@ -4,13 +4,31 @@ export default {
   theme: {
     extend: {
       colors: {
+        // v1.32 浅色主题：原深色语义色全部反转为浅色底 + 深色文字的映射。
+        // slate 色阶「语义反转」：原代码里 slate-50~300 是暗底上的主文字（最亮），
+        // 映射为浅色主题下的最深墨色；400~600 是次级灰字，映射为中深灰。
+        // 明度梯度保持「数字小的更深」，与「数字小 = 更主要的文字」这一用法一致。
+        slate: {
+          50: '#101a2c',
+          100: '#1c2b47',
+          200: '#26334d',
+          300: '#36455f',
+          400: '#55647c',
+          500: '#67748a',
+          600: '#7c8799',
+          700: '#98a1b0',
+          800: '#b3bac6',
+          900: '#cdd2db',
+        },
+        // ink 色阶「明度反转」：ink-950 是页面底色（原最深 → 现最浅），
+        // 数字越大越深。卡片 / 表头 / 弹层等 `bg-ink-900/850` 处自动变白。
         ink: {
-          950: '#05070f',
-          900: '#080b16',
-          850: '#0b0f1d',
-          800: '#101528',
-          700: '#171d34',
-          600: '#222a47',
+          950: '#eef1f6',
+          900: '#ffffff',
+          850: '#f8fafc',
+          800: '#f1f4f9',
+          700: '#e6eaf2',
+          600: '#d8dfea',
         },
         brand: {
           50: '#eef6ff',
@@ -55,13 +73,14 @@ export default {
         '3xl': '1.5rem',
       },
       boxShadow: {
-        card: '0 1px 0 0 rgba(255,255,255,0.06) inset, 0 18px 40px -24px rgba(5,8,20,0.9)',
-        glow: '0 0 0 1px rgba(36,114,245,0.35), 0 20px 50px -20px rgba(36,114,245,0.45)',
-        'glow-accent': '0 0 0 1px rgba(27,196,172,0.35), 0 20px 50px -22px rgba(27,196,172,0.42)',
+        // v1.32 浅色主题：柔和灰阴影替代深色投影
+        card: '0 1px 0 0 rgba(255,255,255,0.9) inset, 0 14px 34px -22px rgba(22,35,61,0.18)',
+        glow: '0 0 0 1px rgba(36,114,245,0.25), 0 20px 50px -22px rgba(36,114,245,0.35)',
+        'glow-accent': '0 0 0 1px rgba(27,196,172,0.25), 0 20px 50px -24px rgba(27,196,172,0.32)',
       },
       backgroundImage: {
         'grid-fade':
-          'linear-gradient(to bottom, rgba(255,255,255,0.045) 1px, transparent 1px), linear-gradient(to right, rgba(255,255,255,0.045) 1px, transparent 1px)',
+          'linear-gradient(to bottom, rgba(22,35,61,0.05) 1px, transparent 1px), linear-gradient(to right, rgba(22,35,61,0.05) 1px, transparent 1px)',
       },
       keyframes: {
         'fade-up': {

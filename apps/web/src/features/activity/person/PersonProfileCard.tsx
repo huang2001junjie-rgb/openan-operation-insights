@@ -8,12 +8,12 @@ import type { PersonAccountItem, PersonContributionsData } from '@/types/contrac
 
 function MetricTile({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
-    <div className="rounded-xl border border-white/[0.07] bg-white/[0.03] px-4 py-3">
+    <div className="rounded-xl border border-ink-950/[0.07] bg-ink-950/[0.03] px-4 py-3">
       <div className="numeric text-xl font-semibold text-slate-50">{value}</div>
-      <div className="mt-0.5 flex items-center gap-1.5 text-[0.7rem] text-slate-500">
+      <div className="mt-0.5 flex items-center gap-1.5 text-xs text-slate-400">
         <span>{label}</span>
         {hint ? (
-          <span className="rounded border border-white/10 bg-white/[0.04] px-1 py-px text-[0.55rem] leading-tight text-slate-500">
+          <span className="rounded border border-ink-950/10 bg-ink-950/[0.04] px-1 py-px text-[0.65rem] leading-tight text-slate-400">
             {hint}
           </span>
         ) : null}
@@ -25,7 +25,7 @@ function MetricTile({ label, value, hint }: { label: string; value: string; hint
 function BotBadge() {
   return (
     <span
-      className="rounded-full border border-amber-300/25 bg-amber-300/10 px-2 py-0.5 text-[0.65rem] font-medium text-amber-200"
+      className="rounded-full border border-amber-300/25 bg-amber-300/10 px-2 py-0.5 text-[0.65rem] font-medium text-amber-700"
       title="githubId=0 的机器人账号：计数保留在画像合计里，但账号条目单独标注"
     >
       bot
@@ -44,11 +44,11 @@ function GithubAccountRow({ account }: { account: PersonAccountItem & { source: 
               <span className="truncate font-medium text-slate-100">{account.displayName}</span>
               {account.isBot ? <BotBadge /> : null}
             </div>
-            <span className="text-[0.7rem] text-slate-500">{account.accountKey}</span>
+            <span className="text-xs text-slate-400">{account.accountKey}</span>
           </div>
         </div>
       </td>
-      <td className="text-xs text-slate-400">{account.orgName ?? '未归属'}</td>
+      <td className="text-sm text-slate-400">{account.orgName ?? '未归属'}</td>
       <td className="numeric text-right">{formatNumber(account.github.pullRequests)}</td>
       <td className="numeric text-right">{formatNumber(account.github.commits ?? 0)}</td>
       <td className="numeric text-right">{formatNumber(account.github.issues)}</td>
@@ -64,10 +64,10 @@ function ConfluenceAccountRow({ account }: { account: PersonAccountItem & { sour
       <td>
         <div className="min-w-0">
           <span className="font-medium text-slate-100">{account.displayName}</span>
-          <span className="ml-2 text-[0.7rem] text-slate-500">{account.accountKey}</span>
+          <span className="ml-2 text-xs text-slate-400">{account.accountKey}</span>
         </div>
       </td>
-      <td className="text-xs text-slate-400">{account.orgName ?? '未归属'}</td>
+      <td className="text-sm text-slate-400">{account.orgName ?? '未归属'}</td>
       <td className="numeric text-right">{formatNumber(account.confluence.requirements)}</td>
       <td className="numeric text-right">{formatNumber(account.confluence.topicShares)}</td>
       <td className="numeric text-right">{formatNumber(account.confluence.edits)}</td>
@@ -126,11 +126,11 @@ export function PersonProfileCard({
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-lg font-semibold text-slate-50">{data.person.displayName}</span>
-                    <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-0.5 text-xs text-slate-300">
+                    <span className="rounded-full border border-ink-950/10 bg-ink-950/[0.04] px-2.5 py-0.5 text-xs text-slate-300">
                       {data.orgName ?? '未归属'}
                     </span>
                   </div>
-                  <p className="text-[0.7rem] text-slate-500">
+                  <p className="text-xs text-slate-400">
                     {data.orgSource === 'person'
                       ? '组织取自人物档案'
                       : '档案未填组织，按名下账号生效归属回落'}
@@ -139,11 +139,11 @@ export function PersonProfileCard({
               </div>
 
               <section>
-                <h3 className="mb-3 flex flex-wrap items-center gap-2 text-[0.8rem] font-semibold uppercase tracking-wider text-slate-500">
+                <h3 className="mb-3 flex flex-wrap items-center gap-2 text-sm font-semibold uppercase tracking-wider text-slate-300">
                   <IconGithub width={14} height={14} className="shrink-0 text-slate-400" />
                   <span>GitHub 协作指标</span>
                   {data.github.updatedAt ? (
-                    <span className="text-[0.7rem] font-normal tracking-normal text-slate-500">
+                    <span className="text-xs font-normal tracking-normal text-slate-400">
                       （更新 {formatDateTime(data.github.updatedAt)}）
                     </span>
                   ) : null}
@@ -156,7 +156,7 @@ export function PersonProfileCard({
                   <MetricTile label="参与仓库" value={formatNumber(data.github.metrics.repos)} hint="并集" />
                 </div>
                 {data.github.repoBreakdown.length > 0 ? (
-                  <div className="mt-4 overflow-x-auto rounded-xl border border-white/[0.07]">
+                  <div className="mt-4 overflow-x-auto rounded-xl border border-ink-950/[0.07]">
                     <table className="data-table min-w-[560px]">
                       <thead>
                         <tr>
@@ -181,22 +181,22 @@ export function PersonProfileCard({
                     </table>
                   </div>
                 ) : (
-                  <p className="mt-3 text-xs text-slate-500">暂无仓库维度贡献。</p>
+                  <p className="mt-3 text-sm text-slate-400">暂无仓库维度贡献。</p>
                 )}
               </section>
 
               <section>
-                <h3 className="mb-3 flex flex-wrap items-center gap-2 text-[0.8rem] font-semibold uppercase tracking-wider text-slate-500">
+                <h3 className="mb-3 flex flex-wrap items-center gap-2 text-sm font-semibold uppercase tracking-wider text-slate-300">
                   <IconConfluence width={14} height={14} className="shrink-0 text-slate-400" />
                   <span>Confluence 成果指标</span>
                   <span
-                    className="rounded border border-white/10 bg-white/[0.04] px-1 py-px text-[0.55rem] font-normal normal-case leading-tight text-slate-500"
+                    className="rounded border border-ink-950/10 bg-ink-950/[0.04] px-1 py-px text-[0.65rem] font-normal normal-case leading-tight text-slate-400"
                     title="Confluence 侧落盘的是账号级累计计数，没有可切片的时间维度"
                   >
                     全历史
                   </span>
                   {data.confluence.updatedAt ? (
-                    <span className="text-[0.7rem] font-normal tracking-normal text-slate-500">
+                    <span className="text-xs font-normal tracking-normal text-slate-400">
                       （更新 {formatDateTime(data.confluence.updatedAt)}）
                     </span>
                   ) : null}
@@ -209,11 +209,11 @@ export function PersonProfileCard({
               </section>
 
               <section className="space-y-4">
-                <h3 className="text-[0.7rem] font-semibold uppercase tracking-wider text-slate-500">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400">
                   名下账号分解（{data.accounts.length}）
                 </h3>
                 {data.accounts.some((a) => a.source === 'github') ? (
-                  <div className="overflow-x-auto rounded-xl border border-white/[0.07]">
+                  <div className="overflow-x-auto rounded-xl border border-ink-950/[0.07]">
                     <table className="data-table min-w-[760px]">
                       <thead>
                         <tr>
@@ -235,7 +235,7 @@ export function PersonProfileCard({
                   </div>
                 ) : null}
                 {data.accounts.some((a) => a.source === 'confluence') ? (
-                  <div className="overflow-x-auto rounded-xl border border-white/[0.07]">
+                  <div className="overflow-x-auto rounded-xl border border-ink-950/[0.07]">
                     <table className="data-table min-w-[560px]">
                       <thead>
                         <tr>
@@ -255,7 +255,7 @@ export function PersonProfileCard({
                   </div>
                 ) : null}
                 {data.accounts.length === 0 ? (
-                  <p className="text-xs text-slate-500">尚未关联任何账号：可在身份匹配控制台认领。</p>
+                  <p className="text-sm text-slate-400">尚未关联任何账号：可在身份匹配控制台认领。</p>
                 ) : null}
               </section>
             </div>

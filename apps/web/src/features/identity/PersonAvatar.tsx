@@ -30,10 +30,10 @@ export function PersonAvatar({ name, src, fallbackId, size = 'md', className }: 
   return (
     <span
       className={cn(
-        'relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/10 font-semibold tracking-wide',
+        'relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-xl border border-ink-950/10 font-semibold tracking-wide',
         showImage
-          ? 'bg-white/[0.05] text-slate-200'
-          : 'bg-gradient-to-br from-brand-400/30 to-violet-400/25 text-brand-100',
+          ? 'bg-ink-950/[0.05] text-slate-200'
+          : 'bg-gradient-to-br from-brand-400/30 to-violet-400/25 text-brand-800',
         SIZE_CLASSES[size],
         className,
       )}

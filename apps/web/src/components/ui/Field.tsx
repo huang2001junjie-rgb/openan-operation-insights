@@ -31,8 +31,8 @@ export function Field({
 }
 
 const CONTROL_CLASSES =
-  'h-10 w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 text-sm text-slate-100 transition ' +
-  'placeholder:text-slate-500 hover:border-white/20 hover:bg-white/[0.06] focus:border-brand-400/60 focus:bg-white/[0.07] ' +
+  'h-10 w-full rounded-xl border border-ink-950/10 bg-ink-950/[0.04] px-3 text-sm text-slate-100 transition ' +
+  'placeholder:text-slate-500 hover:border-ink-950/20 hover:bg-ink-950/[0.06] focus:border-brand-400/60 focus:bg-ink-950/[0.07] ' +
   'focus:outline-none focus:ring-2 focus:ring-brand-500/25 disabled:cursor-not-allowed disabled:opacity-50';
 
 /**
@@ -108,7 +108,7 @@ export function Button({
         'disabled:pointer-events-none disabled:opacity-45',
         variant === 'primary'
           ? 'bg-gradient-to-b from-brand-500 to-brand-600 text-white shadow-[0_10px_28px_-14px_rgba(36,114,245,0.95)] hover:from-brand-400 hover:to-brand-500'
-          : 'border border-white/12 bg-white/[0.04] text-slate-200 hover:border-white/25 hover:bg-white/[0.08]',
+          : 'border border-ink-950/12 bg-ink-950/[0.04] text-slate-200 hover:border-ink-950/25 hover:bg-ink-950/[0.08]',
         className,
       )}
       {...rest}

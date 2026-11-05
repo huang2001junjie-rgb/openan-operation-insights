@@ -28,7 +28,7 @@ export function PageHeading({ eyebrow, title, version, description, meta, action
         >
           {eyebrow}
         </p>
-        <h1 className="mt-2 text-2xl font-semibold tracking-tight text-white sm:text-[1.75rem]">
+        <h1 className="mt-2 text-2xl font-semibold tracking-tight text-slate-50 sm:text-[1.75rem]">
           {title}
         </h1>
         {description ? (

@@ -60,13 +60,13 @@ const CONFLUENCE_RANGE_HINT =
 function ConfluenceClaimNotice({ count }: { count: number }) {
   return (
     <Card className="reveal flex flex-wrap items-center justify-between gap-3 border-amber-400/20 bg-amber-500/[0.05]">
-      <p className="text-xs leading-relaxed text-amber-100/85">
-        有 <span className="numeric font-semibold text-amber-200">{count}</span> 个 Confluence
+      <p className="text-xs leading-relaxed text-amber-700/85">
+        有 <span className="numeric font-semibold text-amber-700">{count}</span> 个 Confluence
         账号尚未归属组织，默认归入「{UNATTRIBUTED_LABEL}」；认领后归属即时生效。
       </p>
       <Link
         to="/admin/identity?source=confluence"
-        className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-amber-400/30 bg-amber-500/10 px-3 py-1.5 text-xs font-medium text-amber-200 transition hover:border-amber-300/50 hover:bg-amber-500/20"
+        className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-amber-400/30 bg-amber-500/10 px-3 py-1.5 text-xs font-medium text-amber-700 transition hover:border-amber-300/50 hover:bg-amber-500/20"
       >
         去账号认领
         <IconArrowRight width={14} height={14} />
@@ -336,7 +336,7 @@ export function ActivityPage() {
 
           {contributions.isError !== wiki.isError ? (
             <Card className="reveal border-amber-400/20 bg-amber-500/[0.05]">
-              <p className="text-xs leading-relaxed text-amber-100/80">
+              <p className="text-xs leading-relaxed text-amber-700/80">
                 数据源部分可用：{contributions.isError ? 'GitHub 贡献数据' : 'Confluence 成果数据'}
                 加载失败，当前表格中该部分指标按 0 展示。
               </p>

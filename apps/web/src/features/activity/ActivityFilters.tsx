@@ -113,7 +113,7 @@ export function ActivityFilters({
 
         {rangeDisabled ? (
           <Field label="时间区间" className="lg:w-72">
-            <p className="flex h-10 items-center rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 text-[0.72rem] leading-snug text-slate-500">
+            <p className="flex h-10 items-center rounded-xl border border-ink-950/[0.07] bg-ink-950/[0.02] px-3 text-[0.72rem] leading-snug text-slate-500">
               恒为全历史累计：Confluence 侧无时间维度明细
             </p>
           </Field>
@@ -144,8 +144,8 @@ export function ActivityFilters({
                   aria-pressed={activePreset === preset.key}
                   className={
                     activePreset === preset.key
-                      ? 'inline-flex h-10 items-center rounded-xl border border-brand-400/40 bg-brand-500/15 px-3 text-xs font-medium text-brand-200 transition'
-                      : 'inline-flex h-10 items-center rounded-xl border border-white/12 bg-white/[0.04] px-3 text-xs text-slate-300 transition hover:border-white/25 hover:bg-white/[0.08]'
+                      ? 'inline-flex h-10 items-center rounded-xl border border-brand-400/40 bg-brand-500/15 px-3 text-xs font-medium text-brand-700 transition'
+                      : 'inline-flex h-10 items-center rounded-xl border border-ink-950/12 bg-ink-950/[0.04] px-3 text-xs text-slate-300 transition hover:border-ink-950/25 hover:bg-ink-950/[0.08]'
                   }
                 >
                   {preset.label}
@@ -159,7 +159,7 @@ export function ActivityFilters({
           <button
             type="button"
             onClick={onReset}
-            className="inline-flex h-10 items-center gap-2 rounded-xl border border-white/12 bg-white/[0.04] px-3.5 text-sm text-slate-200 transition hover:border-white/25 hover:bg-white/[0.08]"
+            className="inline-flex h-10 items-center gap-2 rounded-xl border border-ink-950/12 bg-ink-950/[0.04] px-3.5 text-sm text-slate-200 transition hover:border-ink-950/25 hover:bg-ink-950/[0.08]"
           >
             <IconRefresh width={15} height={15} className={isFetching ? 'animate-spin' : undefined} />
             重置
@@ -168,14 +168,14 @@ export function ActivityFilters({
       </div>
 
       {staleRepoIds.length > 0 ? (
-        <p className="mt-4 rounded-lg border border-amber-400/20 bg-amber-500/[0.05] px-3.5 py-2.5 text-[0.72rem] leading-relaxed text-amber-100/80">
+        <p className="mt-4 rounded-lg border border-amber-400/20 bg-amber-500/[0.05] px-3.5 py-2.5 text-[0.72rem] leading-relaxed text-amber-700/80">
           已选仓库在当前区间内无活动：<span className="numeric">{staleRepoIds.join('、')}</span>
           （区间内没有事件的仓库不出行；放宽区间或取消勾选后恢复）
         </p>
       ) : null}
 
       {rangeHint ? (
-        <p className="mt-4 rounded-lg border border-white/[0.07] bg-white/[0.02] px-3.5 py-2.5 text-[0.72rem] leading-relaxed text-slate-500">
+        <p className="mt-4 rounded-lg border border-ink-950/[0.07] bg-ink-950/[0.02] px-3.5 py-2.5 text-[0.72rem] leading-relaxed text-slate-500">
           口径说明：{rangeHint}
         </p>
       ) : null}

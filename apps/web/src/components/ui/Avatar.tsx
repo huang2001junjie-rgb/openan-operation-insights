@@ -34,8 +34,8 @@ export function Avatar({ src, name, fallbackId, fallbackText, size = 'md', class
   return (
     <span
       className={cn(
-        'relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/10 font-semibold tracking-wide text-slate-200',
-        showImage ? 'bg-white/[0.05]' : 'bg-gradient-to-br from-brand-400/25 to-accent-400/20 text-brand-100',
+        'relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-xl border border-ink-950/10 font-semibold tracking-wide text-slate-200',
+        showImage ? 'bg-ink-950/[0.05]' : 'bg-gradient-to-br from-brand-400/25 to-accent-400/20 text-brand-800',
         SIZE_CLASSES[size],
         className,
       )}

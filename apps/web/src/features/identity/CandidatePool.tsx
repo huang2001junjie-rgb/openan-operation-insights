@@ -116,17 +116,17 @@ export function CandidatePool({
     <section className="glass-card flex min-h-0 flex-col p-4">
       <header className="flex items-center justify-between gap-3">
         <div>
-          <h2 className="text-[0.95rem] font-semibold text-white">候选账号池</h2>
+          <h2 className="text-[0.95rem] font-semibold text-slate-50">候选账号池</h2>
           <p className="mt-0.5 text-xs text-slate-500">
-            待认领 <span className="numeric text-accent-300">{totalPending}</span> 项 · 派生自既有数据
+            待认领 <span className="numeric text-accent-600">{totalPending}</span> 项 · 派生自既有数据
           </p>
         </div>
         <span
           className={cn(
             'inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs',
             targetPerson
-              ? 'border-accent-400/30 bg-accent-500/10 text-accent-300'
-              : 'border-amber-400/30 bg-amber-500/10 text-amber-200',
+              ? 'border-accent-400/30 bg-accent-500/10 text-accent-600'
+              : 'border-amber-400/30 bg-amber-500/10 text-amber-700',
           )}
         >
           <IconUserPlus width={13} height={13} />
@@ -144,7 +144,7 @@ export function CandidatePool({
       </div>
 
       {data && data.warnings.length > 0 ? (
-        <div className="mt-3 space-y-1.5 rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2.5">
+        <div className="mt-3 space-y-1.5 rounded-xl border border-ink-950/[0.07] bg-ink-950/[0.02] px-3 py-2.5">
           {data.warnings.map((warning) => (
             <p key={warning} className="flex items-center gap-2 text-[0.7rem] text-slate-400">
               <IconInfo width={13} height={13} className="shrink-0" />
@@ -175,8 +175,8 @@ export function CandidatePool({
                   else groupRefs.current.delete(group.key);
                 }}
                 className={cn(
-                  'rounded-2xl border bg-white/[0.015] transition-colors',
-                  focusSource === group.key ? 'border-brand-400/40 bg-brand-500/[0.04]' : 'border-white/[0.07]',
+                  'rounded-2xl border bg-ink-950/[0.015] transition-colors',
+                  focusSource === group.key ? 'border-brand-400/40 bg-brand-500/[0.04]' : 'border-ink-950/[0.07]',
                 )}
               >
                 <button
@@ -200,7 +200,7 @@ export function CandidatePool({
                 {!isCollapsed ? (
                   <div className="space-y-2 px-3 pb-3">
                     {rowCount === 0 ? (
-                      <p className="rounded-lg border border-dashed border-white/10 px-3 py-4 text-center text-xs text-slate-500">
+                      <p className="rounded-lg border border-dashed border-ink-950/10 px-3 py-4 text-center text-xs text-slate-500">
                         {needle ? '无匹配候选' : group.emptyLabel}
                       </p>
                     ) : null}
@@ -249,7 +249,7 @@ export function CandidatePool({
           })}
 
           {data && data.warnings.some((warning) => warning.includes('不可用')) ? (
-            <p className="flex items-center gap-2 text-[0.7rem] text-amber-200/80">
+            <p className="flex items-center gap-2 text-[0.7rem] text-amber-700/80">
               <IconAlert width={13} height={13} />
               部分来源已降级为空，页面其余内容不受影响。
             </p>

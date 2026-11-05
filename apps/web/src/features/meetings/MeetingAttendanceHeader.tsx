@@ -43,10 +43,10 @@ export function MeetingAttendanceHeader({ matrix }: MeetingAttendanceHeaderProps
 
       <div className="reveal flex items-start gap-3 rounded-2xl border border-amber-400/20 bg-amber-500/[0.06] px-4 py-3.5">
         <IconAlert width={16} height={16} className="mt-0.5 shrink-0 text-amber-300" />
-        <p className="text-xs leading-relaxed text-amber-100/80">
-          <span className="font-semibold text-amber-200">口径说明：</span>
+        <p className="text-xs leading-relaxed text-amber-700/80">
+          <span className="font-semibold text-amber-700">口径说明：</span>
           空白格代表缺席并计入出席率分母；成员加入前的历史空白同样计为缺席，因此后加入成员的出席率会被系统性拉低，
-          <span className="font-medium text-amber-200">不宜跨成员横向比较</span>
+          <span className="font-medium text-amber-700">不宜跨成员横向比较</span>
           。矩阵严格保留台账原序，不支持重排。
         </p>
       </div>

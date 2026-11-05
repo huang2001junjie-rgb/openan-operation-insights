@@ -40,12 +40,12 @@ export function CardTitle({ title, description, action, icon, size = 'md', class
     <div className={cn('flex items-start justify-between gap-4', className)}>
       <div className="flex min-w-0 items-start gap-3">
         {icon ? (
-          <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/[0.05] text-brand-300">
+          <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-ink-950/10 bg-ink-950/[0.05] text-brand-600">
             {icon}
           </span>
         ) : null}
         <div className="min-w-0">
-          <h3 className={cn('truncate font-semibold text-white', TITLE_SIZE[size])}>{title}</h3>
+          <h3 className={cn('truncate font-semibold text-slate-50', TITLE_SIZE[size])}>{title}</h3>
           {description ? (
             <p className="mt-1 text-xs leading-relaxed text-slate-400">{description}</p>
           ) : null}

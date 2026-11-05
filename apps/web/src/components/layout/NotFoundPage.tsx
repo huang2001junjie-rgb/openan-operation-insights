@@ -8,7 +8,7 @@ export function NotFoundPage() {
       <p className="text-[0.7rem] font-semibold uppercase tracking-[0.24em] text-brand-400/90">
         404
       </p>
-      <h1 className="mt-3 text-xl font-semibold text-white">页面不存在</h1>
+      <h1 className="mt-3 text-xl font-semibold text-slate-50">页面不存在</h1>
       <p className="mt-2 text-sm leading-relaxed text-slate-400">
         你访问的地址不在本平台的三个视图之内。可以返回概览页继续浏览。
       </p>

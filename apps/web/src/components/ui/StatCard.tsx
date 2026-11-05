@@ -8,10 +8,10 @@ import type { DeltaDirection, MetricValue } from '@/types/contract';
 export type StatTone = 'brand' | 'accent' | 'violet' | 'amber';
 
 const TONE_RING: Record<StatTone, string> = {
-  brand: 'border-brand-400/25 bg-brand-500/12 text-brand-200',
-  accent: 'border-accent-400/25 bg-accent-500/12 text-accent-300',
-  violet: 'border-violet-400/25 bg-violet-500/12 text-violet-300',
-  amber: 'border-amber-400/25 bg-amber-500/12 text-amber-200',
+  brand: 'border-brand-400/25 bg-brand-500/12 text-brand-700',
+  accent: 'border-accent-400/25 bg-accent-500/12 text-accent-600',
+  violet: 'border-violet-400/25 bg-violet-500/12 text-violet-600',
+  amber: 'border-amber-400/25 bg-amber-500/12 text-amber-700',
 };
 
 const TONE_GLOW: Record<StatTone, string> = {
@@ -30,10 +30,10 @@ function TrendPill({ delta, direction }: { delta: number; direction?: DeltaDirec
       className={cn(
         'inline-flex items-center gap-1 rounded-lg border px-1.5 py-0.5 text-[0.7rem] font-semibold',
         resolved === 'up'
-          ? 'border-accent-400/25 bg-accent-500/12 text-accent-300'
+          ? 'border-accent-400/25 bg-accent-500/12 text-accent-600'
           : resolved === 'down'
-            ? 'border-rose-400/25 bg-rose-500/12 text-rose-200'
-            : 'border-white/10 bg-white/[0.05] text-slate-400',
+            ? 'border-rose-400/25 bg-rose-500/12 text-rose-600'
+            : 'border-ink-950/10 bg-ink-950/[0.05] text-slate-400',
       )}
     >
       <Icon width={12} height={12} />
@@ -85,7 +85,7 @@ export function StatCard({ label, metric, icon, tone = 'brand', hint, delay = 0 
       <p className="relative mt-5 text-[0.78rem] font-medium tracking-wide text-slate-400">{label}</p>
 
       <p className="relative mt-1.5 flex items-baseline gap-1.5">
-        <span className="numeric text-[2rem] font-semibold leading-none text-white">
+        <span className="numeric text-[2rem] font-semibold leading-none text-slate-50">
           {formatNumber(animated)}
         </span>
         {metric.unit ? (

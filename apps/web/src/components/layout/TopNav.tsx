@@ -14,12 +14,12 @@ const NAV_ITEMS = [
 
 export function TopNav() {
   return (
-    <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-ink-950/72 backdrop-blur-xl">
+    <header className="sticky top-0 z-40 border-b border-ink-950/[0.06] bg-ink-950/72 backdrop-blur-xl">
       <div className="mx-auto flex h-16 w-full max-w-[1440px] items-center gap-6 px-4 sm:px-6 lg:px-8">
         <NavLink to="/" className="flex shrink-0 items-center gap-3" aria-label="OpenAN 运营洞察首页">
           <BrandMark />
           <span className="hidden flex-col leading-tight sm:flex">
-            <span className="text-[0.95rem] font-semibold tracking-tight text-white">OpenAN</span>
+            <span className="text-[0.95rem] font-semibold tracking-tight text-slate-50">OpenAN</span>
             <span className="text-[0.7rem] font-medium tracking-wide text-slate-500">运营洞察平台</span>
           </span>
         </NavLink>
@@ -34,14 +34,14 @@ export function TopNav() {
                 cn(
                   'group relative inline-flex shrink-0 items-center gap-2 rounded-xl px-3.5 py-2 text-sm transition-colors duration-200',
                   isActive
-                    ? 'bg-white/[0.07] text-white'
-                    : 'text-slate-400 hover:bg-white/[0.04] hover:text-slate-100',
+                    ? 'bg-ink-950/[0.07] text-slate-50'
+                    : 'text-slate-400 hover:bg-ink-950/[0.04] hover:text-slate-100',
                 )
               }
             >
               {({ isActive }) => (
                 <>
-                  <span className={cn('transition-colors', isActive ? 'text-brand-300' : 'text-slate-500 group-hover:text-slate-300')}>
+                  <span className={cn('transition-colors', isActive ? 'text-brand-600' : 'text-slate-500 group-hover:text-slate-300')}>
                     {item.icon}
                   </span>
                   <span className="font-medium">{item.label}</span>
@@ -58,7 +58,7 @@ export function TopNav() {
         </nav>
 
         <div className="hidden items-center gap-2 lg:flex">
-          <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.035] px-3 py-1.5 text-[0.7rem] font-medium text-slate-400">
+          <span className="inline-flex items-center gap-2 rounded-full border border-ink-950/10 bg-ink-950/[0.035] px-3 py-1.5 text-[0.7rem] font-medium text-slate-400">
             <span className="relative flex h-1.5 w-1.5">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent-400/70" />
               <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-accent-400" />

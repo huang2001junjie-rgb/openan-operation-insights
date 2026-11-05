@@ -73,8 +73,8 @@ export function ClaimRow({
         conflicted
           ? 'border-amber-400/30 bg-amber-500/[0.05]'
           : owners.length > 0
-            ? 'border-white/[0.07] bg-white/[0.025]'
-            : 'border-white/[0.07] bg-white/[0.015]',
+            ? 'border-ink-950/[0.07] bg-ink-950/[0.025]'
+            : 'border-ink-950/[0.07] bg-ink-950/[0.015]',
       )}
     >
       <div className="flex items-center gap-3">
@@ -110,14 +110,14 @@ export function ClaimRow({
       </div>
 
       {candidate.source !== 'meeting' || owners.length > 0 ? (
-        <div className="mt-2 flex flex-wrap items-center gap-1.5 border-t border-white/[0.06] pt-2">
+        <div className="mt-2 flex flex-wrap items-center gap-1.5 border-t border-ink-950/[0.06] pt-2">
           {candidate.source !== 'meeting' ? (
             <span
               className={cn(
                 'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[0.7rem]',
                 candidate.orgId
-                  ? 'border-white/10 bg-white/[0.05] text-slate-300'
-                  : 'border-white/[0.07] text-slate-500',
+                  ? 'border-ink-950/10 bg-ink-950/[0.05] text-slate-300'
+                  : 'border-ink-950/[0.07] text-slate-500',
               )}
               title={
                 candidate.source === 'confluence'
@@ -130,7 +130,7 @@ export function ClaimRow({
             </span>
           ) : null}
           {conflicted ? (
-            <span className="inline-flex items-center gap-1 text-[0.7rem] font-medium text-amber-200">
+            <span className="inline-flex items-center gap-1 text-[0.7rem] font-medium text-amber-700">
               <IconAlert width={12} height={12} />
               冲突：被 {owners.length} 个自然人引用
             </span>
@@ -140,7 +140,7 @@ export function ClaimRow({
             return (
               <span
                 key={`${owner.personId}-${claim?.claimId ?? ''}`}
-                className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.05] py-0.5 pl-2.5 pr-1 text-[0.7rem] text-slate-200"
+                className="inline-flex items-center gap-1.5 rounded-full border border-ink-950/10 bg-ink-950/[0.05] py-0.5 pl-2.5 pr-1 text-[0.7rem] text-slate-200"
               >
                 已归属 {owner.displayName}
                 <span className="text-slate-500">· {owner.orgName ?? '独立开发者'}</span>
@@ -151,7 +151,7 @@ export function ClaimRow({
                     aria-label={`解除 ${owner.displayName} 的认领`}
                     disabled={isMutating}
                     onClick={() => onUnclaim(claim.claimId)}
-                    className="rounded-full p-0.5 text-slate-400 transition hover:bg-white/10 hover:text-rose-200 disabled:opacity-40"
+                    className="rounded-full p-0.5 text-slate-400 transition hover:bg-ink-950/10 hover:text-rose-600 disabled:opacity-40"
                   >
                     <IconUnlink width={12} height={12} />
                   </button>

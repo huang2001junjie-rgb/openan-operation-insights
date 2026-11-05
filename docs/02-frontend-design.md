@@ -31,7 +31,7 @@
 
 | 路径 | 页面组件 | 导航名称 | 说明 |
 | --- | --- | --- | --- |
-| `/` | `HomePage` | 首页 | 指标卡 + 贡献组织 + 下一次峰会横幅 |
+| `/` | `HomePage` | 首页 | Hero 大字区 + 关键指标条 + 下一次峰会横条 + 贡献组织墙（v1.30 改版） |
 | `/activity` | `ActivityPage` | 社区活跃度情况 | 个人贡献排行 + 组织贡献分布 + 明细表 |
 | `/releases` | `ReleasesPage` | 版本发布 | 汇总指标卡（有 Release 组件占比 / 近 90 天发布 / 最近发布 / 平均发布周期）+ 组件发布明细表（ADR-0019） |
 | `/summits` | `SummitsPage` | 社区参展 | 时间线 + 峰会详情表格 |
@@ -74,37 +74,44 @@ Routes 结构示意（实现时以此为准）：
 
 | # | 区块 | 组件 | 数据来源 | 字段 |
 | --- | --- | --- | --- | --- |
-| 1 | 核心指标卡区 | `HomeMetricSection` | `GET /api/home/summary` | 见下表 5 张卡片 |
-| 2 | 贡献的组织区块 | `HomeOrganizationsSection` | `GET /api/organizations?scope=contributing` | `orgId, name, logoUrl, homepageUrl, tags[], displayOrder, commits, confluenceEdits, topContributors{ github[], confluence[] }`（ADR-0016） |
-| 3 | 下一次峰会横幅 | `NextSummitBanner` | `GET /api/home/summary` → `nextSummit` | `name, startDate, endDate, location, websiteUrl, isUpcoming` |
-| 4 | 页脚 | `AppFooter` | `GET /api/home/summary` → `updatedAt` | `updatedAt` |
+| 1 | Hero 区 | `HomePage` 内联 | `GET /api/home/summary` → `updatedAt` | 版本号（前端常量 `APP_VERSION`）、`updatedAt`（v1.30 起版本号为巨型渐变主视觉） |
+| 2 | 关键指标条 | `KeyMetricsStrip`（v1.30 新增） | `GET /api/home/summary` | `partnerCount` / `summitCount` / `useCaseCount`（各取 `value` + `unit`） |
+| 3 | 下一次峰会横条 | `NextSummitBanner`（v1.30 改为无框横条） | `GET /api/home/summary` → `nextSummit` | `name, startDate, endDate, location, websiteUrl` |
+| 4 | 贡献的组织区块 | `OrganizationWall` | `GET /api/organizations?scope=contributing` | `orgId, name, logoUrl, homepageUrl, tags[], displayOrder, commits, confluenceEdits, topContributors{ github[], confluence[] }`（ADR-0016） |
+| 5 | 指标口径（默认折叠） | `HomePage` 内联 `<details>`（v1.30 改为折叠） | — | 8 条术语定义（内容不变） |
+| 6 | 页脚 | `AppFooter` | `GET /api/home/summary` → `updatedAt` | `updatedAt` |
 
-#### 指标卡字段明细
+#### 关键指标字段明细（v1.30：由 4 张等宽指标卡收敛为 3 项）
 
-| 卡片 | 指标键 | 展示字段 | 强调色 | 附属元素 |
-| --- | --- | --- | --- | --- |
-| 伙伴单位数量 | `partnerCount` | `value`、`unit`、`label` | 蓝→青渐变 | 环比角标 `delta`、`deltaDirection` |
-| 独立开发者数量 | `externalDeveloperCount` | 同上 | 蓝→青渐变 | **无环比角标**（出参不带 `delta` / `deltaDirection`，趋势药丸自动隐藏）：该值自 ADR-0017 起为**读时派生**——生效归属落 `unattributed` 且非机器账号的账号数（现 **7**），不再来自 `home.json` 落盘值（现 **13**） |
-| 参加的峰会 | `summitCount` | 同上 | 蓝→青渐变 | 同上 |
-| 已提供的应用案例 | `useCaseCount` | 同上 | 蓝→青渐变 | 同上 |
-| 下一次峰会 | `nextSummit` | 峰会名 + 倒计时文案 | 青→蓝渐变 | `startDate` 格式化、`daysUntil` |
+| 指标 | 指标键 | 展示字段 | 呈现 |
+| --- | --- | --- | --- |
+| 伙伴单位 | `partnerCount` | `value`、`unit` | 8rem 渐变（`.text-gradient-brand`），三项中唯一的彩色焦点 |
+| 社区峰会 | `summitCount` | `value`、`unit` | 6xl 纯白 |
+| 应用案例 | `useCaseCount` | `value`、`unit` | 4xl 纯白 |
+| ~~独立开发者数量~~ | `externalDeveloperCount` | — | **v1.30 从关键指标撤下**：人数仍由组织墙独立开发者卡与区块右侧计数行带出，接口出参不变 |
+| 下一次峰会 | `nextSummit` | 峰会名 + 倒计时大数字 | 横条右端视觉锚点 |
 
-### 3.2 视觉与交互
+三项指标**均无环比角标**（呈现层不再渲染 `delta` / `deltaDirection`，出参字段保留；`externalDeveloperCount` 本就不带）。
 
-- 5 张指标卡在 ≥1280px 时横向等宽排列（`grid-cols-5`），数字使用 40px/600 字重渐变文字，页面加载时执行一次**滚动计数**动画（`requestAnimationFrame` 缓动 800ms，仅首次挂载触发）。
-- 卡片基础形态：`rounded-2xl`（16px）+ `border border-white/60` + 多层柔和阴影 + `bg-white/70 backdrop-blur`，`hover` 时 `-translate-y-0.5` 并加深阴影，`transition-all duration-200`。
-- 贡献组织采用**卡片墙**，Logo 以卡片顶部的**通栏横版横幅（3:1，`object-contain`）**呈现（v1.24 保持不变），名称 / 类型徽章在横幅下方独立成行；明细表中 Logo 为 3:1 横版（`h-9`）；缺失时降级为首字母色块。**卡片文字整体放大一档**（标题 `1.05rem`、描述 `text-sm`、指标标签 `text-xs`，ADR-0016）。
+### 3.2 视觉与交互（v1.30 改版后）
+
+- **全页零动效**：无滚动计数（count-up）、无进场动画（fade-up reveal）、无 hover 位移；仅保留颜色 / 边框类的即时 hover 反馈。`prefers-reduced-motion` 兜底继续生效。
+- **Hero**：版本号（`APP_VERSION`）以巨型渐变字渲染（lg 断点 5.5rem，`text-gradient-brand`），是全页主视觉；eyebrow「Operation Insights」+ 标题「社区运营概览」居左（v1.31 起删除原描述句），meta（数据契约徽章、`updatedAt`、同步中）收在右侧。
+- **全站灰字可读性**：`tailwind.config.js` 统一定义 `slate` 文字色阶，次级文字 `slate-400/500` 保持「数字小 = 更深 = 更主要」的梯度；个人画像卡的「GitHub 协作指标 / Confluence 成果指标」小节标题与组织墙 top3 列头等另做针对性字号上调。⚠️ v1.32 浅色主题后 slate 色值已整体替换为深字色系（见 §11）。
+- **关键指标条（`KeyMetricsStrip`）**：三项底部对齐**同一基线**的非对称「天际线」——字号刻意错开（伙伴单位 8rem 渐变 > 社区峰会 6xl > 应用案例 4xl），落差形成视觉节奏；**无卡片、无背景框**，项间只用 1px hairline 分隔（桌面竖向贯通 / 移动端横向）；口径 hint 并入标签行且单行截断，保证三块头部严格同高、数字真正共基线；加载骨架按三档宽度渲染防跳动。
+- 贡献组织采用**卡片墙**，Logo 以卡片顶部的**通栏横版横幅（3:1，`object-contain`）**呈现（v1.24 保持不变），名称 / 类型徽章在横幅下方独立成行；明细表中 Logo 为 3:1 横版（`h-9`）；缺失时降级为首字母色块。**卡片文字整体放大一档**（标题 `1.05rem`、描述 `text-sm`、指标标签 `text-xs`，ADR-0016）。v1.30 起卡片去掉 hover 上浮与逐项进场动画（`--d` 内联样式删除），仅保留边框 / 底色即时反馈。
 - 卡片墙展示**全部组织**（不过滤零贡献组织），按运营人工指定的**展示顺序 `displayOrder`** 升序排列，同值/缺失按名称升序兜底（ADR-0016，取代 ADR-0001 的贡献分降序）；卡片直出**代码贡献量（commits）**与 **Confluence 贡献量（编辑量）**两个原始指标及**各维度 top3 贡献者**（两栏各 3 行：20px 圆形头像 + 姓名 + 数字，不可点击；Confluence 账号无头像字段，首字母色块降级；维度无人时显示「—」占位）。**两项贡献量均为 0** 的组织显示「暂无贡献」灰色徽章（承接 ADR-0001 呈现意图，判据已改）。
 - 卡片墙中 `type = 'individual'` 的伪组织渲染为**独立开发者卡片**：中性色 + 个人图标，标题「独立开发者」，展示**人数**（取 `home/summary` 的 `externalDeveloperCount`）与两项贡献量、各维度 top3（`unattributed` 桶内前三），与组织卡片视觉区分、指标口径一致。⚠️ **人数与 top3 是两个口径**（ADR-0017 决策 5）：人数**排除**机器账号（现 7 人），而该桶的 commits / PR 等**量仍计入**（`dependabot` 的 12 commits 留在 `unattributed` 桶里），top3 也**排除**机器账号——三者不要互相推算。
 - 卡片墙的 GitHub 侧数字（commits 与 top3）自 ADR-0017 起由**账号级 + 认领边读时派生**（生效归属），不再取 `github-organizations.json` 落盘值；`scope=contributing` 与 `scope=all` 现在同源同值。Confluence 侧同构口径见 ADR-0010（生效归属）/ ADR-0011（编辑量）。
-- ⚠️ **首页恒为累计（全量口径）**（ADR-0018 决策 7）：首页**没有**时间区间筛选器，5 张指标卡与组织墙的两项贡献量、各维度 top3 **一律不受活跃度页区间影响**。组织卡标签因此带「**（累计）**」二字（`代码贡献量（累计）` / `Confluence 贡献量（累计）`），指标解释文案（`HomePage` 的 `def` 提示）写明「恒为累计值（全量口径）」，并新增术语条目「**时间口径**」说明这条分叉：**首页恒全量，活跃度页 GitHub 侧可按区间**（见 §4.2）。⚠️ 不要因为「首页数字和活跃度页选了区间后的数字对不上」而去给首页加区间——两者口径**刻意不同**，且首页对的是**累计**这一侧。
-- 下一次峰会横幅使用通栏渐变背景（`from-blue-700 via-blue-600 to-cyan-500`），左侧文案右侧 CTA 按钮"查看官网"，整个横幅为可点击区域并在新标签打开官网。
+- ⚠️ **首页恒为累计（全量口径）**（ADR-0018 决策 7）：首页**没有**时间区间筛选器，关键指标条的三项指标与组织墙的两项贡献量、各维度 top3 **一律不受活跃度页区间影响**。组织卡标签因此带「**（累计）**」二字（`代码贡献量（累计）` / `Confluence 贡献量（累计）`），指标解释文案写明「恒为累计值（全量口径）」，并新增术语条目「**时间口径**」说明这条分叉：**首页恒全量，活跃度页 GitHub 侧可按区间**（见 §4.2）。⚠️ 不要因为「首页数字和活跃度页选了区间后的数字对不上」而去给首页加区间——两者口径**刻意不同**，且首页对的是**累计**这一侧。
+- 下一次峰会横幅（v1.30 起）为**无框横条**：上下各一条 hairline，徽章 + 峰会名 + 日期地点单行排开，倒计时数字加大（3xl）作为横条视觉锚点，CTA「查看社区参展 / 峰会主页」在右端；无排期时显示一行灰字说明。
+- **指标口径**（v1.30 起）由整卡改为**默认折叠的 `<details>`**：summary 行显示「指标口径」+ 说明，展开后为原有 8 条术语网格（内容不变）。⚠️ Chromium 134+ 重构了 details 渲染，部分版本下非 summary 子节点闭合时仍保留布局占位，`index.css` 以 `details:not([open]) > .details-body { display: none }` 显式兜底，**不依赖 UA 默认隐藏行为**。
 
 ### 3.3 状态处理
 
 | 状态 | 表现 |
 | --- | --- |
-| 加载中 | 指标卡渲染 5 个骨架块；组织墙渲染 8 个骨架卡；横幅渲染灰底占位条 |
+| 加载中 | 关键指标条按三档宽度渲染骨架块；组织墙渲染骨架列表；峰会横条渲染灰底占位条 |
 | 空数据 | `organizations.json` 为空时组织墙显示空态插画 + 重试按钮；贡献数据缺失不再导致空态（全量展示，见 ADR-0001） |
 | 错误 | 区块级错误提示，展示统一文案与"重试"按钮，**不阻塞**其他区块渲染 |
 
@@ -453,15 +460,15 @@ flowchart TB
 | Primary-700 | `#1D4ED8` | 主按钮、强调文字、渐变起点 |
 | Primary-600 | `#2563EB` | 链接、选中态、图表主色 |
 | Accent-500 | `#06B6D4` | 渐变终点、时间线节点、次强调 |
-| Background | `#F6F8FC` | 页面底色 |
-| Surface | `#FFFFFF` | 卡片表面（配合 `bg-white/70` + 模糊） |
-| Surface-Dark | `#0F172A` | 深色主题页面底色 |
-| Text-Primary | `#0B1220` | 标题与关键数字 |
-| Text-Secondary | `#475569` | 正文与辅助说明 |
+| Background | `#EEF1F6` | 页面底色（v1.32 浅色主题，灰白不刺眼） |
+| Surface | `#FFFFFF` | 卡片表面（实白 + `border-ink-600` 浅灰边 + 柔和投影，v1.32） |
+| Text-Primary | `#101A2C` | 标题与关键数字（`slate-50`） |
+| Text-Body | `#26334D` | 正文（`slate-200`） |
+| Text-Secondary | `#55647C` | 辅助说明（`slate-400`） |
 | Success | `#16A34A` | 上升趋势、已完成 |
-| Warning | `#F59E0B` | 待处理、即将开始 |
+| Warning | `#B45309` | 待处理、即将开始 |
 | Danger | `#DC2626` | 错误态、下降趋势 |
-| Info | `#2563EB` | 中性状态徽标 |
+| Info | `#1554D6` | 中性状态徽标 |
 
 **渐变规范**：强调渐变统一为 `linear-gradient(135deg, #1D4ED8 0%, #2563EB 45%, #06B6D4 100%)`，用于指标数字、时间线竖线与节点、主按钮、横幅背景。
 
@@ -495,10 +502,10 @@ flowchart TB
 ### 9.4 玻璃拟态配方
 
 ```text
-bg-white/70 backdrop-blur-xl border border-white/60 shadow-glass rounded-2xl
+bg-white border border-ink-600 shadow-card rounded-2xl
 ```
 
-深色模式下对应 `bg-slate-900/60 border-white/10`。
+v1.32 起为单一浅色主题：实白卡面 + `ink-600` 浅灰边框 + 柔和投影（见 §11 语义色反转约定）。
 
 ### 9.5 微动效清单
 
@@ -533,13 +540,16 @@ bg-white/70 backdrop-blur-xl border border-white/60 shadow-glass rounded-2xl
 
 ---
 
-## 11. 主题（浅色 / 深色）
+## 11. 主题（v1.32 起：单一浅色主题）
 
-- 实现方式：`<html class="dark">` + Tailwind `darkMode: 'class'`。
-- 状态管理：主题偏好存 `localStorage`；首次访问读取 `prefers-color-scheme`。
-- 切换控件位于导航栏右侧，图标使用 `Sun` / `Moon`。
-- 深色模式下底色 `#0F172A`，卡片 `bg-slate-900/60`，正文 `#E2E8F0`，渐变强调色保持不变以保证品牌一致。
-- 图表颜色从 `lib/chartTheme.ts` 读取，随主题切换重新计算坐标轴与网格颜色。
+- 实现方式：单一样式主题，无 `dark` class 切换；`color-scheme: light`。
+- 语义色反转约定（v1.32，`tailwind.config.js` 一处定义全站生效）：
+  - `ink` 色阶**明度反转**：`ink-950 #EEF1F6`（页面底）→ `ink-900 #FFFFFF`（卡片/表头/弹层）→ `ink-600 #D8DFEA`（最深深灰，用于边框）。原 `bg-ink-950/900/850` 写法零改动自动变浅；
+  - `slate` 色阶**语义反转**：`slate-50 #101A2C`（最深=原暗底最亮的主文字）→ `slate-400 #55647C`（次级）→ `slate-900 #CDD2DB`（最浅）。原 `text-slate-*` 写法零改动自动变深；
+  - `white` 保持纯白：品牌渐变按钮 / 徽章上的 `text-white` 仍是白字；**浅底上的标题**统一用 `text-slate-50`（#101A2C）；
+  - `border-white/*`、`bg-white/[0.0x]` 等白色透明度类已全量映射为 `ink-950/*`（深墨透明，浅底可见），见 v1.32 版本记录。
+- 图表颜色从 `lib/chart-theme.ts` 读取（`AXIS_TEXT` / `SPLIT_LINE` / 提示框均已配为浅底深字）。
+- ⚠️ v1.31 及更早的「暗底灰字提亮」记录仅保留历史意义：v1.32 反转后 slate 色值已全部替换，**不要再按 v1.31 的色值理解 slate**。
 
 ---
 

@@ -43,7 +43,7 @@ export function SummitTimeline({
         {Array.from({ length: 3 }).map((_, index) => (
           <div
             key={index}
-            className="flex items-center gap-4 rounded-2xl border border-white/[0.05] bg-white/[0.02] p-4"
+            className="flex items-center gap-4 rounded-2xl border border-ink-950/[0.05] bg-ink-950/[0.02] p-4"
           >
             <Skeleton className="h-12 w-12 rounded-xl" />
             <div className="flex-1 space-y-2.5">
@@ -83,7 +83,7 @@ export function SummitTimeline({
               {isLast ? null : (
                 <span
                   aria-hidden
-                  className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-gradient-to-b from-white/[0.16] to-white/[0.05]"
+                  className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-gradient-to-b from-ink-950/[0.16] to-ink-950/[0.05]"
                 />
               )}
               <span
@@ -94,7 +94,7 @@ export function SummitTimeline({
                     ? 'border-brand-300 bg-brand-500 shadow-[0_0_0_4px_rgba(36,114,245,0.16)]'
                     : summit.isUpcoming
                       ? 'border-accent-400/70 bg-ink-900'
-                      : 'border-white/25 bg-ink-900',
+                      : 'border-ink-950/25 bg-ink-900',
                 )}
               />
             </div>
@@ -108,17 +108,17 @@ export function SummitTimeline({
                 'reveal group flex-1 rounded-2xl border p-4 text-left transition-all duration-300',
                 active
                   ? 'border-brand-400/40 bg-brand-500/[0.09] shadow-[0_20px_44px_-30px_rgba(36,114,245,0.95)]'
-                  : 'border-white/[0.07] bg-white/[0.02] hover:border-white/[0.15] hover:bg-white/[0.045]',
+                  : 'border-ink-950/[0.07] bg-ink-950/[0.02] hover:border-ink-950/[0.15] hover:bg-ink-950/[0.045]',
               )}
             >
               <div className="flex items-center gap-4">
                 <span
                   className={cn(
                     'flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-xl border transition-colors duration-300',
-                    active ? 'border-brand-400/35 bg-brand-500/12' : 'border-white/[0.08] bg-white/[0.03]',
+                    active ? 'border-brand-400/35 bg-brand-500/12' : 'border-ink-950/[0.08] bg-ink-950/[0.03]',
                   )}
                 >
-                  <span className="numeric text-[0.95rem] font-semibold leading-none text-white">
+                  <span className="numeric text-[0.95rem] font-semibold leading-none text-slate-50">
                     {day}
                   </span>
                   <span className="mt-0.5 text-[0.6rem] text-slate-500">{month}</span>
@@ -126,7 +126,7 @@ export function SummitTimeline({
 
                 <span className="min-w-0 flex-1">
                   <span className="flex items-center gap-2">
-                    <span className="truncate text-sm font-semibold text-white">{summit.name}</span>
+                    <span className="truncate text-sm font-semibold text-slate-50">{summit.name}</span>
                     {summit.isUpcoming ? <Badge tone="accent">即将召开</Badge> : null}
                   </span>
                   <span className="mt-1.5 flex flex-wrap items-center gap-x-3.5 gap-y-1 text-[0.72rem] text-slate-400">
@@ -146,7 +146,7 @@ export function SummitTimeline({
                   height={16}
                   className={cn(
                     'shrink-0 transition-transform duration-300',
-                    active ? 'rotate-180 text-brand-300' : 'text-slate-500 group-hover:text-slate-300',
+                    active ? 'rotate-180 text-brand-600' : 'text-slate-500 group-hover:text-slate-300',
                   )}
                 />
               </div>

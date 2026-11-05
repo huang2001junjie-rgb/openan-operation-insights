@@ -19,16 +19,17 @@ export const CHART_PALETTE = [
   '#c084fc',
 ] as const;
 
-export const AXIS_TEXT = '#94a3b8';
-export const SPLIT_LINE = 'rgba(255,255,255,0.07)';
+// v1.32 浅色主题：轴文字 / 分隔线 / 提示框全部反转为「浅底深字」
+export const AXIS_TEXT = '#67748a';
+export const SPLIT_LINE = 'rgba(22,35,61,0.09)';
 
 const TOOLTIP_STYLE = {
-  backgroundColor: 'rgba(8,11,22,0.94)',
-  borderColor: 'rgba(255,255,255,0.12)',
+  backgroundColor: 'rgba(255,255,255,0.97)',
+  borderColor: 'rgba(22,35,61,0.12)',
   borderWidth: 1,
   padding: [10, 12] as [number, number],
-  textStyle: { color: '#e2e8f0', fontSize: 12 },
-  extraCssText: 'border-radius:12px;box-shadow:0 18px 40px -20px rgba(0,0,0,0.9);backdrop-filter:blur(6px);',
+  textStyle: { color: '#26334d', fontSize: 12 },
+  extraCssText: 'border-radius:12px;box-shadow:0 16px 36px -20px rgba(22,35,61,0.28);backdrop-filter:blur(6px);',
 };
 
 export const TOOLTIP_BASE = {

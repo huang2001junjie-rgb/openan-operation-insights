@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Avatar } from '@/components/ui/Avatar';
 import { Badge, OrganizationTypeBadge } from '@/components/ui/Badge';
 import { IconArrowRight, IconExternal, IconUsers } from '@/components/icons';
@@ -14,7 +14,8 @@ import type { OrganizationCard, OrganizationTopContributor } from '@/types/contr
  * - 每维度 top3 贡献者（两栏各 3 行：20px 头像 + 姓名 + 数字，不可点击）；
  * - 两项贡献量均为 0 的组织显示「暂无贡献」灰色徽章；
  * - 卡片文字在初版基础上再放大一档（标题 1.2rem、描述 text-base、指标行与 top3 text-sm）；
- * - 内容顶对齐：贡献面板紧跟徽章/描述区，剩余空白留在底部链接行上方（链接行仍钉底）。
+ * - 内容顶对齐：贡献面板紧跟徽章/描述区，剩余空白留在底部链接行上方（链接行仍钉底）；
+ * - 首页改版「零动效」：无进场动画、无 hover 位移，仅保留颜色/边框的即时反馈。
  */
 
 /** 20px 个人圆形头像：avatarUrl 缺失或加载失败时降级为首字母色块（Confluence 账号无头像字段，恒走降级） */
@@ -33,8 +34,8 @@ function TopAvatar({ src, name }: { src?: string; name: string }) {
       className={cn(
         'flex h-5 w-5 shrink-0 items-center justify-center overflow-hidden rounded-full border text-[0.5rem] font-semibold leading-none',
         showImage
-          ? 'border-white/12 bg-white/[0.05]'
-          : 'border-brand-400/25 bg-gradient-to-br from-brand-400/30 to-accent-400/20 text-brand-100',
+          ? 'border-ink-950/12 bg-ink-950/[0.05]'
+          : 'border-brand-400/25 bg-gradient-to-br from-brand-400/30 to-accent-400/20 text-brand-800',
       )}
       title={name}
     >
@@ -58,10 +59,10 @@ function TopAvatar({ src, name }: { src?: string; name: string }) {
 function TopColumn({ title, items }: { title: string; items: OrganizationTopContributor[] }) {
   return (
     <div className="min-w-0">
-      <div className="text-[0.75rem] font-medium text-slate-500">{title}</div>
+      <div className="text-xs font-medium text-slate-400">{title}</div>
       <ul className="mt-1.5 space-y-1.5">
         {items.length === 0 ? (
-          <li className="flex h-5 items-center text-sm text-slate-600">—</li>
+          <li className="flex h-5 items-center text-sm text-slate-500">—</li>
         ) : (
           items.map((person, index) => (
             <li key={`${person.name}-${index}`} className="flex items-center gap-1.5">
@@ -88,7 +89,7 @@ function MetricRow({ label, value, unit }: { label: string; value?: number; unit
       {typeof value === 'number' ? (
         <span className="numeric font-semibold text-slate-200">
           {formatNumber(value)}
-          <span className="ml-1 text-[0.75rem] font-normal text-slate-500">{unit}</span>
+          <span className="ml-1 text-xs font-normal text-slate-400">{unit}</span>
         </span>
       ) : (
         <span className="text-slate-500">—</span>
@@ -110,7 +111,7 @@ function ContributionPanel({ org, header }: { org: OrganizationCard; header?: Re
         <MetricRow label="代码贡献量（累计）" value={org.commits ?? 0} unit="次提交" />
         <MetricRow label="Confluence 贡献量（累计）" value={org.confluenceEdits ?? 0} unit="次编辑" />
       </div>
-      <div className="mt-4 grid grid-cols-2 gap-3 border-t border-white/[0.06] pt-3.5">
+      <div className="mt-4 grid grid-cols-2 gap-3 border-t border-ink-950/[0.06] pt-3.5">
         <TopColumn title="代码 top3" items={org.topContributors?.github ?? []} />
         <TopColumn title="文档 top3" items={org.topContributors?.confluence ?? []} />
       </div>
@@ -123,18 +124,15 @@ function hasNoContribution(org: OrganizationCard): boolean {
   return (org.commits ?? 0) === 0 && (org.confluenceEdits ?? 0) === 0;
 }
 
-function OrganizationTile({ org, index }: { org: OrganizationCard; index: number }) {
+function OrganizationTile({ org }: { org: OrganizationCard }) {
   return (
-    <article
-      className="glass-card glass-card--hover reveal group flex flex-col p-5"
-      style={{ '--d': `${Math.min(index, 8) * 55}ms` } as CSSProperties}
-    >
+    <article className="glass-card group flex flex-col p-5 transition-colors duration-200 hover:border-ink-950/[0.14] hover:bg-ink-950/[0.045]">
       {/* Logo 通栏横幅（3:1），占满卡片内容宽度，避免挤压下方信息 */}
       <Avatar src={org.logoUrl} name={org.name} size="banner" className="w-full" />
 
       <div className="mt-4 flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h3 className="truncate text-[1.2rem] font-semibold text-white" title={org.name}>
+          <h3 className="truncate text-[1.2rem] font-semibold text-slate-50" title={org.name}>
             {org.name}
           </h3>
           <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
@@ -151,7 +149,7 @@ function OrganizationTile({ org, index }: { org: OrganizationCard; index: number
       {org.tags.length > 0 ? (
         <div className="mt-4 flex flex-wrap gap-1.5">
           {org.tags.slice(0, 4).map((tag) => (
-            <span key={tag} className="chip text-[0.68rem]">
+            <span key={tag} className="chip text-xs">
               {tag}
             </span>
           ))}
@@ -169,16 +167,16 @@ function OrganizationTile({ org, index }: { org: OrganizationCard; index: number
             href={org.homepageUrl}
             target="_blank"
             rel="noreferrer noopener"
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-400 transition hover:text-brand-300"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-400 transition hover:text-brand-600"
           >
             组织主页
             <IconExternal width={13} height={13} />
           </a>
         ) : (
-          <span className="text-sm text-slate-600">无公开主页</span>
+          <span className="text-sm text-slate-500">无公开主页</span>
         )}
 
-        <span className="inline-flex items-center gap-1 text-sm font-medium text-brand-300/0 transition-all duration-300 group-hover:text-brand-300">
+        <span className="inline-flex items-center gap-1 text-sm font-medium text-brand-600/0 transition-colors group-hover:text-brand-600">
           贡献明细
           <IconArrowRight width={13} height={13} />
         </span>
@@ -196,25 +194,20 @@ function OrganizationTile({ org, index }: { org: OrganizationCard; index: number
 function IndividualTile({
   org,
   memberCount,
-  index,
 }: {
   org: OrganizationCard;
   memberCount?: number;
-  index: number;
 }) {
   return (
-    <article
-      className="glass-card glass-card--hover reveal group flex flex-col border border-dashed border-white/15 p-5"
-      style={{ '--d': `${Math.min(index, 8) * 55}ms` } as CSSProperties}
-    >
+    <article className="glass-card group flex flex-col border border-dashed border-ink-950/15 p-5 transition-colors duration-200 hover:border-ink-950/[0.22] hover:bg-ink-950/[0.045]">
       {/* 占位横幅：与组织 Logo 区同为 3:1 通栏，保持网格对齐 */}
-      <span className="flex aspect-[3/1] w-full shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] text-slate-300">
+      <span className="flex aspect-[3/1] w-full shrink-0 items-center justify-center rounded-xl border border-ink-950/10 bg-ink-950/[0.03] text-slate-300">
         <IconUsers width={30} height={30} />
       </span>
 
       <div className="mt-4 flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h3 className="truncate text-[1.2rem] font-semibold text-white" title={org.name}>
+          <h3 className="truncate text-[1.2rem] font-semibold text-slate-50" title={org.name}>
             {org.name}
           </h3>
           <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
@@ -249,16 +242,11 @@ export function OrganizationWall({
 }) {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-      {organizations.map((org, index) =>
+      {organizations.map((org) =>
         org.type === 'individual' ? (
-          <IndividualTile
-            key={org.orgId}
-            org={org}
-            memberCount={individualCount}
-            index={index}
-          />
+          <IndividualTile key={org.orgId} org={org} memberCount={individualCount} />
         ) : (
-          <OrganizationTile key={org.orgId} org={org} index={index} />
+          <OrganizationTile key={org.orgId} org={org} />
         ),
       )}
     </div>

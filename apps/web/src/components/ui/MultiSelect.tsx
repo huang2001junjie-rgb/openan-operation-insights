@@ -101,8 +101,8 @@ export function MultiSelect({
         className={cn(
           'flex h-10 w-full items-center justify-between gap-2 rounded-xl border px-3 text-sm transition',
           value.length > 0
-            ? 'border-brand-400/40 bg-brand-500/[0.09] text-brand-100'
-            : 'border-white/10 bg-white/[0.04] text-slate-300 hover:border-white/20 hover:bg-white/[0.06]',
+            ? 'border-brand-400/40 bg-brand-500/[0.09] text-brand-800'
+            : 'border-ink-950/10 bg-ink-950/[0.04] text-slate-300 hover:border-ink-950/20 hover:bg-ink-950/[0.06]',
         )}
       >
         <span className="truncate">{buttonLabel}</span>
@@ -121,7 +121,7 @@ export function MultiSelect({
                   onChange([]);
                 }
               }}
-              className="rounded-md px-1 text-[0.68rem] text-slate-400 transition hover:bg-white/10 hover:text-slate-100"
+              className="rounded-md px-1 text-[0.68rem] text-slate-400 transition hover:bg-ink-950/10 hover:text-slate-100"
             >
               清除
             </span>
@@ -137,10 +137,10 @@ export function MultiSelect({
       {open ? (
         <div
           role="listbox"
-          className="animate-fade-in absolute z-30 mt-2 w-full min-w-[15rem] overflow-hidden rounded-xl border border-white/10 bg-ink-850/95 shadow-[0_28px_60px_-24px_rgba(0,0,0,0.95)] backdrop-blur-xl"
+          className="animate-fade-in absolute z-30 mt-2 w-full min-w-[15rem] overflow-hidden rounded-xl border border-ink-950/10 bg-ink-850/95 shadow-[0_24px_48px_-20px_rgba(22,35,61,0.25)] backdrop-blur-xl"
         >
           {searchable ? (
-            <div className="border-b border-white/[0.07] p-2">
+            <div className="border-b border-ink-950/[0.07] p-2">
               <span className="relative block">
                 <IconSearch
                   width={14}
@@ -152,7 +152,7 @@ export function MultiSelect({
                   value={keyword}
                   onChange={(event) => setKeyword(event.target.value)}
                   placeholder={searchPlaceholder}
-                  className="h-8 w-full rounded-lg border border-white/10 bg-white/[0.04] pl-8 pr-2 text-xs text-slate-100 placeholder:text-slate-500 focus:border-brand-400/50 focus:outline-none"
+                  className="h-8 w-full rounded-lg border border-ink-950/10 bg-ink-950/[0.04] pl-8 pr-2 text-xs text-slate-100 placeholder:text-slate-500 focus:border-brand-400/50 focus:outline-none"
                 />
               </span>
             </div>
@@ -171,14 +171,14 @@ export function MultiSelect({
                       role="option"
                       aria-selected={checked}
                       onClick={() => toggle(option.value)}
-                      className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-xs transition hover:bg-white/[0.05]"
+                      className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-xs transition hover:bg-ink-950/[0.05]"
                     >
                       <span
                         className={cn(
                           'flex h-4 w-4 shrink-0 items-center justify-center rounded border transition',
                           checked
                             ? 'border-brand-400 bg-brand-500 text-white'
-                            : 'border-white/20 bg-white/[0.03]',
+                            : 'border-ink-950/20 bg-ink-950/[0.03]',
                         )}
                       >
                         {checked ? (
@@ -206,11 +206,11 @@ export function MultiSelect({
           </ul>
 
           {onSelectAll ? (
-            <div className="border-t border-white/[0.07] p-1.5">
+            <div className="border-t border-ink-950/[0.07] p-1.5">
               <button
                 type="button"
                 onClick={onSelectAll}
-                className="w-full rounded-lg px-3 py-1.5 text-left text-xs text-brand-300 transition hover:bg-white/[0.06]"
+                className="w-full rounded-lg px-3 py-1.5 text-left text-xs text-brand-600 transition hover:bg-ink-950/[0.06]"
               >
                 全选
               </button>

@@ -77,7 +77,8 @@ export function DonutChart({
           padAngle: 2,
           itemStyle: {
             borderRadius: 8,
-            borderColor: 'rgba(8,11,22,0.9)',
+            // v1.32 浅色主题：扇区分隔色用页面底色，白卡上呈现干净切口
+            borderColor: '#ffffff',
             borderWidth: 2,
           },
           label: { show: false },
