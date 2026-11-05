@@ -11,6 +11,7 @@ import {
   usePersonContributions,
   usePersonGithubEvents,
 } from '@/hooks/usePerson';
+import type { Organization } from '@/types/contract';
 import { PersonConfluenceRequirementsCard } from './PersonConfluenceRequirementsCard';
 import { PersonEntityPicker, selectionOf, type PersonSelection } from './PersonEntityPicker';
 import { PersonGithubEventsCard } from './PersonGithubEventsCard';
@@ -47,7 +48,7 @@ const EVENTS_LIMIT = 500;
  * 时间区间沿用组织模式的半开口径（[from, to)），但**只作用于 GitHub 事件明细**：
  * 画像是全历史累计、Confluence 事实没有可切片的时间维度。
  */
-export function PersonModePanel() {
+export function PersonModePanel({ organizations = [] }: { organizations?: Organization[] }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const selection = selectionOf(searchParams);
   const [range, setRange] = useState<{ from: string; to: string }>({ from: '', to: '' });
@@ -187,6 +188,7 @@ export function PersonModePanel() {
           isError={contributionsQuery.isError}
           error={contributionsQuery.error}
           onRetry={() => void contributionsQuery.refetch()}
+          organizations={organizations}
         />
       ) : null}
 

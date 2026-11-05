@@ -50,7 +50,8 @@ export function DonutChart({
           top: '44%',
           style: {
             text: centerValue ?? formatNumber(total),
-            fill: '#e8eefc',
+            // v1.34 浅色可读性：中心数值改纯黑（原 #e8eefc 浅蓝白在白卡上几乎不可见）
+            fill: '#000000',
             fontSize: 26,
             fontWeight: 700,
             fontFamily: 'Inter, sans-serif',
@@ -62,7 +63,8 @@ export function DonutChart({
           top: '57%',
           style: {
             text: centerLabel,
-            fill: '#8794ad',
+            // v1.34 浅色可读性：中心口径标签同步改纯黑（原 #8794ad 浅灰偏淡）
+            fill: '#000000',
             fontSize: 11,
             fontFamily: 'Inter, sans-serif',
           },

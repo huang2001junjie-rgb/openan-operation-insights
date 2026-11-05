@@ -292,7 +292,7 @@ export function ActivityPage() {
       </div>
 
       {mode === 'person' ? (
-        <PersonModePanel />
+        <PersonModePanel organizations={organizations} />
       ) : (
         <>
           <ActivitySourceSwitcher value={source} onChange={handleSourceChange} />

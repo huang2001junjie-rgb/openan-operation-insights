@@ -4,7 +4,7 @@ import { Card, CardTitle } from '@/components/ui/Card';
 import { SkeletonTable } from '@/components/ui/Skeleton';
 import { IconConfluence, IconGithub, IconUsers } from '@/components/icons';
 import { formatDateTime, formatNumber } from '@/lib/format';
-import type { PersonAccountItem, PersonContributionsData } from '@/types/contract';
+import type { Organization, PersonAccountItem, PersonContributionsData } from '@/types/contract';
 
 function MetricTile({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
@@ -86,12 +86,15 @@ export function PersonProfileCard({
   isError,
   error,
   onRetry,
+  /** 组织档案（含 logoUrl）：画像头部按生效归属展示组织 logo，未归属不显示 */
+  organizations = [],
 }: {
   data: PersonContributionsData | undefined;
   isLoading: boolean;
   isError: boolean;
   error?: unknown;
   onRetry?: () => void;
+  organizations?: Organization[];
 }) {
   return (
     <Card className="reveal" padded={false}>
@@ -125,7 +128,28 @@ export function PersonProfileCard({
                 />
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-lg font-semibold text-slate-50">{data.person.displayName}</span>
+                    {/* v1.34 运营反馈：画像人名放大很多（原 text-lg 18px，现 32px） */}
+                    <span className="text-[2rem] font-bold leading-tight tracking-tight text-slate-50">
+                      {data.person.displayName}
+                    </span>
+                    {/* v1.35 运营反馈：人名右侧展示归属组织 logo；未归属（orgName 为空）不显示 */}
+                    {data.orgName ? (
+                      (() => {
+                        const logoUrl = organizations.find(
+                          (org) => org.orgId === data.effectiveOrgId,
+                        )?.logoUrl;
+                        return logoUrl ? (
+                          <img
+                            src={logoUrl}
+                            alt={`${data.orgName} logo`}
+                            className="h-8 max-w-[8rem] object-contain"
+                            onError={(event) => {
+                              event.currentTarget.style.display = 'none';
+                            }}
+                          />
+                        ) : null;
+                      })()
+                    ) : null}
                     <span className="rounded-full border border-ink-950/10 bg-ink-950/[0.04] px-2.5 py-0.5 text-xs text-slate-300">
                       {data.orgName ?? '未归属'}
                     </span>
