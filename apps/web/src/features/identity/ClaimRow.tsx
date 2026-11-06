@@ -71,7 +71,7 @@ export function ClaimRow({
       className={cn(
         'rounded-xl border px-3 py-2.5 transition-colors duration-200',
         conflicted
-          ? 'border-amber-400/30 bg-amber-500/[0.05]'
+          ? 'border-rose-400/30 bg-rose-500/[0.05]'
           : owners.length > 0
             ? 'border-ink-950/[0.07] bg-ink-950/[0.025]'
             : 'border-ink-950/[0.07] bg-ink-950/[0.015]',
@@ -130,7 +130,7 @@ export function ClaimRow({
             </span>
           ) : null}
           {conflicted ? (
-            <span className="inline-flex items-center gap-1 text-[0.7rem] font-medium text-amber-700">
+            <span className="inline-flex items-center gap-1 text-[0.7rem] font-medium text-rose-700">
               <IconAlert width={12} height={12} />
               冲突：被 {owners.length} 个自然人引用
             </span>

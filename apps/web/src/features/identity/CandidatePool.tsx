@@ -118,7 +118,7 @@ export function CandidatePool({
         <div>
           <h2 className="text-[0.95rem] font-semibold text-slate-50">候选账号池</h2>
           <p className="mt-0.5 text-xs text-slate-500">
-            待认领 <span className="numeric text-accent-600">{totalPending}</span> 项 · 派生自既有数据
+            待认领 <span className="numeric text-amber-700">{totalPending}</span> 项 · 派生自既有数据
           </p>
         </div>
         <span
@@ -126,7 +126,7 @@ export function CandidatePool({
             'inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs',
             targetPerson
               ? 'border-accent-400/30 bg-accent-500/10 text-accent-600'
-              : 'border-amber-400/30 bg-amber-500/10 text-amber-700',
+              : 'border-ink-950/[0.10] bg-ink-950/[0.03] text-slate-500',
           )}
         >
           <IconUserPlus width={13} height={13} />
@@ -192,7 +192,7 @@ export function CandidatePool({
                   />
                   <SourceBadge source={group.key} />
                   <span className="numeric text-xs text-slate-500">
-                    待认领 {bucket.pending.length}
+                    待认领 <span className="text-amber-700">{bucket.pending.length}</span>
                     {bucket.claimed.length > 0 ? ` · 已认领 ${bucket.claimed.length}` : ''}
                   </span>
                 </button>
@@ -225,8 +225,8 @@ export function CandidatePool({
                     ) : null}
 
                     {bucket.pending.length > 0 ? (
-                      <div className="space-y-2">
-                        <p className="text-[0.7rem] font-semibold uppercase tracking-wider text-slate-500">
+                      <div className="space-y-2 rounded-xl border border-amber-400/30 bg-amber-500/[0.05] px-2.5 py-2.5">
+                        <p className="text-[0.7rem] font-semibold uppercase tracking-wider text-amber-700">
                           待认领
                         </p>
                         {bucket.pending.map((candidate) => (

@@ -73,8 +73,11 @@ _Avoid_: 脏数据, 异常行
 **组织花名册 (Org Roster)**: 「组织 → 其下开发者」的**派生视图**，由 `Person.orgId` 分组得到，不落盘。"查询组织下所有 dev"即读该视图，写入仍只经由 `Person.orgId`。
 _Avoid_: 落盘的组织成员列表
 
-**候选池 (Candidate Pool)**: 待认领 / 已认领的来源账号集合，由 `github-accounts.json`、`confluence-accounts.json`（账号级，ADR-0010）与 `meetings.json` **实时派生**，不落盘、零维护。按来源分三组，顺序固定为 **GitHub → Confluence → Meeting**；支持 `?source=confluence` 深链预选分组（供活跃页「去账号认领」入口落地）。每条 GitHub / Confluence 候选带**采集口径归属**（`orgId` / `orgName`，Confluence 另带 `orgSource`），`claimedBy` 带各认领自然人的归属（ADR-0014）；认领目标归属与候选采集归属不一致时，认领前弹模态确认（**提醒不阻断**），自然人未归属时提供「认领并归属到该组织」快捷路径（先认领、成功后再改归属）。
+**候选池 (Candidate Pool)**: 待认领 / 已认领的来源账号集合，由 `github-accounts.json`、`confluence-accounts.json`（账号级，ADR-0010）与 `meetings.json` **实时派生**，不落盘、零维护。按来源分三组，顺序固定为 **GitHub → Confluence → Meeting**；支持 `?source=confluence` 深链预选分组（供活跃页「去账号认领」入口落地）。每条 GitHub / Confluence 候选带**采集口径归属**（`orgId` / `orgName`，Confluence 另带 `orgSource`），`claimedBy` 带各认领自然人的归属（ADR-0014）；认领目标归属与候选采集归属不一致时，认领前弹模态确认（**提醒不阻断**），自然人未归属时提供「认领并归属到该组织」快捷路径（先认领、成功后再改归属）。分组内按 `claimedBy` 是否为空分「已认领 / 待认领」两小节，**待认领小节以黄色大框强调**（颜色约定见「待认领」词条）。
 _Avoid_: 账号表
+
+**待认领 (Pending Claim)**: `claimedBy` 为空的候选账号——尚无任何认领边指称它的来源账号。候选池每个来源分组的「待认领」小节收纳全部未认领账号，以**黄色大框**（amber 边框 + 浅黄底）整体框起，小节内行卡片统一浅底；候选池头部与分组头的「待认领 N」计数同步黄色。**黄色在认领界面是待认领的专属语义**：行级冲突与归属不一致确认弹窗一律红色（rose），降级警告等真警示才用琥珀；在认领界面新增黄色元素前先对照本条。
+_Avoid_: 未认领（指称同物，界面文案与词条统一用「待认领」）, 未归属账号（那是 Confluence 采集状态概念）
 
 **认领目标 (Claim Target)**: 自然人模式下左栏花名册中被选中的自然人，是候选池「认领」动作的唯一对象；页面级瞬时状态，不落盘、不进 URL。与「详情抽屉」是两个**独立**状态：选中不打开抽屉，关抽屉不清空目标（ADR-0006）。
 _Avoid_: 当前用户, 选中的人（用于指代详情对象）

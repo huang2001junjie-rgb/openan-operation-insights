@@ -61,7 +61,7 @@ export function OrgConflictDialog({
       >
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-amber-400/25 bg-amber-500/12 text-amber-700">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-rose-400/25 bg-rose-500/12 text-rose-700">
               <IconAlert width={19} height={19} />
             </span>
             <div>
