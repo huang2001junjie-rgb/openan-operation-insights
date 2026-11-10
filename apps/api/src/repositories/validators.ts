@@ -296,11 +296,15 @@ export function isSummitDetailArray(value: unknown): value is SummitDetail[] {
 
 function isMeetingAttendanceRow(value: unknown): value is MeetingAttendanceRow {
   if (!isObject(value)) return false;
+  const participantCount = (value as { participantCount?: unknown }).participantCount;
   return (
     isString(value.date) &&
     MEETING_DATE_PATTERN.test(value.date) &&
     Array.isArray(value.attendance) &&
-    value.attendance.every(isBoolean)
+    value.attendance.every(isBoolean) &&
+    (participantCount === undefined ||
+      participantCount === null ||
+      (typeof participantCount === 'number' && Number.isInteger(participantCount) && participantCount >= 0))
   );
 }
 
@@ -308,6 +312,7 @@ function isMeetingAttendanceRow(value: unknown): value is MeetingAttendanceRow {
  * 例会参会矩阵（04 文档 §3.8）：
  * - columns 非空字符串数组；
  * - 每行 date 为 YYYY-MM-DD，attendance 与 columns 等长；
+ * - 每行 participantCount 缺省 / null / 非负整数；
  * - updatedAt 可选。
  */
 export function isMeetingAttendanceMatrix(value: unknown): value is MeetingAttendanceMatrix {

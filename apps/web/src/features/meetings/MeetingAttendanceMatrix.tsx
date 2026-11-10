@@ -27,8 +27,9 @@ export function splitMemberLabel(raw: string): { name: string; company?: string 
 }
 
 /**
- * 例会参会矩阵：行 = 日期、列 = 成员，严格保留台账原序，前端不可重排（ADR-0005）。
- * 为在「不可重排」的前提下仍能读出席率，个人出席率挂列头副标签、每场出席人数挂行头（见 02 文档 §6）。
+ * 例会参会矩阵：行 = 日期、列 = 成员。**行序为最新例会排最上**（ADR-0005 后续修订：
+ * 存储与接口仍保持台账原序，仅渲染时反转）；列序严格保留台账原序（ADR-0005）。
+ * 为在「列不可重排」的前提下仍能读出席率，个人出席率挂列头副标签、每场出席人数挂行头（见 02 文档 §6）。
  */
 export function MeetingAttendanceMatrix({
   matrix,
@@ -40,6 +41,9 @@ export function MeetingAttendanceMatrix({
   const columns = matrix?.columns ?? [];
   const rows = matrix?.rows ?? [];
   const meetingCount = rows.length;
+
+  /** 渲染行序：最新例会在上（接口与落盘仍保持台账原序，见 ADR-0005 后续修订） */
+  const displayRows = useMemo(() => [...rows].reverse(), [rows]);
 
   /** 个人出席率：该成员出席场次 ÷ 台账总场次（空白格已按缺席计入分母） */
   const rates = useMemo(
@@ -56,7 +60,7 @@ export function MeetingAttendanceMatrix({
     <Card className="reveal">
       <CardTitle
         title="参会矩阵"
-        description="行 = 例会日期，列 = 成员，按运营台账原序排列；✓ 出席，— 缺席。"
+        description="行 = 例会日期（最新在上）、列 = 成员（台账原序）；✓ 出席，— 缺席。"
         icon={<IconUsers width={16} height={16} />}
         action={
           <span className="hidden items-center gap-3 text-[0.7rem] text-slate-500 sm:inline-flex">
@@ -122,7 +126,7 @@ export function MeetingAttendanceMatrix({
                 </tr>
               </thead>
               <tbody>
-                {rows.map((row) => {
+                {displayRows.map((row) => {
                   const presentCount = row.attendance.filter(Boolean).length;
                   return (
                     <tr key={row.date} className="group">

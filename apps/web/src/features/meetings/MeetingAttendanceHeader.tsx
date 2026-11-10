@@ -22,7 +22,7 @@ export function MeetingAttendanceHeader({ matrix }: MeetingAttendanceHeaderProps
       <PageHeading
         eyebrow="Meeting Attendance"
         title="例会参会情况"
-        description="TSC 例会出勤台账：按成员 × 日期逐格记录是否出席，照搬运营维护的原始表格，不做排序、聚合或列名改写。"
+        description="TSC 例会出勤台账：按成员 × 日期逐格记录是否出席，照搬运营维护的原始表格，不做聚合或列名改写；日期列最新在上。"
         meta={
           <>
             <Badge tone="accent">例会台账</Badge>

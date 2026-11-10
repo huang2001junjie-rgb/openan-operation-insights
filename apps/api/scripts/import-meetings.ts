@@ -11,6 +11,8 @@
  *
  * 照搬原则（ADR-0005）：列头为**人名原文**、行头为**日期原序**；不排序、不聚合、
  * 不补人、不改写列名。空白格 = 缺席（计入出席率分母，属明知并接受的负债）。
+ * 例外（ADR-0022）：表头中字面量「出勤人数」的一列**不是成员列**，逐行解析为
+ * 该场全场的实到人数（`participantCount`，可空），不参与出席判定。
  */
 import { existsSync, readdirSync } from 'node:fs';
 import { rename, rm, writeFile } from 'node:fs/promises';
@@ -50,6 +52,12 @@ const PRESENT_TOKENS = new Set([
  * 其余未命中的非空记号会告警，提示校准 PRESENT_TOKENS。
  */
 const ABSENT_TOKENS = new Set(['0', 'false', 'f', 'n', 'no', '否', '缺席', '请假', '×', '-', '—', '–', '/', 'none']);
+
+/**
+ * 出席人数列的表头字面量（ADR-0022）：与成员列区分，整列不参与出席判定。
+ * 该列记录的是全场实到人数（含非成员列席者），与成员出席格计数口径不同。
+ */
+const PARTICIPANT_COUNT_HEADER = '出勤人数';
 
 /** 日期列识别阈值：至少 80% 的数据行可解析为日期 */
 const DATE_COLUMN_RATIO = 0.8;
@@ -175,7 +183,11 @@ function detectDateColumn(raw: string[][]): number {
   );
 }
 
-async function buildMatrix(sourcePath: string, unknownMarks: Set<string>): Promise<MeetingAttendanceMatrix> {
+async function buildMatrix(
+  sourcePath: string,
+  unknownMarks: Set<string>,
+  invalidCounts: Set<string>,
+): Promise<MeetingAttendanceMatrix> {
   const workbook = new Workbook();
   await workbook.xlsx.readFile(sourcePath);
 
@@ -204,10 +216,27 @@ async function buildMatrix(sourcePath: string, unknownMarks: Set<string>): Promi
 
   const nameColumns = raw[0]
     .map((header, index) => ({ name: header.trim(), index }))
-    .filter((column) => column.index !== dateColumn && column.name.length > 0);
+    .filter(
+      (column) => column.index !== dateColumn && column.name.length > 0 && column.name !== PARTICIPANT_COUNT_HEADER,
+    );
   if (nameColumns.length === 0) {
     throw new Error('未能识别出席人列：第 1 行需为人名表头');
   }
+
+  /** 「出勤人数」列（ADR-0022）：可选；缺失时全部行为 null */
+  const participantCountColumn = raw[0].findIndex(
+    (header, index) => index !== dateColumn && header.trim() === PARTICIPANT_COUNT_HEADER,
+  );
+
+  /** 解析出席人数：空白 → null；非负整数 → number；其余 → null 并告警（按缺席语义的「未知」处理，不中止导入） */
+  const parseParticipantCount = (rawValue: string): number | null => {
+    const text = rawValue.trim();
+    if (text.length === 0) return null;
+    const value = Number(text);
+    if (Number.isInteger(value) && value >= 0) return value;
+    invalidCounts.add(text);
+    return null;
+  };
 
   const rows: MeetingAttendanceRow[] = [];
   const seenDates = new Set<string>();
@@ -227,7 +256,10 @@ async function buildMatrix(sourcePath: string, unknownMarks: Set<string>): Promi
       return isPresentMark(mark);
     });
 
-    rows.push({ date, attendance });
+    const participantCount =
+      participantCountColumn >= 0 ? parseParticipantCount(raw[index][participantCountColumn]) : null;
+
+    rows.push({ date, attendance, participantCount });
   }
 
   if (rows.length === 0) throw new Error('台账中没有可解析的例会行');
@@ -255,7 +287,8 @@ async function main(): Promise<void> {
   }
 
   const unknownMarks = new Set<string>();
-  const matrix = await buildMatrix(sourcePath, unknownMarks);
+  const invalidCounts = new Set<string>();
+  const matrix = await buildMatrix(sourcePath, unknownMarks, invalidCounts);
 
   const presentCount = matrix.rows.reduce(
     (total, row) => total + row.attendance.filter(Boolean).length,
@@ -263,14 +296,25 @@ async function main(): Promise<void> {
   );
   const totalCells = matrix.rows.length * matrix.columns.length;
 
+  const counts = matrix.rows.flatMap((row) => (row.participantCount == null ? [] : [row.participantCount]));
+  const countAvg = counts.length > 0 ? counts.reduce((total, value) => total + value, 0) / counts.length : null;
+  const countMax = counts.length > 0 ? Math.max(...counts) : null;
+
   console.log('── 例会台账导入 ─────────────────────────────');
   console.log(`源文件   : ${sourcePath}`);
   console.log(`成员列   : ${matrix.columns.length} 人（保留原序）`);
   console.log(`例会行   : ${matrix.rows.length} 场（保留原序）`);
   console.log(`日期区间 : ${matrix.rows[0].date} → ${matrix.rows[matrix.rows.length - 1].date}`);
   console.log(`出席格   : ${presentCount}/${totalCells}`);
+  console.log(
+    `出勤人数 : ${counts.length}/${matrix.rows.length} 场已填` +
+      (countAvg !== null ? `；平均 ${countAvg.toFixed(1)}，最大 ${countMax}` : ''),
+  );
   if (unknownMarks.size > 0) {
     console.warn(`未识别记号: ${[...unknownMarks].join('、')}（按缺席处理，请校准 PRESENT_TOKENS）`);
+  }
+  if (invalidCounts.size > 0) {
+    console.warn(`出勤人数列存在非整数: ${[...invalidCounts].join('、')}（按未填处理）`);
   }
 
   if (args.dryRun) {

@@ -380,7 +380,7 @@ erDiagram
 | 字段 | 类型 | 必填 | 说明 |
 | --- | --- | --- | --- |
 | `columns` | string[] | ✅ | 列头，即人名**原文**（照搬 Excel 表头，保留原序与原文，含空格）。**非主键**，重名 / 改名 / 空格差异会产生重复列 |
-| `rows` | `MeetingAttendanceRow[]` | ✅ | 每次例会一行，**保持 Excel 原序** |
+| `rows` | `MeetingAttendanceRow[]` | ✅ | 每次例会一行，**存储保持 Excel 原序**（展示行序由前端决定，例会页为最新在上，见 ADR-0005 后续修订） |
 | `updatedAt` | string | ❌ | 台账最后同步时间，由采集器写入 |
 
 `MeetingAttendanceRow`：
@@ -389,11 +389,12 @@ erDiagram
 | --- | --- | --- | --- |
 | `date` | string | ✅ | 例会日期，`YYYY-MM-DD` |
 | `attendance` | boolean[] | ✅ | 出席标记，**与 `columns` 等长、同序**；`true` = 出席，`false` = 缺席 |
+| `participantCount` | number \| null | ❌ | 该场**全场实到人数**（含非成员列席者），由运营在台账「出勤人数」列维护（ADR-0022）；缺省 / 未填视为 `null`。**与 `attendance` 中 `true` 的计数不是同一口径**，系统不校验二者关系 |
 
 > **口径声明**（必须在前端可查，见 02 §6.3）：
 > - **空白 = 缺席**：台账中未标记的格子一律解析为 `false` 并计入出席率分母。因此**成员加入前的历史空白同样计入缺席**，会系统性拉低后加入者的出席率——这是 ADR-0005 明知并接受的负债。
 > - **不含会议元信息**：无时长、主持人、议程、地点等字段（ADR-0005 明确放弃）。
-> - **不含聚合字段**：个人出席率（`present / rows.length`）与每场出席人数均由**前端**派生，接口不返回。
+> - **不含派生聚合字段**：个人出席率（`present / rows.length`）与每场出席人数（`attendance` 中 `true` 的计数）均由**前端**派生，接口不返回；平均 / 最大出勤人数同理由前端对 `participantCount` 点集派生（ADR-0022）。`participantCount` 本身是台账**原子数据**（逐场维护的实到人数），不是聚合值，故由接口透传。
 
 ### 3.9 `Person`（自然人）
 

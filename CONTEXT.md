@@ -19,6 +19,9 @@ _Avoid_: 工单, 任务, issue
 **议题分享 (Topic Share)**: 会议纪要页（标题匹配 `^\d{4}-\d{2}-\d{2} TSC Minutes$` 且父页匹配 `^\d{4} - TSC Minutes$`）`Agenda` 段**内**的全部 @ 提及（段落里的与表格行里的都算，实测分享人写在「议题标题 + @分享人」的段落里），**同一期同一账号最多算 1 次**（≈ 参加了几期会议的议题分享）。**只取该段**：同页 `Attendees & Representation` 段的 @ 是出席签到（占全页 80%），计入会得到"出席次数"。取代原先恒 0 的 `bestPractices`。见 ADR-0009 及其「后续修订」。
 _Avoid_: 分享, 演讲, 议题, best practice
 
+**出勤人数 (Participant Count)**: 某场 TSC 例会的**全场实到人数**，**含非成员列席者**，由运营在台账 xlsx 字面量「出勤人数」列逐场维护（可空），经 `import-meetings.ts` 落为 `MeetingAttendanceRow.participantCount`（ADR-0022）。**不是** `attendance` 布尔格中 `true` 的计数——后者只数矩阵成员列（8 列），恒 ≤ 8，与实到 21～26 人不是一回事；两者并列展示、不互相推导也不互相校验。平均 / 最大出勤人数由前端对已填点集派生，接口不返回。
+_Avoid_: 出席率, 到会率, 参会人数（与 member 出席计数混用）
+
 **需求级事实 (Requirement-level Fact)**: 需求口径的**行级原子事实**：「某账号在某页某需求行的 `Contacts` 列被 @ 提及」，一条 = 一行 × 一个提及账号（幂等键 `pageId+rowIndex+accountId`，行内重复提及折叠）。落盘 `data/confluence-requirements.json`（ADR-0021），**唯一读路径是个人模式的需求明细**（恒全历史、无时间维度）；与「需求 (Requirement)」的**账号级累计计数**并存但口径独立——组织级 / 账号级仍读 `confluence-accounts.json`。`release` 解析不到为 `null`（显式「—」不 guess）；页面 URL **不落盘**，读时按 `confluence.baseUrl + pageId` 派生；文件缺失是「**待采集**」态（空数组 + `updatedAt=null`），非错误。
 _Avoid_: 需求明细（未点明与账号级计数的并存差异）, 需求事件
 

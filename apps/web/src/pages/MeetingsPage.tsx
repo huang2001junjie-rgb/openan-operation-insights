@@ -1,5 +1,6 @@
 import { MeetingAttendanceHeader } from '@/features/meetings/MeetingAttendanceHeader';
 import { MeetingAttendanceMatrix } from '@/features/meetings/MeetingAttendanceMatrix';
+import { ParticipantsLineChart } from '@/features/meetings/ParticipantsLineChart';
 import { useMeetingAttendance } from '@/hooks/useMeetingAttendance';
 
 /**
@@ -12,6 +13,13 @@ export function MeetingsPage() {
   return (
     <div className="space-y-6">
       <MeetingAttendanceHeader matrix={data} />
+      <ParticipantsLineChart
+        matrix={data}
+        isLoading={isLoading}
+        isError={isError}
+        error={error}
+        onRetry={() => void refetch()}
+      />
       <MeetingAttendanceMatrix
         matrix={data}
         isLoading={isLoading}

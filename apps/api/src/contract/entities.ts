@@ -501,6 +501,12 @@ export interface MeetingAttendanceRow {
   date: string;
   /** 出席标记，与 columns 等长、同序（true=出席，false=缺席） */
   attendance: boolean[];
+  /**
+   * 该场例会的实际出席人数（含非成员列席者），由运营在台账「出勤人数」列维护（ADR-0022）。
+   * 与 `attendance` 中 true 的计数**不是同一口径**：前者是全场实到人数，后者仅数矩阵成员列。
+   * 未填（早期例会行）为 `null`；接口纯透传，不做派生。
+   */
+  participantCount?: number | null;
 }
 
 export interface MeetingAttendanceMatrix {

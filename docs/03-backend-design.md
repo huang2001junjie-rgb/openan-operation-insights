@@ -338,14 +338,15 @@ export interface SummitPort {
 
 ```ts
 // providers/ports/meeting-attendance.port.ts
-/** 例会参会矩阵：行 = 日期，列 = 人名（照搬 Excel 台账，见 ADR-0005） */
+/** 例会参会矩阵：行 = 日期，列 = 人名（照搬 Excel 台账，见 ADR-0005 / ADR-0022） */
 export interface MeetingAttendanceRow {
-  date: string;          // YYYY-MM-DD
-  attendance: boolean[]; // 与 columns 等长、同序；true = 出席
+  date: string;           // YYYY-MM-DD
+  attendance: boolean[];  // 与 columns 等长、同序；true = 出席
+  participantCount?: number | null; // 全场实到人数（含列席者，ADR-0022）；未填 = null
 }
 
 export interface MeetingAttendanceMatrix {
-  columns: string[];            // 人名原文（非主键）
+  columns: string[];            // 人名原文（非主键；字面量「出勤人数」列由采集脚本识别，不进本数组）
   rows: MeetingAttendanceRow[]; // 保持台账原序
   updatedAt?: string;
 }
@@ -355,7 +356,7 @@ export interface MeetingAttendancePort {
 }
 ```
 
-> 该端口是**纯透传**：Service 不做任何排序、聚合与补全（ADR-0005）。个人出席率与每场出席人数由**前端**派生（02 §6.3），后端不计算。
+> 该端口是**纯透传**：Service 不做任何排序、聚合与补全（ADR-0005）。个人出席率、每场出席人数（成员列 `true` 计数）与出勤人数的平均 / 最大均由**前端**派生（02 §6.3），后端不计算；`participantCount` 是台账原子数据，逐行透传（ADR-0022）。
 
 ### 4.6 DI Token 与绑定切换
 

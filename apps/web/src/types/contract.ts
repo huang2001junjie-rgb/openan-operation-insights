@@ -284,6 +284,8 @@ export interface MeetingAttendanceRow {
   date: string;
   /** 出席标记，与 columns 等长、同序 */
   attendance: boolean[];
+  /** 该场全场实到人数（含非成员列席者，ADR-0022）；早期未填的行可能为 null / 缺省 */
+  participantCount?: number | null;
 }
 
 export interface MeetingAttendanceMatrix {

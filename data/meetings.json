@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-11-10T07:48:09.642Z",
+  "updatedAt": "2026-11-10T08:51:42.753Z",
   "data": {
     "columns": [
       "Huawei(Yijun Yu)",
@@ -24,7 +24,8 @@
           true,
           true,
           true
-        ]
+        ],
+        "participantCount": null
       },
       {
         "date": "2026-06-16",
@@ -37,7 +38,8 @@
           false,
           false,
           false
-        ]
+        ],
+        "participantCount": null
       },
       {
         "date": "2026-06-30",
@@ -50,7 +52,8 @@
           true,
           true,
           false
-        ]
+        ],
+        "participantCount": null
       },
       {
         "date": "2026-07-07",
@@ -63,7 +66,8 @@
           true,
           false,
           false
-        ]
+        ],
+        "participantCount": null
       },
       {
         "date": "2026-07-14",
@@ -76,7 +80,8 @@
           true,
           false,
           false
-        ]
+        ],
+        "participantCount": null
       },
       {
         "date": "2026-07-21",
@@ -89,7 +94,8 @@
           true,
           false,
           false
-        ]
+        ],
+        "participantCount": null
       },
       {
         "date": "2026-07-28",
@@ -102,7 +108,8 @@
           true,
           false,
           false
-        ]
+        ],
+        "participantCount": null
       },
       {
         "date": "2026-08-04",
@@ -115,7 +122,8 @@
           true,
           false,
           false
-        ]
+        ],
+        "participantCount": null
       },
       {
         "date": "2026-08-11",
@@ -128,7 +136,8 @@
           true,
           true,
           false
-        ]
+        ],
+        "participantCount": null
       },
       {
         "date": "2026-08-18",
@@ -141,7 +150,8 @@
           true,
           true,
           true
-        ]
+        ],
+        "participantCount": null
       },
       {
         "date": "2026-08-25",
@@ -154,7 +164,8 @@
           false,
           true,
           true
-        ]
+        ],
+        "participantCount": 24
       },
       {
         "date": "2026-09-01",
@@ -167,7 +178,8 @@
           false,
           true,
           true
-        ]
+        ],
+        "participantCount": 25
       },
       {
         "date": "2026-09-08",
@@ -180,7 +192,8 @@
           false,
           true,
           true
-        ]
+        ],
+        "participantCount": 25
       },
       {
         "date": "2026-09-15",
@@ -193,7 +206,8 @@
           false,
           true,
           true
-        ]
+        ],
+        "participantCount": 23
       },
       {
         "date": "2026-09-22",
@@ -206,7 +220,8 @@
           true,
           true,
           true
-        ]
+        ],
+        "participantCount": 22
       },
       {
         "date": "2026-09-29",
@@ -219,7 +234,8 @@
           true,
           true,
           true
-        ]
+        ],
+        "participantCount": 23
       },
       {
         "date": "2026-10-13",
@@ -232,7 +248,8 @@
           true,
           true,
           true
-        ]
+        ],
+        "participantCount": 21
       },
       {
         "date": "2026-10-27",
@@ -245,7 +262,8 @@
           false,
           true,
           true
-        ]
+        ],
+        "participantCount": 24
       },
       {
         "date": "2026-11-03",
@@ -258,9 +276,10 @@
           true,
           true,
           true
-        ]
+        ],
+        "participantCount": 26
       }
     ],
-    "updatedAt": "2026-11-10T07:48:09.639Z"
+    "updatedAt": "2026-11-10T08:51:42.750Z"
   }
 }
