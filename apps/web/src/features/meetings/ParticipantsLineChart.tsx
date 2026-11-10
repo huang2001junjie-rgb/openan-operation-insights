@@ -66,7 +66,7 @@ export function ParticipantsLineChart({ matrix, isLoading, isError, error, onRet
         axisLine: { show: false },
         axisTick: { show: false },
         splitLine: { lineStyle: { color: SPLIT_LINE } },
-        axisLabel: { color: AXIS_TEXT, fontSize: 11 },
+        axisLabel: { color: AXIS_TEXT, fontSize: 14, fontWeight: 600 },
       },
       series: [
         {
@@ -75,6 +75,14 @@ export function ParticipantsLineChart({ matrix, isLoading, isError, error, onRet
           smooth: true,
           symbol: 'circle',
           symbolSize: 7,
+          label: {
+            show: true,
+            position: 'top',
+            color: '#9db7dd',
+            fontSize: 13,
+            fontWeight: 600,
+            formatter: '{c}',
+          },
           lineStyle: { width: 2.5, color: '#4b96ff' },
           itemStyle: { color: '#4b96ff', borderColor: '#ffffff', borderWidth: 1.5 },
           emphasis: { itemStyle: { color: '#2472f5' } },

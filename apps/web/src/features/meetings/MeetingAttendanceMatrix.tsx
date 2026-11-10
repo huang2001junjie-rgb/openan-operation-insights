@@ -59,7 +59,7 @@ export function MeetingAttendanceMatrix({
   return (
     <Card className="reveal">
       <CardTitle
-        title="参会矩阵"
+        title="TSC代表成员出席情况"
         description="行 = 例会日期（最新在上）、列 = 成员（台账原序）；✓ 出席，— 缺席。"
         icon={<IconUsers width={16} height={16} />}
         action={
